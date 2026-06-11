@@ -136,15 +136,15 @@ export default function Healthspan({ data }) {
         </div>
       </div>
 
-      {/* Pace of aging */}
+      {/* Pace of aging — ratio of biological to calendar age */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Pace of Aging</p>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold" style={{ color: diff <= 0 ? '#00c9a7' : '#f59e0b' }}>
-            {diff < 0 ? `${Math.abs(diff)}x` : diff > 0 ? `+${diff}x` : '1x'}
+            {(Math.round((physAge / USER_AGE) * 100) / 100).toFixed(2)}x
           </span>
           <span className="text-gray-500 text-sm">
-            {diff < 0 ? 'slower than calendar' : diff > 0 ? 'faster than calendar' : 'on track'}
+            {diff < 0 ? 'aging slower than the calendar' : diff > 0 ? 'aging faster than the calendar' : 'on track with the calendar'}
           </span>
         </div>
         <p className="text-xs text-gray-600 mt-2">

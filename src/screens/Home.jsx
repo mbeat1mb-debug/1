@@ -171,11 +171,6 @@ const SECTION_CONTENT = {
   journal: JournalContent,
 }
 
-const NAV_TARGETS = {
-  recovery: 'recovery', strain: 'strain', sleep: 'sleep', stress: 'stress',
-  records: 'records', healthspan: 'healthspan', journal: 'journal',
-}
-
 // ── Sortable card ────────────────────────────────────────────────────────────
 
 function SortableCard({ id, editing, onNav, data }) {
@@ -206,7 +201,7 @@ function SortableCard({ id, editing, onNav, data }) {
           </div>
         )}
         <button
-          onClick={() => !editing && onNav(NAV_TARGETS[id])}
+          onClick={() => !editing && onNav(id)}
           className="flex-1 p-4 text-left transition-opacity active:opacity-70"
           style={{ cursor: editing ? 'default' : 'pointer' }}
         >
@@ -219,7 +214,7 @@ function SortableCard({ id, editing, onNav, data }) {
 
 // ── Home screen ──────────────────────────────────────────────────────────────
 
-export default function Home({ data, onNav }) {
+export default function Home({ data, onNav, onRefresh }) {
   const [order, setOrder] = useState(getHomeLayout)
   const [editing, setEditing] = useState(false)
   const [activeId, setActiveId] = useState(null)
@@ -255,6 +250,13 @@ export default function Home({ data, onNav }) {
           <h1 className="text-xl font-bold text-white">Daily Report</h1>
         </div>
         <div className="flex items-center gap-2">
+          {onRefresh && !editing && (
+            <button onClick={onRefresh} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="Refresh data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={() => editing ? finishEditing() : setEditing(true)}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"

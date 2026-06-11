@@ -53,7 +53,7 @@ export default function Stress({ data }) {
           style={{ background: 'linear-gradient(to right, #00c9a7, #f59e0b, #ef4444)' }}>
           <div
             className="absolute top-0 w-3 h-3 bg-white rounded-full shadow-lg transition-all duration-700"
-            style={{ left: `calc(${stressScore}% - 6px)` }}
+            style={{ left: `calc(${Math.min(96, Math.max(2, stressScore))}% - 6px)` }}
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500">

@@ -159,29 +159,32 @@ export default function Journal({ data }) {
       </button>
 
       {/* Correlations */}
-      {healthHistory.length >= 10 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Behavior Insights</p>
-            <p className="text-xs text-gray-600 mt-1">How your tags affect recovery (need 5+ data points per tag)</p>
-          </div>
-          <div className="px-4 pb-4 space-y-3 mt-2">
-            {tags.filter(t => selectedTags.includes(t.id) || true).slice(0, 8).map(tag => {
-              const corr = analyzeTagCorrelation(tag.id, healthHistory)
-              if (!corr) return null
-              return (
+      {healthHistory.length >= 10 && (() => {
+        const correlations = tags
+          .map(tag => ({ tag, corr: analyzeTagCorrelation(tag.id, healthHistory) }))
+          .filter(x => x.corr)
+          .sort((a, b) => Math.abs(b.corr.diff) - Math.abs(a.corr.diff))
+          .slice(0, 8)
+        return (
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Behavior Insights</p>
+              <p className="text-xs text-gray-600 mt-1">How your tags affect recovery (needs 3+ days with and without each tag)</p>
+            </div>
+            <div className="px-4 pb-4 space-y-3 mt-2">
+              {correlations.map(({ tag, corr }) => (
                 <div key={tag.id} className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">{tag.emoji} {tag.label}</span>
                   <CorrelationBadge diff={corr.diff} />
                 </div>
-              )
-            }).filter(Boolean)}
-            {tags.filter(t => analyzeTagCorrelation(t.id, healthHistory)).length === 0 && (
-              <p className="text-sm text-gray-600">Keep logging — insights appear after 5+ days with each tag.</p>
-            )}
+              ))}
+              {correlations.length === 0 && (
+                <p className="text-sm text-gray-600">Keep logging — insights appear after 3+ days with each tag.</p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

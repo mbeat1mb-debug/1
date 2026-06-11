@@ -214,14 +214,12 @@ function PushNotificationsSection() {
           <p className="text-xs text-gray-500">
             Update <span className="text-white font-mono">vercel.json</span> crons to match your timezone:
           </p>
-          <div className="rounded-lg p-2 overflow-x-auto" style={{ background: '#0a0a0a' }}>
-            <p className="text-[11px] font-mono text-green-400">
-              {`"crons": [`}<br />
-              {`  \{"path": "/api/push-morning", "schedule": "${morningCron}"\},`}<br />
-              {`  \{"path": "/api/push-evening", "schedule": "${eveningCron}"\}`}<br />
-              {`]`}
-            </p>
-          </div>
+          <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-green-400" style={{ background: '#0a0a0a' }}>
+{`"crons": [
+  {"path": "/api/push-morning", "schedule": "${morningCron}"},
+  {"path": "/api/push-evening", "schedule": "${eveningCron}"}
+]`}
+          </pre>
           <p className="text-xs text-gray-600">Edit vercel.json in your repo, then redeploy. One-time fix.</p>
         </div>
       )}

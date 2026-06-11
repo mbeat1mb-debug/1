@@ -103,6 +103,12 @@ export function getRecoveryColor(score) {
   return '#ef4444'
 }
 
+// Duration (70%) + efficiency (30%), normalized to an 8h target
+export function calculateSleepScore(sleep) {
+  if (!sleep) return 0
+  return Math.round(Math.min(100, (sleep.minutesAsleep / 480) * 70 + (sleep.efficiency || 85) / 100 * 30))
+}
+
 export function getRecoveryLabel(score) {
   if (score >= 67) return 'PEAK'
   if (score >= 34) return 'GOOD'

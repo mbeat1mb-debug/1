@@ -1,29 +1,31 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
 import { loadDashboardData } from './lib/api'
 import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
-  calculateStressScore, calculateSleepDebt, calculateOptimalSleepWindow,
+  calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
-  updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements, getPersonalRecords,
-  getUnlockedAchievements,
+  updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
 } from './lib/achievements'
 import { fireDataNotifications } from './lib/notifications'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
 import Home from './screens/Home'
-import Recovery from './screens/Recovery'
-import Strain from './screens/Strain'
-import Sleep from './screens/Sleep'
-import Stress from './screens/Stress'
-import Journal from './screens/Journal'
-import Coach from './screens/Coach'
-import Healthspan from './screens/Healthspan'
-import Records from './screens/Records'
-import Settings from './screens/Settings'
+
+// Lazy-load secondary screens so the initial bundle stays small
+// (recharts alone is ~400kB and Home doesn't use it)
+const Recovery = lazy(() => import('./screens/Recovery'))
+const Strain = lazy(() => import('./screens/Strain'))
+const Sleep = lazy(() => import('./screens/Sleep'))
+const Stress = lazy(() => import('./screens/Stress'))
+const Journal = lazy(() => import('./screens/Journal'))
+const Coach = lazy(() => import('./screens/Coach'))
+const Healthspan = lazy(() => import('./screens/Healthspan'))
+const Records = lazy(() => import('./screens/Records'))
+const Settings = lazy(() => import('./screens/Settings'))
 
 // Generate 90-day demo calendar data
 function makeCalendarDays() {
@@ -122,9 +124,7 @@ export default function App() {
       hrv: parsed.todayHRV, rhr: parsed.todayRHR,
       hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
     })
-    const sleepScore = parsed.todaySleep
-      ? Math.round(Math.min(100, (parsed.todaySleep.minutesAsleep / 480) * 70 + (parsed.todaySleep.efficiency || 85) / 100 * 30))
-      : 0
+    const sleepScore = calculateSleepScore(parsed.todaySleep)
     const sleepDebt = calculateSleepDebt(parsed.sleepHistory)
     const optimalSleepWindow = calculateOptimalSleepWindow(parsed.sleepHistory)
 
@@ -139,9 +139,13 @@ export default function App() {
       })
     }).filter(Boolean)
 
+    // Align from the end — both arrays end "today", but recoveryHistory may be
+    // shorter since HRV isn't captured every night. Missing days stay null so
+    // the heatmap shows them as no-data instead of a fake score.
+    const offset = recoveryHistory.length - parsed.sleepHistory.length
     const calendarDays = parsed.sleepHistory.map((s, i) => ({
       date: s.date,
-      recovery: recoveryHistory[i] ?? 50,
+      recovery: recoveryHistory[i + offset] ?? null,
       sleep: s.minutes,
     }))
 
@@ -206,16 +210,18 @@ export default function App() {
     <div className="min-h-screen bg-black">
       {showAlerts && <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />}
 
-      {tab === 'home' && <Home data={data} onNav={handleNav} />}
-      {tab === 'recovery' && <Recovery data={data} />}
-      {tab === 'strain' && <Strain data={data} />}
-      {tab === 'sleep' && <Sleep data={data} />}
-      {tab === 'stress' && <Stress data={data} />}
-      {tab === 'journal' && <Journal data={data} />}
-      {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
-      {tab === 'healthspan' && <Healthspan data={data} />}
-      {tab === 'records' && <Records data={data} />}
-      {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
+      {tab === 'home' && <Home data={data} onNav={handleNav} onRefresh={connected && !demo ? loadAndProcess : undefined} />}
+      <Suspense fallback={<Spinner />}>
+        {tab === 'recovery' && <Recovery data={data} />}
+        {tab === 'strain' && <Strain data={data} />}
+        {tab === 'sleep' && <Sleep data={data} />}
+        {tab === 'stress' && <Stress data={data} />}
+        {tab === 'journal' && <Journal data={data} />}
+        {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
+        {tab === 'healthspan' && <Healthspan data={data} />}
+        {tab === 'records' && <Records data={data} />}
+        {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
+      </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (
         <div className="fixed top-safe left-0 right-0 flex justify-center pt-2 pointer-events-none" style={{ zIndex: 60 }}>

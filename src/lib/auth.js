@@ -15,13 +15,14 @@ function generateState() {
 export function startOAuth(clientId) {
   const state = generateState()
   sessionStorage.setItem('oauth_state', state)
+  // No `prompt` param: Fitbit shows login/consent only when needed, so
+  // reconnects with an active Fitbit session are silent (auto-connect UX)
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
     scope: SCOPES,
     redirect_uri: getRedirectUri(),
     state,
-    prompt: 'login consent',
   })
   window.location.href = `${FITBIT_AUTH_URL}?${params}`
 }

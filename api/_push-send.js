@@ -57,7 +57,7 @@ export async function sendScheduledPush(type) {
   await kv.set(sentKey, 1, { ex: 90000 }) // expire after ~25 hours
 
   webPush.setVapidDetails(
-    process.env.VAPID_SUBJECT,
+    process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY,
   )

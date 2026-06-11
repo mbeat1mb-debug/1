@@ -52,8 +52,8 @@ function buildSystemPrompt(data) {
   const { recoveryScore, strainScore, sleepScore, stressScore, todayHRV, todayRHR,
     todaySleep, todaySpO2, todayBR, steps, calories, hrvHistory, rhrHistory } = data
 
-  const avgHRV = hrvHistory?.filter(Boolean).slice(-14).reduce((a, b) => a + b, 0) /
-    (hrvHistory?.filter(Boolean).slice(-14).length || 1)
+  const recentHRV = (hrvHistory || []).filter(Boolean).slice(-14)
+  const avgHRV = recentHRV.length ? recentHRV.reduce((a, b) => a + b, 0) / recentHRV.length : 0
 
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : 'unknown'
 

@@ -49,8 +49,9 @@ export default function CalendarHeatmap({ days = [] }) {
   return (
     <div>
       <div className="flex gap-1">
-        {/* Day labels */}
+        {/* Day labels — h-3 spacer matches the month-label row above each week column */}
         <div className="flex flex-col gap-1 mr-1">
+          <div className="h-3" />
           {DAY_LABELS.map((l, i) => (
             <div key={i} className="w-4 h-4 flex items-center justify-center text-[9px] text-gray-600">{l}</div>
           ))}

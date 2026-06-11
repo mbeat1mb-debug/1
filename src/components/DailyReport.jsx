@@ -54,7 +54,7 @@ export default function DailyReport({ data, type }) {
   const [loading, setLoading] = useState(false)
 
   const {
-    recoveryScore = 0, strainScore = 0, stressScore = 0, sleepScore = 0,
+    recoveryScore = 0, strainScore = 0, stressScore = 0,
     todayHRV = 0, todayRHR = 0, todaySleep, steps = 0, calories = 0,
     hrvHistory = [], rhrHistory = [], sleepDebt = 0, optimalSleepWindow,
   } = data
