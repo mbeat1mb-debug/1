@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import DailyReport from '../components/DailyReport'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 const REPORT_KEY = 'weekly_report'
@@ -235,12 +236,12 @@ export default function Coach({ data }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex px-4 pt-3 gap-3" style={{ borderBottom: '1px solid #1a1a1a' }}>
-        {[['chat', 'Chat'], ['report', 'Weekly Report']].map(([id, label]) => (
+      <div className="flex px-4 pt-3 gap-4 overflow-x-auto" style={{ borderBottom: '1px solid #1a1a1a' }}>
+        {[['chat', 'Chat'], ['report', 'Weekly'], ['morning', 'Morning'], ['evening', 'Evening']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className="pb-2 text-sm font-semibold transition-colors"
+            className="pb-2 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
             style={{
               color: activeTab === id ? '#00c9a7' : '#555',
               borderBottom: activeTab === id ? '2px solid #00c9a7' : '2px solid transparent',
@@ -254,6 +255,18 @@ export default function Coach({ data }) {
       {activeTab === 'report' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
           <WeeklyReport data={data} apiKey={apiKey} />
+        </div>
+      )}
+
+      {activeTab === 'morning' && (
+        <div className="flex-1 overflow-y-auto py-4 pb-24">
+          <DailyReport data={data} type="morning" />
+        </div>
+      )}
+
+      {activeTab === 'evening' && (
+        <div className="flex-1 overflow-y-auto py-4 pb-24">
+          <DailyReport data={data} type="evening" />
         </div>
       )}
 
