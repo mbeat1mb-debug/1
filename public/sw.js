@@ -18,3 +18,30 @@ self.addEventListener('fetch', e => {
     fetch(e.request).catch(() => caches.match(e.request).then(r => r || caches.match('/')))
   )
 })
+
+self.addEventListener('push', e => {
+  let data = { title: 'Health Dashboard', body: 'Check your stats today.' }
+  try { data = e.data?.json() || data } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || 'health',
+      renotify: true,
+      data: { url: data.url || '/' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = e.notification.data?.url || '/'
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(w => w.url.startsWith(self.location.origin))
+      if (existing) { existing.focus(); existing.navigate(url) }
+      else clients.openWindow(url)
+    })
+  )
+})
