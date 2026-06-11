@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { isConnected, startOAuth, disconnect } from '../lib/auth'
+import { getPermission, requestPermission } from '../lib/notifications'
 
 export default function Settings({ onBack }) {
   const [clientId, setClientId] = useState(() => localStorage.getItem('fitbit_client_id') || '')
   const [connected, setConnected] = useState(isConnected)
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [saved, setSaved] = useState(false)
+  const [notifPerm, setNotifPerm] = useState(getPermission)
+
+  const enableNotifications = async () => {
+    const result = await requestPermission()
+    setNotifPerm(result)
+  }
 
   const saveAndConnect = () => {
     if (!clientId.trim()) return
@@ -112,6 +119,58 @@ export default function Settings({ onBack }) {
       >
         {saved ? '✓ Saved' : 'Save Settings'}
       </button>
+
+      {/* Notifications */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-white">Notifications</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {notifPerm === 'unsupported' ? 'Not supported in this browser'
+                : notifPerm === 'granted' ? 'Enabled — you\'ll get health alerts'
+                : notifPerm === 'denied' ? 'Blocked — enable in iOS Settings → Safari'
+                : 'Off — tap to enable'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{
+              background: notifPerm === 'granted' ? '#00c9a7' : notifPerm === 'denied' ? '#ef4444' : '#555'
+            }} />
+          </div>
+        </div>
+        {notifPerm !== 'granted' && notifPerm !== 'unsupported' && notifPerm !== 'denied' && (
+          <button
+            onClick={enableNotifications}
+            className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity"
+            style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+          >
+            Enable Notifications
+          </button>
+        )}
+        {notifPerm === 'denied' && (
+          <p className="text-xs text-gray-600">
+            Open iOS Settings → scroll to Safari → Notifications → allow for this site.
+          </p>
+        )}
+        {notifPerm === 'granted' && (
+          <div className="space-y-2 pt-1">
+            {[
+              { label: 'Recovery red zone', desc: 'Score below 34% — rest day alert' },
+              { label: 'Sleep debt ≥ 3h', desc: 'Weekly sleep deficit warning' },
+              { label: 'High stress', desc: 'Stress score above 78' },
+              { label: 'Achievements', desc: 'When you unlock a new badge' },
+            ].map(n => (
+              <div key={n.label} className="flex items-start gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00c9a7] mt-1.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-300 font-medium">{n.label}</p>
+                  <p className="text-[11px] text-gray-600">{n.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Note on API migration */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>

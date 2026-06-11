@@ -88,6 +88,7 @@ export function checkAndUnlockAchievements({ pr, streaks, recoveryHistory, sleep
   check('biohacker', journalCount >= 30)
   check('low_stress', streaks.lowStress >= 7)
   check('peak_week', avgRecovery >= 75)
+  check('consistent_sleeper', streaks.sleep >= 14)
 
   if (newUnlocks.length) localStorage.setItem(UNLOCK_KEY, JSON.stringify([...unlocked]))
   return { unlocked: [...unlocked], newUnlocks }

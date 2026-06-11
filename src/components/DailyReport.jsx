@@ -48,7 +48,6 @@ function StatPill({ label, value, unit = '', up }) {
 }
 
 export default function DailyReport({ data, type }) {
-  const apiKey = localStorage.getItem('claude_api_key')
   const cacheKey = todayKey(type)
 
   const [brief, setBrief] = useState(() => localStorage.getItem(cacheKey) || '')
@@ -72,6 +71,7 @@ export default function DailyReport({ data, type }) {
   const optimalStrain = recoveryScore >= 67 ? '12–16' : recoveryScore >= 34 ? '8–12' : '5–8'
 
   useEffect(() => {
+    const apiKey = localStorage.getItem('claude_api_key')
     if (!apiKey || brief) return
     const prompt = type === 'morning'
       ? `Recovery: ${recoveryScore}%, HRV: ${todayHRV}ms (${hrvDiff >= 0 ? '+' : ''}${hrvDiff}ms vs avg), RHR: ${todayRHR}bpm (${rhrDiff >= 0 ? '+' : ''}${rhrDiff} vs avg), Sleep: ${sleepHours}. What should I focus on today and why?`
@@ -82,7 +82,7 @@ export default function DailyReport({ data, type }) {
       .then(text => { setBrief(text); localStorage.setItem(cacheKey, text) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [type, recoveryScore, todayHRV, todayRHR, strainScore, steps, calories, stressScore, sleepDebt])
 
   const isMorning = type === 'morning'
   const accentColor = isMorning ? recoveryColor : '#3b82f6'

@@ -74,7 +74,7 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, hrvHistory, rhrHi
   // Sleep component (25%): duration + efficiency
   let sleepScore = 50
   if (sleep) {
-    const hours = sleep.totalMinutesAsleep / 60
+    const hours = sleep.minutesAsleep / 60
     const efficiency = sleep.efficiency || 85
     const hourScore = clamp((hours / 8) * 70, 0, 70)
     const effScore = clamp((efficiency / 100) * 30, 0, 30)

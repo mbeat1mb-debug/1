@@ -10,6 +10,7 @@ import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements, getPersonalRecords,
   getUnlockedAchievements,
 } from './lib/achievements'
+import { fireDataNotifications } from './lib/notifications'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
@@ -160,8 +161,11 @@ export default function App() {
       pr, streaks, recoveryHistory, sleepHistory: parsed.sleepHistory,
     })
     const alerts = detectAlerts({ ...base, recoveryHistory })
+    const result = { ...base, personalRecords: pr, streaks, unlockedAchievements: unlocked, alerts }
 
-    return { ...base, personalRecords: pr, streaks, unlockedAchievements: unlocked, alerts }
+    fireDataNotifications(result, newUnlocks)
+
+    return result
   }, [])
 
   useEffect(() => {
@@ -208,7 +212,7 @@ export default function App() {
       {tab === 'sleep' && <Sleep data={data} />}
       {tab === 'stress' && <Stress data={data} />}
       {tab === 'journal' && <Journal data={data} />}
-      {tab === 'coach' && <Coach data={data} />}
+      {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
       {tab === 'healthspan' && <Healthspan data={data} />}
       {tab === 'records' && <Records data={data} />}
       {tab === 'settings' && <Settings onBack={() => setTab('home')} />}

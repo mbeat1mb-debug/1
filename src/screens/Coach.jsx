@@ -132,7 +132,7 @@ function WeeklyReport({ data, apiKey }) {
   )
 }
 
-export default function Coach({ data }) {
+export default function Coach({ data, onNav }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -189,9 +189,18 @@ export default function Coach({ data }) {
   if (!hasKey || showKeyInput) {
     return (
       <div className="px-4 pt-safe pb-28 space-y-4">
-        <div className="pt-2">
-          <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
-          <h1 className="text-xl font-bold">Set Up Coaching</h1>
+        <div className="pt-2 flex items-center gap-3">
+          {onNav && (
+            <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
+            <h1 className="text-xl font-bold">Set Up Coaching</h1>
+          </div>
         </div>
         <div className="rounded-2xl p-5 space-y-4" style={{ background: '#111', border: '1px solid #00c9a733' }}>
           <p className="text-gray-300 text-sm">
@@ -226,9 +235,18 @@ export default function Coach({ data }) {
   return (
     <div className="flex flex-col pt-safe" style={{ height: '100dvh' }}>
       <div className="px-4 pt-2 pb-3 flex items-center justify-between" style={{ borderBottom: '1px solid #1a1a1a' }}>
-        <div>
-          <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
-          <h1 className="text-lg font-bold">Ask anything</h1>
+        <div className="flex items-center gap-3">
+          {onNav && (
+            <button onClick={() => onNav('home')} className="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
+            <h1 className="text-lg font-bold">Ask anything</h1>
+          </div>
         </div>
         <button onClick={() => setShowKeyInput(true)} className="text-xs text-gray-600 px-2 py-1 rounded-lg bg-[#1a1a1a]">
           API Key
