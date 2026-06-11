@@ -204,7 +204,13 @@ export function parseFitbitData(raw) {
 
   const sleepHistory = (sleepRange?.sleep ?? [])
     .filter(s => s.isMainSleep)
-    .map(s => ({ date: s.dateOfSleep, minutes: s.minutesAsleep, efficiency: s.efficiency }))
+    .map(s => ({
+      date: s.dateOfSleep,
+      minutes: s.minutesAsleep,
+      efficiency: s.efficiency,
+      startTime: s.startTime,
+      endTime: s.endTime,
+    }))
 
   return {
     todayHRV,
@@ -219,5 +225,63 @@ export function parseFitbitData(raw) {
     rhrHistory,
     sleepHistory,
     hrIntradayData: hrIntraday,
+  }
+}
+
+// ── Sleep Debt ────────────────────────────────────────────────────────────────
+
+export function calculateSleepDebt(sleepHistory, optimalHours = 8) {
+  const optimalMins = optimalHours * 60
+  const last7 = sleepHistory.slice(-7)
+  const debt = last7.reduce((acc, s) => acc + Math.max(0, optimalMins - (s.minutes || 0)), 0)
+  return Math.round(debt / 60 * 10) / 10
+}
+
+// ── Optimal Sleep Window ──────────────────────────────────────────────────────
+
+function medianOf(arr) {
+  if (!arr.length) return 0
+  const s = [...arr].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+
+function stdDev(arr) {
+  if (arr.length < 2) return 0
+  const m = arr.reduce((a, b) => a + b, 0) / arr.length
+  return Math.sqrt(arr.reduce((sq, v) => sq + Math.pow(v - m, 2), 0) / arr.length)
+}
+
+function formatMins(totalMins) {
+  const m = ((totalMins % 1440) + 1440) % 1440
+  const h = Math.floor(m / 60) % 24
+  const min = m % 60
+  const period = h >= 12 ? 'PM' : 'AM'
+  return `${h % 12 || 12}:${String(min).padStart(2, '0')} ${period}`
+}
+
+export function calculateOptimalSleepWindow(sleepHistory) {
+  const entries = sleepHistory.filter(s => s.startTime && s.endTime)
+  if (entries.length < 7) return null
+
+  const toMins = isoStr => {
+    const d = new Date(isoStr)
+    let m = d.getHours() * 60 + d.getMinutes()
+    if (m < 300) m += 1440 // midnight–5am treated as "next day"
+    return m
+  }
+
+  const startMins = entries.map(s => toMins(s.startTime))
+  const endMins = entries.map(s => {
+    const d = new Date(s.endTime)
+    return d.getHours() * 60 + d.getMinutes()
+  })
+
+  const consistency = Math.round(Math.max(0, Math.min(100, 100 - stdDev(startMins) / 1.5)))
+
+  return {
+    bedtime: formatMins(medianOf(startMins)),
+    wakeTime: formatMins(medianOf(endMins)),
+    consistency,
   }
 }

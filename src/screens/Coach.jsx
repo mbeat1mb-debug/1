@@ -1,6 +1,51 @@
 import { useState, useRef, useEffect } from 'react'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
+const REPORT_KEY = 'weekly_report'
+
+async function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 400) {
+  const res = await fetch(CLAUDE_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  })
+  if (!res.ok) throw new Error(`API error ${res.status}`)
+  const json = await res.json()
+  return json.content?.[0]?.text || ''
+}
+
+function buildWeeklyPrompt(data) {
+  const { recoveryScore, strainScore, sleepScore, stressScore, todayHRV, todayRHR,
+    hrvHistory = [], rhrHistory = [], sleepHistory = [] } = data
+  const last7HRV = hrvHistory.slice(-7).filter(Boolean)
+  const avgHRV7 = last7HRV.length ? Math.round(last7HRV.reduce((a, b) => a + b, 0) / last7HRV.length) : 0
+  const last7RHR = rhrHistory.slice(-7).filter(Boolean)
+  const avgRHR7 = last7RHR.length ? Math.round(last7RHR.reduce((a, b) => a + b, 0) / last7RHR.length) : 0
+  const last7Sleep = sleepHistory.slice(-7)
+  const avgSleep7 = last7Sleep.length ? Math.round(last7Sleep.reduce((a, s) => a + s.minutes, 0) / last7Sleep.length / 60 * 10) / 10 : 0
+  const prior7HRV = hrvHistory.slice(-14, -7).filter(Boolean)
+  const priorAvgHRV = prior7HRV.length ? Math.round(prior7HRV.reduce((a, b) => a + b, 0) / prior7HRV.length) : avgHRV7
+
+  return `Generate a concise but insightful weekly health report for this person. Age 39, male.
+
+THIS WEEK:
+- Avg HRV: ${avgHRV7}ms (prior week: ${priorAvgHRV}ms, ${avgHRV7 >= priorAvgHRV ? 'UP' : 'DOWN'} ${Math.abs(avgHRV7 - priorAvgHRV)}ms)
+- Avg RHR: ${avgRHR7} bpm
+- Avg Sleep: ${avgSleep7}h/night
+- Today's Recovery: ${recoveryScore}%, Strain: ${strainScore}, Sleep Score: ${sleepScore}%, Stress: ${stressScore}
+
+FORMAT: Write 3-4 short paragraphs: (1) This week's overall picture in 1-2 sentences, (2) What went well, (3) Main opportunity to improve, (4) One specific action for next week. Be direct and personal — use "you" and specific numbers. No bullet points, just prose. Max 250 words.`
+}
 
 function buildSystemPrompt(data) {
   const { recoveryScore, strainScore, sleepScore, stressScore, todayHRV, todayRHR,
@@ -42,12 +87,57 @@ const STARTERS = [
   'How\'s my fitness trending?',
 ]
 
+function WeeklyReport({ data, apiKey }) {
+  const [report, setReport] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(REPORT_KEY) || 'null') } catch { return null }
+  })
+  const [generating, setGenerating] = useState(false)
+
+  const generate = async () => {
+    if (!apiKey || generating) return
+    setGenerating(true)
+    try {
+      const text = await callClaude(apiKey, 'You are a personal health coach generating weekly reports.', buildWeeklyPrompt(data), 600)
+      const saved = { text, generatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
+      setReport(saved)
+      localStorage.setItem(REPORT_KEY, JSON.stringify(saved))
+    } catch (e) {
+      setReport({ text: `Error generating report: ${e.message}`, generatedAt: 'error' })
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Report</p>
+        {report && <span className="text-xs text-gray-600">{report.generatedAt}</span>}
+      </div>
+      {report ? (
+        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{report.text}</p>
+      ) : (
+        <p className="text-sm text-gray-600">Get a full AI analysis of your week — what went well, what to improve, one focus for next week.</p>
+      )}
+      <button
+        onClick={generate}
+        disabled={generating || !apiKey}
+        className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+        style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+      >
+        {generating ? 'Generating…' : report ? 'Regenerate Report' : 'Generate This Week\'s Report'}
+      </button>
+    </div>
+  )
+}
+
 export default function Coach({ data }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
+  const [activeTab, setActiveTab] = useState('chat')
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -66,11 +156,9 @@ export default function Coach({ data }) {
     const question = text || input.trim()
     if (!question || loading || !hasKey) return
     setInput('')
-
     const newMessages = [...messages, { role: 'user', content: question }]
     setMessages(newMessages)
     setLoading(true)
-
     try {
       const res = await fetch(CLAUDE_API, {
         method: 'POST',
@@ -87,11 +175,9 @@ export default function Coach({ data }) {
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         }),
       })
-
       if (!res.ok) throw new Error(`API error ${res.status}`)
       const json = await res.json()
-      const reply = json.content?.[0]?.text || 'No response.'
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      setMessages(prev => [...prev, { role: 'assistant', content: json.content?.[0]?.text || 'No response.' }])
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}. Check your API key in Settings.` }])
     } finally {
@@ -148,8 +234,31 @@ export default function Coach({ data }) {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex px-4 pt-3 gap-3" style={{ borderBottom: '1px solid #1a1a1a' }}>
+        {[['chat', 'Chat'], ['report', 'Weekly Report']].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className="pb-2 text-sm font-semibold transition-colors"
+            style={{
+              color: activeTab === id ? '#00c9a7' : '#555',
+              borderBottom: activeTab === id ? '2px solid #00c9a7' : '2px solid transparent',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'report' && (
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+          <WeeklyReport data={data} apiKey={apiKey} />
+        </div>
+      )}
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32">
+      {activeTab === 'chat' && <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32">
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-gray-500 text-sm text-center pt-4">Your coach knows today's data. Ask anything.</p>
@@ -197,9 +306,10 @@ export default function Coach({ data }) {
           </div>
         )}
         <div ref={bottomRef} />
-      </div>
+      </div>}
 
-      {/* Input */}
+      {/* Input — chat tab only */}
+      {activeTab === 'chat' &&
       <div
         className="fixed bottom-0 left-0 right-0 px-4 pb-safe pt-2"
         style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(12px)', borderTop: '1px solid #1a1a1a' }}
@@ -225,7 +335,7 @@ export default function Coach({ data }) {
             </svg>
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

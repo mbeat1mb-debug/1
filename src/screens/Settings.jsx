@@ -121,6 +121,25 @@ export default function Settings({ onBack }) {
         </p>
       </div>
 
+      {/* Native app upgrade */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Upgrade to Native App</p>
+        <p className="text-xs text-gray-500">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
+        {[
+          { icon: '🏠', label: 'Home Screen Widget', desc: 'Recovery ring on your home screen without opening the app' },
+          { icon: '🍎', label: 'Apple Health Sync', desc: 'Write your scores into the native Apple Health app' },
+          { icon: '🔄', label: 'Background Sync', desc: 'Data refreshes at 6am — numbers waiting before you open it' },
+        ].map(f => (
+          <div key={f.label} className="flex items-start gap-3 py-2" style={{ borderTop: '1px solid #1a1a1a' }}>
+            <span className="text-xl">{f.icon}</span>
+            <div>
+              <p className="text-sm text-gray-300 font-medium">{f.label}</p>
+              <p className="text-xs text-gray-600">{f.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* About */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">About</p>

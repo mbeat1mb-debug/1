@@ -1,6 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
+import { calculateSleepDebt, calculateOptimalSleepWindow } from '../lib/calculations'
 
 function SleepStageBar({ label, minutes, total, color }) {
   const pct = total > 0 ? (minutes / total) * 100 : 0
@@ -96,6 +97,70 @@ export default function Sleep({ data }) {
       </div>
 
       {/* Guidance */}
+      {/* Sleep Debt */}
+      {(() => {
+        const debt = calculateSleepDebt(sleepHistory)
+        const debtColor = debt >= 5 ? '#ef4444' : debt >= 2 ? '#f59e0b' : '#00c9a7'
+        return (
+          <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">7-Day Sleep Debt</p>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-bold" style={{ color: debtColor }}>{debt}h</span>
+              <span className="text-gray-500 text-sm">{debt === 0 ? 'fully caught up' : 'owed this week'}</span>
+            </div>
+            <div className="h-2 rounded-full bg-[#222] overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.min(100, (debt / 10) * 100)}%`, background: debtColor }} />
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              {debt === 0
+                ? 'No debt — your body is fully rested.'
+                : debt < 2
+                ? 'Minor debt. One good night recovers this.'
+                : `Add ${Math.ceil(debt / 7 * 60)} extra minutes per night to break even by end of week.`}
+            </p>
+          </div>
+        )
+      })()}
+
+      {/* Optimal Sleep Window */}
+      {(() => {
+        const window = calculateOptimalSleepWindow(sleepHistory)
+        if (!window) return (
+          <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Optimal Sleep Window</p>
+            <p className="text-sm text-gray-600">Need 7+ nights of data to calculate your natural window.</p>
+          </div>
+        )
+        const consistencyColor = window.consistency >= 75 ? '#00c9a7' : window.consistency >= 50 ? '#f59e0b' : '#ef4444'
+        return (
+          <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Your Natural Sleep Window</p>
+            <div className="flex justify-around text-center mb-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Target Bedtime</p>
+                <p className="text-xl font-bold text-white">{window.bedtime}</p>
+              </div>
+              <div className="text-gray-700 self-center text-xl">→</div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Natural Wake</p>
+                <p className="text-xl font-bold text-white">{window.wakeTime}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Consistency score</span>
+              <span className="text-sm font-bold" style={{ color: consistencyColor }}>{window.consistency}%</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              {window.consistency >= 75
+                ? 'Great consistency. Your body has a stable rhythm — protect it.'
+                : 'Irregular sleep schedule detected. Staying within 30 min of your target adds ~20% recovery quality.'}
+            </p>
+          </div>
+        )
+      })()}
+
+      {/* Sleep tip */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1526', border: '1px solid #3b2d5e' }}>
         <p className="text-xs font-semibold text-purple-400 uppercase tracking-widest mb-2">Sleep Tip</p>
         <p className="text-sm text-gray-400">

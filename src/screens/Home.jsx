@@ -127,6 +127,19 @@ export default function Home({ data, onNav }) {
         </div>
       </SectionCard>
 
+      {/* Records */}
+      <SectionCard onClick={() => onNav('records')}>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Records & History</span>
+            <p className="text-gray-300 text-sm mt-1">PRs, streaks, 90-day calendar</p>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1.5} className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+        </div>
+      </SectionCard>
+
       {/* Healthspan */}
       <SectionCard onClick={() => onNav('healthspan')}>
         <div className="flex items-center justify-between">
