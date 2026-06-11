@@ -1,0 +1,87 @@
+import ScoreRing from '../components/ScoreRing'
+import { BarGraph } from '../components/TrendChart'
+import { StatRow } from '../components/MetricCard'
+import { MAX_HR } from '../lib/calculations'
+
+const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444']
+const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
+const ZONE_DESCS = ['Warm-Up', 'Fat Burn', 'Cardio', 'Threshold', 'Max']
+
+export default function Strain({ data }) {
+  const { strainScore = 0, steps = 0, calories = 0, activeMinutes = 0,
+    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0 } = data
+
+  const strainColor = '#3b82f6'
+  const totalZoneMinutes = zoneMinutes.reduce((a, b) => a + b, 0)
+
+  const optimalStrain = recoveryScore >= 67 ? 14 : recoveryScore >= 34 ? 10 : 7
+
+  return (
+    <div className="px-4 pt-safe pb-28 space-y-4">
+      <div className="pt-2">
+        <p className="text-gray-500 text-xs uppercase tracking-wider">Strain</p>
+        <h1 className="text-xl font-bold">Cardiovascular load</h1>
+      </div>
+
+      {/* Main score */}
+      <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#111', border: '1px solid #222' }}>
+        <ScoreRing score={strainScore} max={21} color={strainColor} size={130} strokeWidth={11} sublabel="/ 21" />
+        <div className="flex-1">
+          <p className="text-gray-400 text-sm mb-2">Day Strain</p>
+          <div className="rounded-xl p-3" style={{ background: strainColor + '15', border: `1px solid ${strainColor}33` }}>
+            <p className="text-xs text-gray-400 mb-0.5">Optimal target today</p>
+            <p className="text-2xl font-bold" style={{ color: strainColor }}>{optimalStrain}</p>
+            <p className="text-xs text-gray-500">Based on recovery {recoveryScore}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Activity stats */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="px-4 pt-4 pb-2">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Activity</span>
+        </div>
+        <div className="px-4">
+          <StatRow label="Steps" value={steps.toLocaleString()} />
+          <StatRow label="Calories Burned" value={calories.toLocaleString()} unit="kcal" />
+          <StatRow label="Active Minutes" value={activeMinutes} unit="min" />
+          <StatRow label="Max HR Target" value={MAX_HR} unit="bpm" color="#f59e0b" />
+        </div>
+      </div>
+
+      {/* HR Zones breakdown */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Heart Rate Zones</p>
+        <div className="space-y-3">
+          {ZONE_LABELS.map((zone, i) => {
+            const mins = zoneMinutes[i] || 0
+            const pct = totalZoneMinutes > 0 ? (mins / totalZoneMinutes) * 100 : 0
+            return (
+              <div key={i}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-400">{zone} <span className="text-gray-600">({ZONE_DESCS[i]})</span></span>
+                  <span className="text-white font-medium">{mins} min</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${pct}%`, background: ZONE_COLORS[i + 1] }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Strain guidance */}
+      <div className="rounded-2xl p-4" style={{ background: '#1a1f2e', border: '1px solid #2a3a5e' }}>
+        <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2">How Strain is Calculated</p>
+        <p className="text-sm text-gray-400">
+          Based on time spent in each heart rate zone throughout the day. Higher zones count exponentially more.
+          Your personal max HR is <span className="text-white font-semibold">{MAX_HR} bpm</span> (Gellish formula, age 39).
+        </p>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,99 @@
+import { getTokens, isTokenExpired, refreshAccessToken, disconnect } from './auth'
+
+const BASE = 'https://api.fitbit.com'
+
+async function fitbitFetch(path) {
+  if (isTokenExpired()) {
+    const ok = await refreshAccessToken()
+    if (!ok) { disconnect(); window.location.reload(); return null }
+  }
+  const { access_token } = getTokens()
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  })
+  if (res.status === 401) { disconnect(); window.location.reload(); return null }
+  if (!res.ok) return null
+  return res.json()
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0]
+}
+
+function daysAgo(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().split('T')[0]
+}
+
+export async function getProfile() {
+  return fitbitFetch('/1/user/-/profile.json')
+}
+
+export async function getDailySummary(date = today()) {
+  return fitbitFetch(`/1/user/-/activities/date/${date}.json`)
+}
+
+export async function getHeartRateIntraday(date = today()) {
+  return fitbitFetch(`/1/user/-/activities/heart/date/${date}/1d/1min.json`)
+}
+
+export async function getHeartRateRange(startDate, endDate) {
+  return fitbitFetch(`/1/user/-/activities/heart/date/${startDate}/${endDate}.json`)
+}
+
+export async function getSleep(date = today()) {
+  return fitbitFetch(`/1.2/user/-/sleep/date/${date}.json`)
+}
+
+export async function getSleepRange(startDate, endDate) {
+  return fitbitFetch(`/1.2/user/-/sleep/date/${startDate}/${endDate}.json`)
+}
+
+export async function getHRV(date = today()) {
+  return fitbitFetch(`/1/user/-/hrv/date/${date}.json`)
+}
+
+export async function getHRVRange(startDate, endDate) {
+  return fitbitFetch(`/1/user/-/hrv/date/${startDate}/${endDate}.json`)
+}
+
+export async function getSpO2(date = today()) {
+  return fitbitFetch(`/1/user/-/spo2/date/${date}.json`)
+}
+
+export async function getRespiratoryRate(date = today()) {
+  return fitbitFetch(`/1/user/-/br/date/${date}.json`)
+}
+
+export async function getCardioFitness() {
+  return fitbitFetch(`/1/user/-/cardioscore/date/${daysAgo(7)}/${today()}.json`)
+}
+
+export async function loadDashboardData() {
+  const date = today()
+  const rangeStart = daysAgo(30)
+  const [
+    summary,
+    hrIntraday,
+    sleep,
+    hrv,
+    spo2,
+    br,
+    hrvRange,
+    hrRange,
+    sleepRange,
+  ] = await Promise.all([
+    getDailySummary(date),
+    getHeartRateIntraday(date),
+    getSleep(date),
+    getHRV(date),
+    getSpO2(date),
+    getRespiratoryRate(date),
+    getHRVRange(daysAgo(30), date),
+    getHeartRateRange(daysAgo(7), date),
+    getSleepRange(daysAgo(30), date),
+  ])
+
+  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, date }
+}
