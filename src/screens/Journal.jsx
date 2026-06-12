@@ -65,7 +65,7 @@ export default function Journal({ data, onNav }) {
   const save = () => {
     saveJournalEntry(today(), selectedTags, notes, energy)
     const sys = parseInt(bpSys, 10), dia = parseInt(bpDia, 10)
-    if (sys > 0 && dia > 0) saveBPReading(today(), sys, dia)
+    if (sys >= 50 && sys <= 300 && dia >= 30 && dia <= 200) saveBPReading(today(), sys, dia)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

@@ -27,8 +27,9 @@ export default function Recovery({ data, onNav }) {
   const hrvChartData = hrvHistory.slice(-14).map((v, i) => ({ label: i === hrvHistory.slice(-14).length - 1 ? 'Today' : `-${hrvHistory.slice(-14).length - 1 - i}d`, hrv: Math.round(v) }))
   const rhrChartData = rhrHistory.slice(-14).map((v, i) => ({ label: i === rhrHistory.slice(-14).length - 1 ? 'Today' : `-${rhrHistory.slice(-14).length - 1 - i}d`, rhr: Math.round(v) }))
 
-  const avgHRV = hrvHistory.length ? Math.round(hrvHistory.reduce((a, b) => a + b, 0) / hrvHistory.length) : 0
-  const daysOfData = hrvHistory.filter(Boolean).length
+  const validHRV = hrvHistory.filter(Boolean)
+  const avgHRV = validHRV.length ? Math.round(validHRV.reduce((a, b) => a + b, 0) / validHRV.length) : 0
+  const daysOfData = validHRV.length
   const isCalibrating = daysOfData < 14
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
 

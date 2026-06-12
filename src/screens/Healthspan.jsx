@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
-import { getLabContributions } from '../lib/labs'
+import { getLabContributions, getLabAgeAdjustment } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 
@@ -65,6 +65,7 @@ export default function Healthspan({ data, onNav }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [],
     steps = 0, vo2Max = 0, todaySpO2 = 0, todayBR = 0 } = data
   const userAge = getUserAge()
+  const ageIsSet = !!localStorage.getItem('user_age')
   const heightCm = getUserHeightCm()
   const weightKg = getUserWeightKg()
   const units = getUserUnits()
@@ -98,12 +99,15 @@ export default function Healthspan({ data, onNav }) {
   const alcoholWeek = getUserAlcohol()
   const bp = getAverageBP()
   const labContributions = getLabContributions()
+  const labAdj = getLabAgeAdjustment()
 
   const physAge = useMemo(() => calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
     avgSteps: steps, weeklyAZM,
     vo2Max, avgDeepPct, avgRemPct,
-  }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj])
 
   const diff = physAge - userAge
 
@@ -207,7 +211,7 @@ export default function Healthspan({ data, onNav }) {
         </div>
       </div>
 
-      {userAge === 0 ? (
+      {!ageIsSet ? (
         <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid #333' }}>
           <p className="text-2xl mb-3">⏳</p>
           <p className="text-gray-300 text-sm font-medium">Set your age to get started</p>

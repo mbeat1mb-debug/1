@@ -458,7 +458,7 @@ export function getBPReadings() {
 }
 
 export function saveBPReading(date, sys, dia) {
-  if (!sys || !dia || sys < 50 || dia < 30) return
+  if (!sys || !dia || sys < 50 || sys > 300 || dia < 30 || dia > 200) return
   try {
     const readings = getBPReadings()
     const idx = readings.findIndex(r => r.date === date)

@@ -88,29 +88,32 @@ export default function Sleep({ data, onNav }) {
         </div>
       )}
 
-      {/* Sleep stages */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Sleep Stages</p>
-        <div className="space-y-3">
-          <SleepStageBar label="Deep (Restorative)" minutes={deep} total={totalMins} color="#4f46e5" />
-          <SleepStageBar label="REM (Dream)" minutes={rem} total={totalMins} color="#8b5cf6" />
-          <SleepStageBar label="Light" minutes={light} total={totalMins} color="#a78bfa" />
-          <SleepStageBar label="Awake" minutes={wake} total={totalMins} color="#374151" />
-        </div>
-      </div>
+      {/* Sleep stages + metrics — only when data exists */}
+      {todaySleep && (
+        <>
+          <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Sleep Stages</p>
+            <div className="space-y-3">
+              <SleepStageBar label="Deep (Restorative)" minutes={deep} total={totalMins} color="#4f46e5" />
+              <SleepStageBar label="REM (Dream)" minutes={rem} total={totalMins} color="#8b5cf6" />
+              <SleepStageBar label="Light" minutes={light} total={totalMins} color="#a78bfa" />
+              <SleepStageBar label="Awake" minutes={wake} total={totalMins} color="#374151" />
+            </div>
+          </div>
 
-      {/* Sleep stats */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
-        <div className="px-4 pt-4 pb-2">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Metrics</span>
-        </div>
-        <div className="px-4">
-          <StatRow label="Sleep Efficiency" value={todaySleep?.efficiency ?? '--'} unit="%" color={sleepColor} />
-          <StatRow label="Sleep Score" value={sleepScore} unit="/ 100" color={sleepColor} />
-          <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
-          <StatRow label="Wakeups" value={todaySleep?.levels?.data?.filter(d => d.level === 'wake').length ?? '--'} />
-        </div>
-      </div>
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+            <div className="px-4 pt-4 pb-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Metrics</span>
+            </div>
+            <div className="px-4">
+              <StatRow label="Sleep Efficiency" value={todaySleep.efficiency ?? '--'} unit="%" color={sleepColor} />
+              <StatRow label="Sleep Score" value={sleepScore} unit="/ 100" color={sleepColor} />
+              <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
+              <StatRow label="Wakeups" value={todaySleep.levels?.data?.filter(d => d.level === 'wake' && d.seconds >= 60).length ?? '--'} />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* 14-day trend */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
