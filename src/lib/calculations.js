@@ -145,6 +145,16 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   const userAge = getUserAge()
   let adj = 0
 
+  // BMI adjustment when height/weight are set
+  const bmi = calculateBMI(getUserHeightCm(), getUserWeightKg())
+  if (bmi !== null) {
+    if (bmi < 18.5) adj += 1
+    else if (bmi < 25) adj -= 1
+    else if (bmi < 30) adj += 1
+    else if (bmi < 35) adj += 2
+    else adj += 4
+  }
+
   if (avgHRV > 70) adj -= 4
   else if (avgHRV > 60) adj -= 3
   else if (avgHRV > 50) adj -= 1
@@ -329,6 +339,53 @@ export function getTrendVelocity(history) {
   const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length
   const priorAvg = prior.reduce((a, b) => a + b, 0) / prior.length
   return Math.round(recentAvg - priorAvg)
+}
+
+// ── Height / Weight / BMI ──────────────────────────────────────────────────
+
+export function getUserHeightCm() {
+  try {
+    const v = parseFloat(localStorage.getItem('user_height_cm') || '0')
+    return isNaN(v) ? 0 : v
+  } catch { return 0 }
+}
+
+export function getUserWeightKg() {
+  try {
+    const v = parseFloat(localStorage.getItem('user_weight_kg') || '0')
+    return isNaN(v) ? 0 : v
+  } catch { return 0 }
+}
+
+export function getUserUnits() {
+  try { return localStorage.getItem('user_units') || 'imperial' } catch { return 'imperial' }
+}
+
+export function calculateBMI(heightCm, weightKg) {
+  if (!heightCm || !weightKg) return null
+  const hm = heightCm / 100
+  return Math.round((weightKg / (hm * hm)) * 10) / 10
+}
+
+export function getBMILabel(bmi) {
+  if (bmi < 18.5) return 'Underweight'
+  if (bmi < 25) return 'Healthy'
+  if (bmi < 30) return 'Overweight'
+  return 'Obese'
+}
+
+export function getBMIColor(bmi) {
+  if (bmi < 18.5) return '#f59e0b'
+  if (bmi < 25) return '#00c9a7'
+  if (bmi < 30) return '#f59e0b'
+  return '#ef4444'
+}
+
+// Steps → distance using height-based stride estimate
+export function calculateDistance(steps, heightCm) {
+  if (!steps || !heightCm) return null
+  const strideLengthM = heightCm * 0.00414
+  return Math.round(steps * strideLengthM / 100) / 10
 }
 
 // ── Weekly Pattern ─────────────────────────────────────────────────────────

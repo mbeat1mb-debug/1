@@ -13,7 +13,7 @@ import ScoreRing from '../components/ScoreRing'
 import DailyReport, { getTimeOfDay } from '../components/DailyReport'
 import {
   getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
-  getTrainingLoadColor,
+  getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 
@@ -85,6 +85,12 @@ function RecoveryContent({ data }) {
 function StrainContent({ data }) {
   const { strainScore = 0, calories = 0, activeMinutes = 0, steps = 0, trainingLoad, strainVelocity } = data
   const tsbColor = trainingLoad ? getTrainingLoadColor(trainingLoad.tsb) : '#3b82f6'
+  const heightCm = getUserHeightCm()
+  const units = getUserUnits()
+  const distanceKm = calculateDistance(steps, heightCm)
+  const distanceDisplay = distanceKm
+    ? units === 'imperial' ? `${Math.round(distanceKm * 0.6214 * 10) / 10} mi` : `${distanceKm} km`
+    : null
   return (
     <>
       <div className="flex items-center justify-between mb-3">
@@ -99,7 +105,9 @@ function StrainContent({ data }) {
         <div className="flex-1 space-y-3">
           <Pill label="Calories" value={calories.toLocaleString()} unit="kcal" />
           <Pill label="Active" value={activeMinutes} unit="min" />
-          <Pill label="Steps" value={steps.toLocaleString()} />
+          {distanceDisplay
+            ? <Pill label="Distance" value={distanceDisplay} />
+            : <Pill label="Steps" value={steps.toLocaleString()} />}
           {trainingLoad && (
             <div className="flex flex-col">
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Form</span>

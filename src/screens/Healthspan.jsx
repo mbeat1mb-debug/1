@@ -1,4 +1,4 @@
-import { calculatePhysiologicalAge, getUserAge } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor } from '../lib/calculations'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 
@@ -35,14 +35,14 @@ function AgeMeter({ physAge, chronAge }) {
   )
 }
 
-function MetricContribution({ label, value, unit, contribution, color }) {
+function MetricContribution({ label, value, unit, contribution, color, sublabel }) {
   return (
     <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #1a1a1a' }}>
       <div>
         <p className="text-sm text-white">{label}</p>
-        <p className="text-xs text-gray-500">{value}{unit}</p>
+        <p className="text-xs text-gray-500">{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
       </div>
-      <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ background: color + '20', color }}>
+      <span className="text-sm font-bold px-2 py.5 rounded" style={{ background: color + '20', color }}>
         {contribution > 0 ? '+' : ''}{contribution}y
       </span>
     </div>
@@ -52,6 +52,10 @@ function MetricContribution({ label, value, unit, contribution, color }) {
 export default function Healthspan({ data }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [], steps = 0 } = data
   const userAge = getUserAge()
+  const heightCm = getUserHeightCm()
+  const weightKg = getUserWeightKg()
+  const units = getUserUnits()
+  const bmi = calculateBMI(heightCm, weightKg)
 
   const avgHRV = hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1)
   const avgRHR = data.rhrHistory?.filter(Boolean).reduce((a, b) => a + b, 0) / (data.rhrHistory?.filter(Boolean).length || 1) || 0
@@ -111,6 +115,13 @@ export default function Healthspan({ data }) {
       unit: '/week',
       contribution: weeklyAZM >= 150 ? -1 : weeklyAZM < 50 ? 2 : 0,
     },
+    ...(bmi !== null ? [{
+      label: 'BMI',
+      value: bmi,
+      unit: '',
+      contribution: bmi < 18.5 ? 1 : bmi < 25 ? -1 : bmi < 30 ? 1 : bmi < 35 ? 2 : 4,
+      sublabel: getBMILabel(bmi),
+    }] : []),
   ]
 
   return (
@@ -121,6 +132,45 @@ export default function Healthspan({ data }) {
       </div>
 
       <AgeMeter physAge={physAge} chronAge={userAge} />
+
+      {/* Body composition */}
+      {(bmi !== null || heightCm > 0 || weightKg > 0) && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Body Composition</p>
+          <div className="flex gap-4">
+            {heightCm > 0 && (
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-600 uppercase tracking-wider">Height</span>
+                <span className="text-sm font-semibold text-white">
+                  {units === 'imperial'
+                    ? `${Math.floor(heightCm / 30.48)}'${Math.round((heightCm / 2.54) % 12)}"`
+                    : `${Math.round(heightCm)} cm`}
+                </span>
+              </div>
+            )}
+            {weightKg > 0 && (
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-600 uppercase tracking-wider">Weight</span>
+                <span className="text-sm font-semibold text-white">
+                  {units === 'imperial'
+                    ? `${Math.round(weightKg * 2.2046)} lbs`
+                    : `${Math.round(weightKg * 10) / 10} kg`}
+                </span>
+              </div>
+            )}
+            {bmi !== null && (
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-600 uppercase tracking-wider">BMI</span>
+                <span className="text-sm font-semibold" style={{ color: getBMIColor(bmi) }}>{bmi}</span>
+                <span className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</span>
+              </div>
+            )}
+          </div>
+          {bmi === null && (heightCm === 0 || weightKg === 0) && (
+            <p className="text-xs text-gray-600 mt-1">Set both height and weight in Settings to see BMI.</p>
+          )}
+        </div>
+      )}
 
       {/* What's moving the needle */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>

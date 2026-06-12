@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getMaxHR, getTrainingLoadColor } from '../lib/calculations'
+import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance } from '../lib/calculations'
 
 const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444']
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
@@ -13,6 +13,12 @@ export default function Strain({ data }) {
 
   const maxHR = getMaxHR()
   const strainColor = '#3b82f6'
+  const heightCm = getUserHeightCm()
+  const units = getUserUnits()
+  const distanceKm = calculateDistance(steps, heightCm)
+  const distanceDisplay = distanceKm
+    ? units === 'imperial' ? `${Math.round(distanceKm * 0.6214 * 10) / 10} mi` : `${distanceKm} km`
+    : null
   const totalZoneMinutes = zoneMinutes.reduce((a, b) => a + b, 0)
   const optimalStrain = recoveryScore >= 67 ? 14 : recoveryScore >= 34 ? 10 : 7
 
@@ -75,6 +81,7 @@ export default function Strain({ data }) {
         </div>
         <div className="px-4">
           <StatRow label="Steps" value={steps.toLocaleString()} />
+          {distanceDisplay && <StatRow label="Distance" value={distanceDisplay} color="#3b82f6" />}
           <StatRow label="Calories Burned" value={calories.toLocaleString()} unit="kcal" />
           <StatRow label="Active Minutes" value={activeMinutes} unit="min" />
           <StatRow label="Max HR Target" value={maxHR} unit="bpm" color="#f59e0b" />

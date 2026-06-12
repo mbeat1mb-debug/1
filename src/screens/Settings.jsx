@@ -6,6 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
+import { calculateBMI, getBMILabel, getBMIColor } from '../lib/calculations'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -322,8 +323,33 @@ export default function Settings({ onBack }) {
   const [connected, setConnected] = useState(isConnected)
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [userAge, setUserAge] = useState(() => localStorage.getItem('user_age') || '39')
+  const [units, setUnits] = useState(() => localStorage.getItem('user_units') || 'imperial')
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
+
+  // Height/weight stored in metric; displayed per unit preference
+  const storedHCm = parseFloat(localStorage.getItem('user_height_cm') || '0') || 0
+  const storedWKg = parseFloat(localStorage.getItem('user_weight_kg') || '0') || 0
+  const [heightFt, setHeightFt] = useState(() => storedHCm ? String(Math.floor(storedHCm / 30.48)) : '')
+  const [heightIn, setHeightIn] = useState(() => storedHCm ? String(Math.round((storedHCm / 2.54) % 12)) : '')
+  const [weightLbs, setWeightLbs] = useState(() => storedWKg ? String(Math.round(storedWKg * 2.2046)) : '')
+  const [heightCm, setHeightCm] = useState(() => storedHCm ? String(Math.round(storedHCm)) : '')
+  const [weightKg, setWeightKg] = useState(() => storedWKg ? String(Math.round(storedWKg * 10) / 10) : '')
+
+  // Live BMI preview
+  const previewBMI = (() => {
+    let hCm = 0, wKg = 0
+    if (units === 'imperial') {
+      const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
+      if (!isNaN(ft) && ft > 0) hCm = (ft * 12 + inch) * 2.54
+      const lbs = parseFloat(weightLbs)
+      if (!isNaN(lbs) && lbs > 0) wKg = lbs / 2.2046
+    } else {
+      hCm = parseFloat(heightCm) || 0
+      wKg = parseFloat(weightKg) || 0
+    }
+    return calculateBMI(hCm, wKg)
+  })()
 
   const saveAndConnect = () => {
     if (!clientId.trim()) return
@@ -338,6 +364,20 @@ export default function Settings({ onBack }) {
     if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
     const age = parseInt(userAge, 10)
     if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
+
+    localStorage.setItem('user_units', units)
+    if (units === 'imperial') {
+      const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
+      if (!isNaN(ft) && ft > 0) localStorage.setItem('user_height_cm', String(Math.round((ft * 12 + inch) * 2.54)))
+      const lbs = parseFloat(weightLbs)
+      if (!isNaN(lbs) && lbs > 0) localStorage.setItem('user_weight_kg', String(Math.round(lbs / 2.2046 * 10) / 10))
+    } else {
+      const cm = parseFloat(heightCm)
+      if (!isNaN(cm) && cm > 0) localStorage.setItem('user_height_cm', String(cm))
+      const kg = parseFloat(weightKg)
+      if (!isNaN(kg) && kg > 0) localStorage.setItem('user_weight_kg', String(kg))
+    }
+
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -429,6 +469,95 @@ export default function Settings({ onBack }) {
           value={userAge}
           onChange={e => setUserAge(e.target.value)}
         />
+      </div>
+
+      {/* Height & Weight */}
+      <div className="rounded-2xl p-4 space-y-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-white">Height & Weight</p>
+            <p className="text-xs text-gray-500 mt-0.5">Used for BMI, distance, and biological age.</p>
+          </div>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #333' }}>
+            {['imperial', 'metric'].map(u => (
+              <button
+                key={u}
+                onClick={() => setUnits(u)}
+                className="px-3 py-1 text-xs font-semibold capitalize transition-colors"
+                style={{ background: units === u ? '#00c9a7' : '#1a1a1a', color: units === u ? '#000' : '#888' }}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {units === 'imperial' ? (
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 mb-1.5">Height</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number" min={3} max={8}
+                  className="w-14 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="5" value={heightFt} onChange={e => setHeightFt(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">ft</span>
+                <input
+                  type="number" min={0} max={11}
+                  className="w-14 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="10" value={heightIn} onChange={e => setHeightIn(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">in</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 mb-1.5">Weight</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number" min={50} max={600}
+                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  placeholder="176" value={weightLbs} onChange={e => setWeightLbs(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">lbs</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 mb-1.5">Height</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number" min={100} max={250}
+                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  placeholder="178" value={heightCm} onChange={e => setHeightCm(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">cm</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 mb-1.5">Weight</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number" min={30} max={300}
+                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  placeholder="80" value={weightKg} onChange={e => setWeightKg(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">kg</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {previewBMI && (
+          <p className="text-xs">
+            <span className="text-gray-500">BMI: </span>
+            <span className="font-bold" style={{ color: getBMIColor(previewBMI) }}>
+              {previewBMI} — {getBMILabel(previewBMI)}
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Claude API key */}
