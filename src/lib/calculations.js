@@ -283,7 +283,7 @@ export function parseFitbitData(raw) {
   return {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
     steps, calories, activeMinutes,
-    hrvHistory, rhrHistory, sleepHistory,
+    hrvHistory, rhrHistory, historyDates, sleepHistory,
     hrIntradayData: hrIntraday,
     vo2Max, skinTempDev,
   }
@@ -333,10 +333,7 @@ export function calculateOptimalSleepWindow(sleepHistory) {
   }
 
   const startMins = entries.map(s => toMins(s.startTime))
-  const endMins = entries.map(s => {
-    const d = new Date(s.endTime)
-    return d.getHours() * 60 + d.getMinutes()
-  })
+  const endMins = entries.map(s => toMins(s.endTime))
 
   const consistency = Math.round(Math.max(0, Math.min(100, 100 - stdDev(startMins) / 1.5)))
   return {

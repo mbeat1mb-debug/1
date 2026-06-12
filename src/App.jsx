@@ -167,18 +167,27 @@ export default function App() {
     const sleepDebt = calculateSleepDebt(parsed.sleepHistory)
     const optimalSleepWindow = calculateOptimalSleepWindow(parsed.sleepHistory)
 
+    const sleepByDate = {}
+    for (const s of parsed.sleepHistory) sleepByDate[s.date] = s
+
     const recoveryHistory = []
     const stressHistory = []
+    const recoveryByDate = {}
     parsed.hrvHistory.forEach((hrv, i) => {
       if (!hrv) return
-      recoveryHistory.push(calculateRecovery({
-        hrv, rhr: parsed.rhrHistory[i] || parsed.todayRHR,
-        sleep: parsed.sleepHistory[i] ? { minutesAsleep: parsed.sleepHistory[i].minutes, efficiency: parsed.sleepHistory[i].efficiency } : null,
-        spo2: parsed.todaySpO2, br: parsed.todayBR,
+      const date = parsed.historyDates[i]
+      const sleepEntry = sleepByDate[date]
+      const rhr = parsed.rhrHistory[i]  // 0 = no data; calculateRecovery guards with rhr > 0
+      const recovery = calculateRecovery({
+        hrv, rhr,
+        sleep: sleepEntry ? { minutesAsleep: sleepEntry.minutes, efficiency: sleepEntry.efficiency } : null,
+        spo2: 97, br: 14,  // per-day historical data not available from Fitbit API; use neutral defaults
         hrvHistory: parsed.hrvHistory.slice(0, i), rhrHistory: parsed.rhrHistory.slice(0, i),
-      }))
+      })
+      recoveryHistory.push(recovery)
+      if (date) recoveryByDate[date] = recovery
       stressHistory.push(calculateStressScore({
-        hrv, rhr: parsed.rhrHistory[i] || parsed.todayRHR,
+        hrv, rhr,
         hrvHistory: parsed.hrvHistory.slice(0, i),
         rhrHistory: parsed.rhrHistory.slice(0, i),
       }))
@@ -187,10 +196,9 @@ export default function App() {
     const recoveryVelocity = getTrendVelocity(recoveryHistory)
     const stressVelocity = getTrendVelocity(stressHistory)
 
-    const offset = recoveryHistory.length - parsed.sleepHistory.length
-    const calendarDays = parsed.sleepHistory.map((s, i) => ({
+    const calendarDays = parsed.sleepHistory.map(s => ({
       date: s.date,
-      recovery: recoveryHistory[i + offset] ?? null,
+      recovery: recoveryByDate[s.date] ?? null,
       sleep: s.minutes,
     }))
 
@@ -280,7 +288,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('code')) {
         setLoading(true)
-        const tokens = await handleOAuthCallback(localStorage.getItem('fitbit_client_id'))
+        const tokens = await handleOAuthCallback()
         if (tokens) { setConnected(true); doSync(true) }
         else setLoading(false)
         return

@@ -103,18 +103,29 @@ export async function subscribeToPush(prefs) {
 
   const reg = await navigator.serviceWorker.ready
   const existing = await reg.pushManager.getSubscription()
-  if (existing) await existing.unsubscribe()
 
-  const subscription = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
-  })
+  let subscription
+  try {
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    })
+  } catch {
+    // Retry once after clearing the stale subscription (e.g. VAPID key rotation)
+    if (existing) await existing.unsubscribe()
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    })
+  }
 
-  await fetch('/api/push-subscribe', {
+  const token = localStorage.getItem('access_token') || ''
+  const res = await fetch('/api/push-subscribe', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ subscription, prefs }),
   })
+  if (!res.ok) throw new Error('Failed to register subscription with server')
 
   return subscription
 }
@@ -125,9 +136,10 @@ export async function unsubscribeFromPush() {
 }
 
 export async function savePushPrefs(prefs) {
+  const token = localStorage.getItem('access_token') || ''
   await fetch('/api/push-prefs', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(prefs),
   })
   localStorage.setItem('push_prefs', JSON.stringify(prefs))

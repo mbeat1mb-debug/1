@@ -57,7 +57,7 @@ export async function handleOAuthCallback(clientId) {
 }
 
 export function saveTokens({ access_token, refresh_token, expires_in }) {
-  const expiry = Date.now() + (expires_in - 60) * 1000
+  const expiry = Date.now() + ((Number(expires_in) || 3600) - 60) * 1000
   localStorage.setItem('access_token', access_token)
   localStorage.setItem('refresh_token', refresh_token)
   localStorage.setItem('token_expiry', String(expiry))

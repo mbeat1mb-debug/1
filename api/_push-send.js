@@ -78,11 +78,14 @@ export async function sendScheduledPush(type) {
   const sentKey = `push:sent:${type}:${today}`
   if (await kv.get(sentKey)) return { skipped: 'already sent' }
 
-  webPush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
-  )
+  const vapidPublic = process.env.VAPID_PUBLIC_KEY
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY
+  const vapidSubject = process.env.VAPID_SUBJECT
+  if (!vapidPublic || !vapidPrivate || !vapidSubject) {
+    console.error('Push not configured: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT must be set')
+    return { error: 'Push not configured' }
+  }
+  webPush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
 
   // Fetch latest health scores for rich notification body
   const scores = await kv.get('push:latest_scores').catch(() => null)

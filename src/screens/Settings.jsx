@@ -30,26 +30,34 @@ const EVENING_TIMES = makeTimes(19, 0, 23, 30)
 const WINDDOWN_TIMES = makeTimes(20, 0, 23, 30)
 
 const TIMEZONES = [
-  { value: 'America/New_York', label: 'Eastern (ET)', utcOffset: -5 },
-  { value: 'America/Chicago', label: 'Central (CT)', utcOffset: -6 },
-  { value: 'America/Denver', label: 'Mountain (MT)', utcOffset: -7 },
-  { value: 'America/Los_Angeles', label: 'Pacific (PT)', utcOffset: -8 },
-  { value: 'America/Anchorage', label: 'Alaska (AKT)', utcOffset: -9 },
-  { value: 'Pacific/Honolulu', label: 'Hawaii (HT)', utcOffset: -10 },
-  { value: 'Europe/London', label: 'London (GMT)', utcOffset: 0 },
-  { value: 'Europe/Paris', label: 'Paris (CET)', utcOffset: 1 },
-  { value: 'Asia/Tokyo', label: 'Tokyo (JST)', utcOffset: 9 },
-  { value: 'Australia/Sydney', label: 'Sydney (AEST)', utcOffset: 10 },
+  { value: 'America/New_York', label: 'Eastern (ET)' },
+  { value: 'America/Chicago', label: 'Central (CT)' },
+  { value: 'America/Denver', label: 'Mountain (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific (PT)' },
+  { value: 'America/Anchorage', label: 'Alaska (AKT)' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii (HT)' },
+  { value: 'Europe/London', label: 'London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
 ]
 
-function localTimeToUTC(localTime, utcOffset) {
+function getCurrentUTCOffset(timezone) {
+  const now = new Date()
+  const local = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
+  return Math.round((local - utc) / 3600000)
+}
+
+function localTimeToUTC(localTime, timezone) {
+  const utcOffset = getCurrentUTCOffset(timezone)
   const [h, m] = localTime.split(':').map(Number)
   const utcH = ((h - utcOffset) % 24 + 24) % 24
   return `${String(utcH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-function toCronExpression(localTime, utcOffset) {
-  const utc = localTimeToUTC(localTime, utcOffset)
+function toCronExpression(localTime, timezone) {
+  const utc = localTimeToUTC(localTime, timezone)
   const [h, m] = utc.split(':').map(Number)
   return `${m} ${h} * * *`
 }
@@ -106,9 +114,9 @@ function PushNotificationsSection() {
     setSubscribed(false)
   }
 
-  const morningCron = toCronExpression(prefs.morningTime, tzEntry.utcOffset)
-  const eveningCron = toCronExpression(prefs.eveningTime, tzEntry.utcOffset)
-  const winddownCron = prefs.winddownEnabled ? toCronExpression(prefs.winddownTime, tzEntry.utcOffset) : null
+  const morningCron = toCronExpression(prefs.morningTime, tzEntry.value)
+  const eveningCron = toCronExpression(prefs.eveningTime, tzEntry.value)
+  const winddownCron = prefs.winddownEnabled ? toCronExpression(prefs.winddownTime, tzEntry.value) : null
   const defaultMorningCron = '0 12 * * *'
   const defaultEveningCron = '0 2 * * *'
   const needsCronUpdate = morningCron !== defaultMorningCron || eveningCron !== defaultEveningCron
