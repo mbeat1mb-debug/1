@@ -57,14 +57,27 @@ function AchievementBadge({ def, unlocked }) {
   )
 }
 
-export default function Records({ data }) {
+function BackButton({ onNav }) {
+  return (
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )
+}
+
+export default function Records({ data, onNav }) {
   const { personalRecords = {}, streaks = {}, unlockedAchievements = [], calendarDays = [] } = data
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">Records & Trends</p>
-        <h1 className="text-xl font-bold">Your History</h1>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && <BackButton onNav={onNav} />}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Records & Trends</p>
+          <h1 className="text-xl font-bold">Your History</h1>
+        </div>
       </div>
 
       {/* 90-Day Calendar */}

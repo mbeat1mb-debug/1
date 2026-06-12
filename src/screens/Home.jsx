@@ -311,11 +311,12 @@ function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }
               style={{ borderLeft: '1px solid #1a1a1a' }}
               aria-label={minimized ? 'Expand' : 'Minimize'}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth={2.5} className="w-4 h-4">
-                {minimized
-                  ? <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  : <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                }
+              <svg
+                viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth={2.5}
+                className="w-4 h-4 transition-transform duration-200"
+                style={{ transform: minimized ? 'rotate(0deg)' : 'rotate(180deg)' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
           )}

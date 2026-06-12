@@ -3,7 +3,17 @@ import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings } from '../lib/calculations'
 
-export default function Recovery({ data }) {
+function BackButton({ onNav }) {
+  return (
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )
+}
+
+export default function Recovery({ data, onNav }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
     todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [],
     vo2Max = 0, skinTempDev } = data
@@ -31,9 +41,12 @@ export default function Recovery({ data }) {
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">Recovery</p>
-        <h1 className="text-xl font-bold">How recovered are you?</h1>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && <BackButton onNav={onNav} />}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Recovery</p>
+          <h1 className="text-xl font-bold">How recovered are you?</h1>
+        </div>
       </div>
 
       {/* Main score */}
@@ -68,8 +81,8 @@ export default function Recovery({ data }) {
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Today's Metrics</span>
         </div>
         <div className="px-4">
-          <StatRow label="Heart Rate Variability" value={todayHRV} unit="ms" color={todayHRV >= avgHRV ? '#00c9a7' : '#f59e0b'} />
-          <StatRow label="30-Day HRV Average" value={avgHRV} unit="ms" />
+          <StatRow label="Heart Rate Variability" value={todayHRV} unit="ms" color={avgHRV > 0 ? (todayHRV >= avgHRV ? '#00c9a7' : '#f59e0b') : '#888'} />
+          <StatRow label="30-Day HRV Average" value={avgHRV || '—'} unit={avgHRV ? 'ms' : ''} />
           <StatRow label="Resting Heart Rate" value={todayRHR} unit="bpm" />
           <StatRow label="Sleep Duration" value={sleepHours} />
           <StatRow label="Sleep Efficiency" value={todaySleep?.efficiency ?? '--'} unit="%" />

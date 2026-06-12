@@ -7,7 +7,17 @@ const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
 const ZONE_DESCS = ['Warm-Up', 'Fat Burn', 'Cardio', 'Threshold', 'Max']
 
-export default function Strain({ data }) {
+function BackButton({ onNav }) {
+  return (
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )
+}
+
+export default function Strain({ data, onNav }) {
   const { strainScore = 0, steps = 0, calories = 0, activeMinutes = 0,
     zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad } = data
 
@@ -26,9 +36,12 @@ export default function Strain({ data }) {
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">Strain</p>
-        <h1 className="text-xl font-bold">Cardiovascular load</h1>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && <BackButton onNav={onNav} />}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Strain</p>
+          <h1 className="text-xl font-bold">Cardiovascular load</h1>
+        </div>
       </div>
 
       {/* Main score */}

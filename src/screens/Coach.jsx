@@ -137,6 +137,7 @@ export default function Coach({ data, onNav }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('claude_api_key') || '')
+  const [keyInput, setKeyInput] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
   const bottomRef = useRef(null)
@@ -216,12 +217,12 @@ export default function Coach({ data, onNav }) {
             type="password"
             className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
             placeholder="sk-ant-..."
-            defaultValue={apiKey}
-            onBlur={e => setApiKey(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && saveKey(e.target.value)}
+            value={keyInput}
+            onChange={e => setKeyInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && saveKey(keyInput)}
           />
           <button
-            onClick={() => saveKey(apiKey)}
+            onClick={() => saveKey(keyInput)}
             className="w-full py-3 rounded-xl font-bold text-sm"
             style={{ background: '#00c9a7', color: '#000' }}
           >
@@ -248,7 +249,7 @@ export default function Coach({ data, onNav }) {
             <h1 className="text-lg font-bold">Ask anything</h1>
           </div>
         </div>
-        <button onClick={() => setShowKeyInput(true)} className="text-xs text-gray-600 px-2 py-1 rounded-lg bg-[#1a1a1a]">
+        <button onClick={() => { setKeyInput(apiKey); setShowKeyInput(true) }} className="text-xs text-gray-600 px-2 py-1 rounded-lg bg-[#1a1a1a]">
           API Key
         </button>
       </div>

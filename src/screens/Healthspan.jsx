@@ -1,7 +1,18 @@
+import { useMemo } from 'react'
 import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
 import { getLabContributions } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
+
+function BackButton({ onNav }) {
+  return (
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )
+}
 
 function AgeMeter({ physAge, chronAge }) {
   const diff = physAge - chronAge
@@ -50,7 +61,7 @@ function MetricContribution({ label, value, unit, contribution, color, sublabel 
   )
 }
 
-export default function Healthspan({ data }) {
+export default function Healthspan({ data, onNav }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [],
     steps = 0, vo2Max = 0, todaySpO2 = 0, todayBR = 0 } = data
   const userAge = getUserAge()
@@ -88,11 +99,11 @@ export default function Healthspan({ data }) {
   const bp = getAverageBP()
   const labContributions = getLabContributions()
 
-  const physAge = calculatePhysiologicalAge({
+  const physAge = useMemo(() => calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
     avgSteps: steps, weeklyAZM,
     vo2Max, avgDeepPct, avgRemPct,
-  })
+  }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct])
 
   const diff = physAge - userAge
 
@@ -188,12 +199,32 @@ export default function Healthspan({ data }) {
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">Healthspan</p>
-        <h1 className="text-xl font-bold">Your biological age</h1>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && <BackButton onNav={onNav} />}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Healthspan</p>
+          <h1 className="text-xl font-bold">Your biological age</h1>
+        </div>
       </div>
 
-      <AgeMeter physAge={physAge} chronAge={userAge} />
+      {userAge === 0 ? (
+        <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid #333' }}>
+          <p className="text-2xl mb-3">⏳</p>
+          <p className="text-gray-300 text-sm font-medium">Set your age to get started</p>
+          <p className="text-xs text-gray-600 mt-1 mb-4">Biological age needs your calendar age as a baseline.</p>
+          {onNav && (
+            <button
+              onClick={() => onNav('settings')}
+              className="px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+            >
+              Open Settings
+            </button>
+          )}
+        </div>
+      ) : (
+        <AgeMeter physAge={physAge} chronAge={userAge} />
+      )}
 
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0) && (

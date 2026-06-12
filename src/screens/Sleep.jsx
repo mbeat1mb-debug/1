@@ -21,7 +21,17 @@ function SleepStageBar({ label, minutes, total, color }) {
   )
 }
 
-export default function Sleep({ data }) {
+function BackButton({ onNav }) {
+  return (
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )
+}
+
+export default function Sleep({ data, onNav }) {
   const { todaySleep, sleepHistory = [], todayBR = 0 } = data
 
   const sleepScore = data.sleepScore || 0
@@ -45,25 +55,38 @@ export default function Sleep({ data }) {
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">Sleep</p>
-        <h1 className="text-xl font-bold">Last night's sleep</h1>
-      </div>
-
-      {/* Main score */}
-      <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#111', border: '1px solid #222' }}>
-        <ScoreRing score={sleepScore} color={sleepColor} size={130} strokeWidth={11} unit="%" />
-        <div className="flex-1">
-          <p className="text-2xl font-bold text-white">{hours}h {mins}m</p>
-          <p className="text-gray-500 text-sm">Time asleep</p>
-          <p className="text-gray-600 text-xs mt-2">In bed: {Math.floor(totalInBed / 60)}h {totalInBed % 60}m</p>
-          <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
-            <span className="text-xs font-bold" style={{ color: sleepColor }}>
-              {sleepScore >= 75 ? 'GREAT' : sleepScore >= 50 ? 'FAIR' : 'POOR'}
-            </span>
-          </div>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && <BackButton onNav={onNav} />}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Sleep</p>
+          <h1 className="text-xl font-bold">Last night's sleep</h1>
         </div>
       </div>
+
+      {!todaySleep && (
+        <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-2xl mb-3">😴</p>
+          <p className="text-gray-300 text-sm font-medium">No sleep data yet</p>
+          <p className="text-xs text-gray-600 mt-1">Make sure your Fitbit synced after waking up.</p>
+        </div>
+      )}
+
+      {/* Main score */}
+      {todaySleep && (
+        <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#111', border: '1px solid #222' }}>
+          <ScoreRing score={sleepScore} color={sleepColor} size={130} strokeWidth={11} unit="%" />
+          <div className="flex-1">
+            <p className="text-2xl font-bold text-white">{hours}h {mins}m</p>
+            <p className="text-gray-500 text-sm">Time asleep</p>
+            <p className="text-gray-600 text-xs mt-2">In bed: {Math.floor(totalInBed / 60)}h {totalInBed % 60}m</p>
+            <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
+              <span className="text-xs font-bold" style={{ color: sleepColor }}>
+                {sleepScore >= 75 ? 'GREAT' : sleepScore >= 50 ? 'FAIR' : 'POOR'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sleep stages */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>

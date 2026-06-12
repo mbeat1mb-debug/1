@@ -322,14 +322,14 @@ export default function App() {
         />
       )}
       <Suspense fallback={<Spinner />}>
-        {tab === 'recovery' && <Recovery data={data} />}
-        {tab === 'strain' && <Strain data={data} />}
-        {tab === 'sleep' && <Sleep data={data} />}
-        {tab === 'stress' && <Stress data={data} />}
-        {tab === 'journal' && <Journal data={data} />}
+        {tab === 'recovery' && <Recovery data={data} onNav={handleNav} />}
+        {tab === 'strain' && <Strain data={data} onNav={handleNav} />}
+        {tab === 'sleep' && <Sleep data={data} onNav={handleNav} />}
+        {tab === 'stress' && <Stress data={data} onNav={handleNav} />}
+        {tab === 'journal' && <Journal data={data} onNav={handleNav} />}
         {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
-        {tab === 'healthspan' && <Healthspan data={data} />}
-        {tab === 'records' && <Records data={data} />}
+        {tab === 'healthspan' && <Healthspan data={data} onNav={handleNav} />}
+        {tab === 'records' && <Records data={data} onNav={handleNav} />}
         {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
       </Suspense>
 
