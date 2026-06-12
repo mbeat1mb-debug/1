@@ -1,10 +1,9 @@
 const TABS = [
   { id: 'home', label: 'Today', icon: HomeIcon },
   { id: 'recovery', label: 'Recovery', icon: HeartIcon },
-  { id: 'strain', label: 'Strain', icon: BoltIcon },
   { id: 'sleep', label: 'Sleep', icon: MoonIcon },
-  { id: 'journal', label: 'Journal', icon: TagIcon },
-  { id: 'coach', label: 'Coach', icon: ChatIcon },
+  { id: 'strain', label: 'Strain', icon: BoltIcon },
+  { id: 'healthspan', label: 'Healthspan', icon: HealthspanIcon },
 ]
 
 function HomeIcon({ active }) {
@@ -39,18 +38,11 @@ function MoonIcon({ active }) {
   )
 }
 
-function TagIcon({ active }) {
+function HealthspanIcon({ active }) {
   return (
     <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} className="w-6 h-6">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-    </svg>
-  )
-}
-
-function ChatIcon({ active }) {
-  return (
-    <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} className="w-6 h-6">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9" />
     </svg>
   )
 }

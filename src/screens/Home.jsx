@@ -248,6 +248,29 @@ function JournalContent() {
   )
 }
 
+function CalibrationBanner({ daysOfData }) {
+  if (daysOfData >= 14) return null
+  const pct = Math.round((daysOfData / 14) * 100)
+  const msg = daysOfData < 3
+    ? 'Scores are estimates — your baseline is still being established.'
+    : daysOfData < 7
+    ? `${14 - daysOfData} more days of data will significantly improve accuracy.`
+    : 'Scores are reliable — fine-tuning with each new day.'
+
+  return (
+    <div className="mx-4 mb-1 rounded-xl px-4 py-3" style={{ background: '#1a1600', border: '1px solid #f59e0b33' }}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">Calibrating</span>
+        <span className="text-xs text-gray-600">{daysOfData} / 14 days</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-[#222] overflow-hidden mb-2">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: '#f59e0b' }} />
+      </div>
+      <p className="text-xs text-gray-500">{msg}</p>
+    </div>
+  )
+}
+
 const SECTION_CONTENT = {
   recovery: RecoveryContent,
   strain: StrainContent,
@@ -336,6 +359,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
     try { return JSON.parse(localStorage.getItem('cards_minimized') || '{}') } catch { return {} }
   })
   const timeOfDay = getTimeOfDay()
+  const daysOfData = data.hrvHistory?.filter(Boolean).length || 0
 
   const sensors = useSensors(
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
@@ -412,7 +436,12 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           >
             {editing ? 'Done' : 'Edit Layout'}
           </button>
-          <button onClick={() => onNav('settings')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center">
+          <button onClick={() => onNav('coach')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="AI Coach">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </button>
+          <button onClick={() => onNav('settings')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
               <circle cx="12" cy="12" r="3" />
               <path strokeLinecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
@@ -420,6 +449,8 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           </button>
         </div>
       </div>
+
+      {!editing && <CalibrationBanner daysOfData={daysOfData} />}
 
       {editing && (
         <p className="text-center text-xs text-gray-600 pb-2">Hold grip to reorder · Chevron to minimize</p>

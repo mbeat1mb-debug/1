@@ -33,7 +33,7 @@ function CorrelationBadge({ diff }) {
   )
 }
 
-export default function Journal({ data }) {
+export default function Journal({ data, onNav }) {
   const [selectedTags, setSelectedTags] = useState([])
   const [notes, setNotes] = useState('')
   const [energy, setEnergy] = useState(null)
@@ -90,11 +90,20 @@ export default function Journal({ data }) {
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
-      <div className="pt-2">
-        <p className="text-gray-500 text-xs uppercase tracking-wider">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-        </p>
-        <h1 className="text-xl font-bold">Daily Journal</h1>
+      <div className="pt-2 flex items-center gap-3">
+        {onNav && (
+          <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+        <div>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </p>
+          <h1 className="text-xl font-bold">Daily Journal</h1>
+        </div>
       </div>
 
       {/* Category filter */}

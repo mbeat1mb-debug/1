@@ -28,6 +28,8 @@ export default function Recovery({ data, onNav }) {
   const rhrChartData = rhrHistory.slice(-14).map((v, i) => ({ label: i === rhrHistory.slice(-14).length - 1 ? 'Today' : `-${rhrHistory.slice(-14).length - 1 - i}d`, rhr: Math.round(v) }))
 
   const avgHRV = hrvHistory.length ? Math.round(hrvHistory.reduce((a, b) => a + b, 0) / hrvHistory.length) : 0
+  const daysOfData = hrvHistory.filter(Boolean).length
+  const isCalibrating = daysOfData < 14
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
 
   const skinTempColor = skinTempDev == null ? '#888'
@@ -72,6 +74,9 @@ export default function Recovery({ data, onNav }) {
               <span className="text-white font-medium">10%</span>
             </div>
           </div>
+          {isCalibrating && (
+            <p className="text-[10px] text-yellow-600 mt-2">{daysOfData}/14 days calibrated</p>
+          )}
         </div>
       </div>
 
