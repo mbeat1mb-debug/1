@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
@@ -108,6 +108,45 @@ export default function Healthspan({ data, onNav }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
     smoking, alcoholWeek, bp.sys, bp.dia, labAdj])
+
+  // Persist today's physiological age snapshot
+  useEffect(() => {
+    if (!ageIsSet || physAge <= 0) return
+    const today = new Date().toISOString().split('T')[0]
+    try {
+      const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
+      const idx = history.findIndex(e => e.date === today)
+      if (idx >= 0) history[idx].physAge = physAge
+      else history.push({ date: today, physAge })
+      history.sort((a, b) => a.date.localeCompare(b.date))
+      localStorage.setItem('physio_age_history', JSON.stringify(history.slice(-365)))
+    } catch {}
+  }, [physAge, ageIsSet])
+
+  const ageTrend = useMemo(() => {
+    if (!ageIsSet) return null
+    try {
+      const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
+      if (history.length < 2) return null
+
+      const cutoff90 = new Date()
+      cutoff90.setDate(cutoff90.getDate() - 90)
+      const cutoffStr = cutoff90.toISOString().split('T')[0]
+
+      const old = history.filter(e => e.date <= cutoffStr)
+      if (!old.length) {
+        // Not enough history yet — show since first reading
+        const first = history[0]
+        const diff = Math.round((physAge - first.physAge) * 10) / 10
+        const days = Math.round((Date.now() - new Date(first.date).getTime()) / 86400000)
+        return { diff, days, label: days < 30 ? `${days}d` : `${Math.round(days / 30)}mo` }
+      }
+
+      const baseline = old[old.length - 1]
+      const diff = Math.round((physAge - baseline.physAge) * 10) / 10
+      return { diff, days: 90, label: '90d' }
+    } catch { return null }
+  }, [physAge, ageIsSet])
 
   const diff = physAge - userAge
 
@@ -293,6 +332,26 @@ export default function Healthspan({ data, onNav }) {
             {diff < 0 ? 'aging slower than the calendar' : diff > 0 ? 'aging faster than the calendar' : 'on track with the calendar'}
           </span>
         </div>
+        {ageTrend && (
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className="text-xs font-bold px-2 py-0.5 rounded"
+              style={{
+                background: ageTrend.diff <= 0 ? '#00c9a720' : '#ef444420',
+                color: ageTrend.diff <= 0 ? '#00c9a7' : '#ef4444',
+              }}
+            >
+              {ageTrend.diff < 0 ? '↓' : ageTrend.diff > 0 ? '↑' : '→'}{Math.abs(ageTrend.diff)}y
+            </span>
+            <span className="text-xs text-gray-600">
+              {ageTrend.diff < 0
+                ? `${Math.abs(ageTrend.diff)} years younger than ${ageTrend.label} ago`
+                : ageTrend.diff > 0
+                ? `${ageTrend.diff} years older than ${ageTrend.label} ago`
+                : `no change in ${ageTrend.label}`}
+            </span>
+          </div>
+        )}
         <p className="text-xs text-gray-600 mt-2">
           Calculated from 30-day averages of your key health metrics vs. population norms for age {userAge}.
         </p>

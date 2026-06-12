@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   DndContext, closestCenter, TouchSensor, MouseSensor,
   useSensor, useSensors, DragOverlay,
@@ -16,6 +16,7 @@ import {
   getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
+import { getTopCorrelations } from '../lib/correlations'
 
 function Pill({ label, value, unit = '' }) {
   return (
@@ -248,6 +249,61 @@ function JournalContent() {
   )
 }
 
+function InsightsContent() {
+  const [correlations, setCorrelations] = useState(null)
+
+  useEffect(() => {
+    getTopCorrelations().then(setCorrelations)
+  }, [])
+
+  if (correlations === null) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
+          <p className="text-gray-600 text-sm mt-1">Analyzing patterns…</p>
+        </div>
+        <span className="text-2xl">🔬</span>
+      </div>
+    )
+  }
+
+  if (correlations.length === 0) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
+          <p className="text-gray-600 text-sm mt-1">Log 14+ days to see patterns</p>
+        </div>
+        <span className="text-2xl">🔬</span>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
+        <span className="text-xs text-gray-600">vs avg recovery</span>
+      </div>
+      <div className="space-y-2">
+        {correlations.slice(0, 3).map(c => {
+          const isPositive = c.diff > 0
+          const color = isPositive ? '#00c9a7' : '#ef4444'
+          return (
+            <div key={c.tagId} className="flex items-center justify-between">
+              <span className="text-sm text-gray-300">{c.emoji} {c.label}</span>
+              <span className="text-sm font-bold" style={{ color }}>
+                {isPositive ? '+' : ''}{c.diff}%
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function CalibrationBanner({ daysOfData }) {
   if (daysOfData >= 14) return null
   const pct = Math.round((daysOfData / 14) * 100)
@@ -280,6 +336,7 @@ const SECTION_CONTENT = {
   healthspan: HealthspanContent,
   weeklypattern: WeeklyPatternContent,
   journal: JournalContent,
+  insights: InsightsContent,
 }
 
 // ── Sortable card ────────────────────────────────────────────────────────────
@@ -361,6 +418,31 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const timeOfDay = getTimeOfDay()
   const daysOfData = data.hrvHistory?.filter(Boolean).length || 0
 
+  const [pullY, setPullY] = useState(0)
+  const [isPulling, setIsPulling] = useState(false)
+  const touchStartY = useRef(0)
+  const PULL_THRESHOLD = 70
+
+  const handleTouchStart = useCallback((e) => {
+    if (window.scrollY > 0) return
+    touchStartY.current = e.touches[0].clientY
+    setIsPulling(true)
+  }, [])
+
+  const handleTouchMove = useCallback((e) => {
+    if (!isPulling) return
+    const delta = e.touches[0].clientY - touchStartY.current
+    if (delta > 0) setPullY(Math.min(delta * 0.4, PULL_THRESHOLD))
+  }, [isPulling])
+
+  const handleTouchEnd = useCallback(() => {
+    if (pullY >= PULL_THRESHOLD && onRefresh && !isSyncing) {
+      onRefresh()
+    }
+    setPullY(0)
+    setIsPulling(false)
+  }, [pullY, onRefresh, isSyncing])
+
   const sensors = useSensors(
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
@@ -388,7 +470,24 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const ActiveContent = activeId ? SECTION_CONTENT[activeId] : null
 
   return (
-    <div className="pt-safe pb-28">
+    <div
+      className="pt-safe pb-28"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ transform: pullY > 0 ? `translateY(${pullY}px)` : undefined, transition: pullY === 0 ? 'transform 0.2s ease' : undefined }}
+    >
+      {pullY > 0 && (
+        <div className="flex justify-center items-center pb-2" style={{ opacity: pullY / PULL_THRESHOLD }}>
+          <svg
+            viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth={2}
+            className="w-5 h-5"
+            style={{ transform: `rotate(${pullY / PULL_THRESHOLD * 180}deg)` }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between pt-2 pb-1 px-4">
         <div>

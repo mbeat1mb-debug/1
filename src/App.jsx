@@ -154,7 +154,7 @@ export default function App() {
 
     const recoveryScore = calculateRecovery({
       hrv: parsed.todayHRV, rhr: parsed.todayRHR, sleep: parsed.todaySleep,
-      spo2: parsed.todaySpO2, br: parsed.todayBR,
+      spo2: parsed.todaySpO2, br: parsed.todayBR, skinTempDev: parsed.skinTempDev,
       hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
     })
     const strainScore = calculateStrain(parsed.hrIntradayData)
@@ -335,15 +335,17 @@ export default function App() {
         />
       )}
       <Suspense fallback={<Spinner />}>
-        {tab === 'recovery' && <Recovery data={data} onNav={handleNav} />}
-        {tab === 'strain' && <Strain data={data} onNav={handleNav} />}
-        {tab === 'sleep' && <Sleep data={data} onNav={handleNav} />}
-        {tab === 'stress' && <Stress data={data} onNav={handleNav} />}
-        {tab === 'journal' && <Journal data={data} onNav={handleNav} />}
-        {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
-        {tab === 'healthspan' && <Healthspan data={data} onNav={handleNav} />}
-        {tab === 'records' && <Records data={data} onNav={handleNav} />}
-        {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
+        <div key={tab} className={tab !== 'home' ? 'screen-enter' : ''}>
+          {tab === 'recovery' && <Recovery data={data} onNav={handleNav} />}
+          {tab === 'strain' && <Strain data={data} onNav={handleNav} />}
+          {tab === 'sleep' && <Sleep data={data} onNav={handleNav} />}
+          {tab === 'stress' && <Stress data={data} onNav={handleNav} />}
+          {tab === 'journal' && <Journal data={data} onNav={handleNav} />}
+          {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
+          {tab === 'healthspan' && <Healthspan data={data} onNav={handleNav} />}
+          {tab === 'records' && <Records data={data} onNav={handleNav} />}
+          {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
+        </div>
       </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (

@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import ScoreRing from '../components/ScoreRing'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings } from '../lib/calculations'
+import { getHistory } from '../lib/db'
 
 function BackButton({ onNav }) {
   return (
@@ -17,6 +19,22 @@ export default function Recovery({ data, onNav }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
     todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [],
     vo2Max = 0, skinTempDev } = data
+
+  const [spo2History, setSpo2History] = useState([])
+  const [brHistory, setBrHistory] = useState([])
+
+  useEffect(() => {
+    getHistory(14).then(rows => {
+      setSpo2History(rows.filter(r => r.spo2 > 0).map((r, i, arr) => ({
+        label: i === arr.length - 1 ? 'Today' : `-${arr.length - 1 - i}d`,
+        spo2: r.spo2,
+      })))
+      setBrHistory(rows.filter(r => r.br > 0).map((r, i, arr) => ({
+        label: i === arr.length - 1 ? 'Today' : `-${arr.length - 1 - i}d`,
+        br: r.br,
+      })))
+    })
+  }, [])
 
   const color = getRecoveryColor(recoveryScore)
   const label = getRecoveryLabel(recoveryScore)
@@ -144,6 +162,22 @@ export default function Recovery({ data, onNav }) {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Resting HR — 14 Days</p>
         <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} />
       </div>
+
+      {spo2History.length >= 3 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Blood Oxygen — 14 Days</p>
+          <LineGraph data={spo2History} dataKey="spo2" color="#3b82f6" unit="%" reference={97} height={80} />
+          <p className="text-xs text-gray-600 mt-2">Normal range: 95–100%. Below 95% warrants attention.</p>
+        </div>
+      )}
+
+      {brHistory.length >= 3 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Respiratory Rate — 14 Days</p>
+          <LineGraph data={brHistory} dataKey="br" color="#8b5cf6" unit=" br/m" height={80} />
+          <p className="text-xs text-gray-600 mt-2">Normal range: 12–20 br/min. Elevated rate may indicate stress or illness.</p>
+        </div>
+      )}
 
       {/* Recovery guidance */}
       <div className="rounded-2xl p-4" style={{ background: color + '10', border: `1px solid ${color}33` }}>

@@ -55,6 +55,9 @@ export async function saveDay(result) {
       rhr: result.todayRHR,
       steps: result.steps,
       calories: result.calories,
+      spo2: result.todaySpO2 ?? null,
+      br: result.todayBR ?? null,
+      skinTempDev: result.skinTempDev ?? null,
     })
   } catch (e) {
     console.warn('db saveDay:', e)

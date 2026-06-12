@@ -1,9 +1,35 @@
 import { useState, useRef, useEffect } from 'react'
 import DailyReport from '../components/DailyReport'
 import { getUserAge } from '../lib/calculations'
+import { getJournalEntries, getAllTags } from '../lib/storage'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 const REPORT_KEY = 'weekly_report'
+
+function getRecentJournalContext() {
+  const entries = getJournalEntries()
+  const tags = getAllTags()
+  const tagMap = Object.fromEntries(tags.map(t => [t.id, t]))
+
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 7)
+  const cutoffStr = cutoff.toISOString().split('T')[0]
+
+  const recent = entries
+    .filter(e => e.date >= cutoffStr)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 7)
+
+  if (!recent.length) return ''
+
+  const lines = recent.map(e => {
+    const tagLabels = (e.tagIds || []).map(id => tagMap[id]?.label).filter(Boolean)
+    const energyStr = e.energy != null ? ` energy:${e.energy}/5` : ''
+    return `${e.date}:${tagLabels.length ? ' ' + tagLabels.join(', ') : ' (no tags)'}${energyStr}`
+  })
+
+  return `\nRECENT JOURNAL (last 7 days):\n${lines.join('\n')}`
+}
 
 async function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 400) {
   const res = await fetch(CLAUDE_API, {
@@ -39,6 +65,7 @@ function buildWeeklyPrompt(data) {
   const priorAvgHRV = prior7HRV.length ? Math.round(prior7HRV.reduce((a, b) => a + b, 0) / prior7HRV.length) : avgHRV7
 
   const age = getUserAge()
+  const journalContext = getRecentJournalContext()
   return `Generate a concise but insightful weekly health report for this person. Age ${age}.
 
 THIS WEEK:
@@ -46,7 +73,7 @@ THIS WEEK:
 - Avg RHR: ${avgRHR7} bpm
 - Avg Sleep: ${avgSleep7}h/night
 - Today's Recovery: ${recoveryScore}%, Strain: ${strainScore}, Sleep Score: ${sleepScore}%, Stress: ${stressScore}
-
+${journalContext ? '\n' + journalContext : ''}
 FORMAT: Write 3-4 short paragraphs: (1) This week's overall picture in 1-2 sentences, (2) What went well, (3) Main opportunity to improve, (4) One specific action for next week. Be direct and personal — use "you" and specific numbers. No bullet points, just prose. Max 250 words.`
 }
 
@@ -78,7 +105,7 @@ TODAY'S DATA:
 - Steps: ${steps?.toLocaleString() ?? 'unknown'}
 - Calories: ${calories?.toLocaleString() ?? 'unknown'} kcal
 
-GUIDANCE: Answer health and performance questions using this data. When asked "should I work out," give a specific recommendation with reasoning. When asked about trends, reference the numbers. Keep replies concise (2-4 sentences usually). Never say "consult a doctor" for general fitness questions.`
+GUIDANCE: Answer health and performance questions using this data. When asked "should I work out," give a specific recommendation with reasoning. When asked about trends, reference the numbers. Keep replies concise (2-4 sentences usually). Never say "consult a doctor" for general fitness questions.${getRecentJournalContext()}`
 }
 
 const STARTERS = [

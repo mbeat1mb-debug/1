@@ -74,7 +74,7 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v))
 }
 
-export function calculateRecovery({ hrv, rhr, sleep, spo2, br, hrvHistory, rhrHistory }) {
+export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvHistory, rhrHistory }) {
   const avgHRV = average(hrvHistory.filter(Boolean))
   const avgRHR = average(rhrHistory.filter(Boolean))
 
@@ -102,7 +102,14 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, hrvHistory, rhrHi
   // BR: graduated penalty reflects that 20 br/min is a mild signal; 25+ is an acute concern
   const brScore = br >= 12 && br <= 18 ? 100 : br >= 10 && br <= 22 ? 75 : br >= 8 && br <= 25 ? 50 : 25
 
-  const score = hrvScore * 0.40 + rhrScore * 0.25 + sleepScore * 0.25 + spo2Score * 0.05 + brScore * 0.05
+  // Skin temp: >0.3°C elevation signals stress/illness; slight drop indicates good recovery
+  let skinTempMod = 0
+  if (skinTempDev != null) {
+    if (skinTempDev > 0.3) skinTempMod = -5
+    else if (skinTempDev < -0.3) skinTempMod = 2
+  }
+
+  const score = hrvScore * 0.40 + rhrScore * 0.25 + sleepScore * 0.25 + spo2Score * 0.05 + brScore * 0.05 + skinTempMod
   return Math.round(clamp(score, 0, 100))
 }
 
