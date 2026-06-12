@@ -10,13 +10,12 @@ import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
 } from './lib/achievements'
 import { fireDataNotifications } from './lib/notifications'
+import { saveDay, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
 import Home from './screens/Home'
 
-// Lazy-load secondary screens so the initial bundle stays small
-// (recharts alone is ~400kB and Home doesn't use it)
 const Recovery = lazy(() => import('./screens/Recovery'))
 const Strain = lazy(() => import('./screens/Strain'))
 const Sleep = lazy(() => import('./screens/Sleep'))
@@ -27,7 +26,6 @@ const Healthspan = lazy(() => import('./screens/Healthspan'))
 const Records = lazy(() => import('./screens/Records'))
 const Settings = lazy(() => import('./screens/Settings'))
 
-// Generate 90-day demo calendar data
 function makeCalendarDays() {
   return Array.from({ length: 90 }, (_, i) => {
     const d = new Date()
@@ -72,6 +70,19 @@ const DEMO = {
   isDemo: true,
 }
 
+function formatSyncTime(ts) {
+  if (!ts) return null
+  const d = new Date(ts)
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return 'yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
@@ -106,9 +117,15 @@ function ConnectScreen({ onNav }) {
 export default function App() {
   const [tab, setTab] = useState('home')
   const [loading, setLoading] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncFailed, setSyncFailed] = useState(false)
   const [appData, setAppData] = useState(null)
   const [demo, setDemo] = useState(false)
   const [connected, setConnected] = useState(isConnected())
+  const [lastSyncedAt, setLastSyncedAt] = useState(() => {
+    const ts = localStorage.getItem('last_synced_at')
+    return ts ? Number(ts) : null
+  })
 
   const processData = useCallback((raw) => {
     const parsed = parseFitbitData(raw)
@@ -128,7 +145,6 @@ export default function App() {
     const sleepDebt = calculateSleepDebt(parsed.sleepHistory)
     const optimalSleepWindow = calculateOptimalSleepWindow(parsed.sleepHistory)
 
-    // Build recovery history from historical data
     const recoveryHistory = parsed.hrvHistory.map((hrv, i) => {
       if (!hrv) return null
       return calculateRecovery({
@@ -139,9 +155,6 @@ export default function App() {
       })
     }).filter(Boolean)
 
-    // Align from the end — both arrays end "today", but recoveryHistory may be
-    // shorter since HRV isn't captured every night. Missing days stay null so
-    // the heatmap shows them as no-data instead of a fake score.
     const offset = recoveryHistory.length - parsed.sleepHistory.length
     const calendarDays = parsed.sleepHistory.map((s, i) => ({
       date: s.date,
@@ -155,13 +168,12 @@ export default function App() {
       stressHistory: Array(recoveryHistory.length).fill(0),
     }
 
-    // PR tracking + achievements
     const pr = updatePersonalRecords({
       todayHRV: parsed.todayHRV, todayRHR: parsed.todayRHR,
       recoveryScore, strainScore, steps: parsed.steps,
     })
     const streaks = calculateStreaks(recoveryHistory, parsed.sleepHistory)
-    const { unlocked } = checkAndUnlockAchievements({
+    const { unlocked, newUnlocks } = checkAndUnlockAchievements({
       pr, streaks, recoveryHistory, sleepHistory: parsed.sleepHistory,
     })
     const alerts = detectAlerts({ ...base, recoveryHistory })
@@ -172,27 +184,69 @@ export default function App() {
     return result
   }, [])
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('code')) {
-      setLoading(true)
-      handleOAuthCallback(localStorage.getItem('fitbit_client_id')).then(tokens => {
-        if (tokens) { setConnected(true); loadAndProcess() }
-        else setLoading(false)
-      })
-      return
-    }
-    if (isConnected()) loadAndProcess()
-  }, [])
+  const doSync = useCallback(async (showSpinner) => {
+    if (showSpinner) setLoading(true)
+    else setIsSyncing(true)
+    setSyncFailed(false)
 
-  const loadAndProcess = async () => {
-    setLoading(true)
     try {
       const raw = await loadDashboardData()
-      if (raw) { setAppData(processData(raw)); setDemo(false) }
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+      if (!raw) { setSyncFailed(true); return }
+
+      const result = { ...processData(raw), date: raw.date }
+
+      // Persist to IndexedDB
+      await saveDay(result)
+      await saveSnapshot(result)
+
+      // Extend calendar with older IndexedDB history beyond the 30-day Fitbit window
+      const dbHistory = await getHistory(90)
+      const fitbitDates = new Set(result.calendarDays.map(d => d.date))
+      const olderDays = dbHistory
+        .filter(d => !fitbitDates.has(d.date))
+        .map(d => ({ date: d.date, recovery: d.recovery, strain: d.strain, sleep: d.sleep }))
+      const mergedCalendar = [...olderDays, ...result.calendarDays]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-90)
+
+      setAppData({ ...result, calendarDays: mergedCalendar })
+      setDemo(false)
+
+      const now = Date.now()
+      setLastSyncedAt(now)
+      localStorage.setItem('last_synced_at', String(now))
+    } catch (e) {
+      console.error(e)
+      setSyncFailed(true)
+    } finally {
+      setLoading(false)
+      setIsSyncing(false)
+    }
+  }, [processData])
+
+  useEffect(() => {
+    const init = async () => {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('code')) {
+        setLoading(true)
+        const tokens = await handleOAuthCallback(localStorage.getItem('fitbit_client_id'))
+        if (tokens) { setConnected(true); doSync(true) }
+        else setLoading(false)
+        return
+      }
+      if (!isConnected()) return
+
+      // Instant-open: show cached snapshot immediately, refresh in background
+      const snapshot = await getLatestSnapshot()
+      if (snapshot?.data) {
+        setAppData(snapshot.data)
+        doSync(false)
+      } else {
+        doSync(true)
+      }
+    }
+    init()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNav = (id) => {
     if (id === 'demo') { setDemo(true); setTab('home'); return }
@@ -204,13 +258,22 @@ export default function App() {
 
   const data = demo ? DEMO : (appData || DEMO)
   const showNav = tab !== 'settings' && tab !== 'coach'
-  const showAlerts = ['home'].includes(tab) && data.alerts?.length > 0
+  const showAlerts = tab === 'home' && data.alerts?.length > 0
 
   return (
     <div className="min-h-screen bg-black">
       {showAlerts && <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />}
 
-      {tab === 'home' && <Home data={data} onNav={handleNav} onRefresh={connected && !demo ? loadAndProcess : undefined} />}
+      {tab === 'home' && (
+        <Home
+          data={data}
+          onNav={handleNav}
+          onRefresh={connected && !demo ? () => doSync(false) : undefined}
+          isSyncing={isSyncing}
+          syncFailed={syncFailed && !demo}
+          lastSyncedAt={!demo ? formatSyncTime(lastSyncedAt) : null}
+        />
+      )}
       <Suspense fallback={<Spinner />}>
         {tab === 'recovery' && <Recovery data={data} />}
         {tab === 'strain' && <Strain data={data} />}

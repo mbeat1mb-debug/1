@@ -214,7 +214,7 @@ function SortableCard({ id, editing, onNav, data }) {
 
 // ── Home screen ──────────────────────────────────────────────────────────────
 
-export default function Home({ data, onNav, onRefresh }) {
+export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, lastSyncedAt }) {
   const [order, setOrder] = useState(getHomeLayout)
   const [editing, setEditing] = useState(false)
   const [activeId, setActiveId] = useState(null)
@@ -248,11 +248,31 @@ export default function Home({ data, onNav, onRefresh }) {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
           <h1 className="text-xl font-bold text-white">Daily Report</h1>
+          {!editing && (
+            <p className="text-[10px] mt-0.5" style={{ color: syncFailed ? '#f59e0b' : '#444' }}>
+              {isSyncing
+                ? 'Syncing…'
+                : syncFailed
+                  ? 'Sync failed — tap ↺ to retry'
+                  : lastSyncedAt
+                    ? `Synced ${lastSyncedAt}`
+                    : ''}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onRefresh && !editing && (
-            <button onClick={onRefresh} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="Refresh data">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-4 h-4">
+            <button
+              onClick={onRefresh}
+              disabled={isSyncing}
+              className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center"
+              aria-label="Refresh data"
+            >
+              <svg
+                viewBox="0 0 24 24" fill="none" stroke={syncFailed ? '#f59e0b' : '#888'} strokeWidth={2}
+                className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                style={isSyncing ? { animationDirection: 'reverse' } : {}}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
