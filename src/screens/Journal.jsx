@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag } from '../lib/storage'
+import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation } from '../lib/storage'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -35,6 +35,7 @@ function CorrelationBadge({ diff }) {
 export default function Journal({ data }) {
   const [selectedTags, setSelectedTags] = useState([])
   const [notes, setNotes] = useState('')
+  const [energy, setEnergy] = useState(null)
   const [saved, setSaved] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [newTagLabel, setNewTagLabel] = useState('')
@@ -47,6 +48,7 @@ export default function Journal({ data }) {
     const entry = getEntryForDate(today())
     setSelectedTags(entry.tagIds || [])
     setNotes(entry.notes || '')
+    setEnergy(entry.energy ?? null)
   }, [])
 
   const toggle = (id) => {
@@ -55,7 +57,7 @@ export default function Journal({ data }) {
   }
 
   const save = () => {
-    saveJournalEntry(today(), selectedTags, notes)
+    saveJournalEntry(today(), selectedTags, notes, energy)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -73,6 +75,10 @@ export default function Journal({ data }) {
   })) || []
 
   const filteredTags = activeCategory === 'all' ? tags : tags.filter(t => t.category === activeCategory)
+  const energyCorrelation = analyzeEnergyCorrelation(healthHistory)
+
+  const ENERGY_LABELS = ['', 'Drained', 'Low', 'Okay', 'Good', 'Energized']
+  const ENERGY_COLORS = ['', '#ef4444', '#f59e0b', '#888', '#3b82f6', '#00c9a7']
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
@@ -137,6 +143,32 @@ export default function Journal({ data }) {
         </div>
       )}
 
+      {/* Energy level */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Energy Level</p>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map(n => (
+            <button
+              key={n}
+              onClick={() => { setEnergy(energy === n ? null : n); setSaved(false) }}
+              className="flex-1 py-3 rounded-xl text-base font-bold transition-all"
+              style={{
+                background: energy === n ? ENERGY_COLORS[n] + '20' : '#1a1a1a',
+                border: `1px solid ${energy === n ? ENERGY_COLORS[n] : '#2a2a2a'}`,
+                color: energy === n ? ENERGY_COLORS[n] : '#555',
+              }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between text-[10px] text-gray-600 mt-1.5 px-1">
+          <span>Drained</span>
+          {energy !== null && <span style={{ color: ENERGY_COLORS[energy] }}>{ENERGY_LABELS[energy]}</span>}
+          <span>Energized</span>
+        </div>
+      </div>
+
       {/* Notes */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Notes</p>
@@ -158,7 +190,7 @@ export default function Journal({ data }) {
         {saved ? '✓ Saved' : 'Save Today\'s Log'}
       </button>
 
-      {/* Correlations */}
+      {/* Behavior correlations */}
       {healthHistory.length >= 10 && (() => {
         const correlations = tags
           .map(tag => ({ tag, corr: analyzeTagCorrelation(tag.id, healthHistory) }))
@@ -185,6 +217,30 @@ export default function Journal({ data }) {
           </div>
         )
       })()}
+
+      {/* Energy vs recovery correlation */}
+      {energyCorrelation && energyCorrelation.length >= 3 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Energy vs Recovery</p>
+            <p className="text-xs text-gray-600 mt-1">How your self-rated energy relates to physiological recovery</p>
+          </div>
+          <div className="px-4 pb-4 flex items-end gap-2 mt-3 h-16">
+            {energyCorrelation.map(e => {
+              const h = Math.max(8, (e.avgRecovery / 100) * 48)
+              const color = e.avgRecovery >= 67 ? '#00c9a7' : e.avgRecovery >= 34 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={e.energy} className="flex flex-col items-center flex-1">
+                  <span className="text-[9px] text-gray-500 mb-1">{e.avgRecovery}%</span>
+                  <div className="w-full rounded-sm" style={{ height: `${h}px`, background: color }} />
+                  <span className="text-[10px] text-gray-600 mt-1">{e.energy}</span>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-[11px] text-gray-600 px-4 pb-3">Higher energy ratings correlate with {energyCorrelation[energyCorrelation.length - 1].avgRecovery > energyCorrelation[0].avgRecovery ? 'higher' : 'lower'} recovery scores.</p>
+        </div>
+      )}
     </div>
   )
 }

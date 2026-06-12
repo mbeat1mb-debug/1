@@ -1,18 +1,34 @@
 import webPush from 'web-push'
 import { kv } from '@vercel/kv'
 
-const MORNING_PAYLOAD = {
-  title: 'Morning Brief 🌅',
-  body: 'Your recovery and HRV summary is ready.',
-  url: '/',
-  tag: 'morning',
-}
-
-const EVENING_PAYLOAD = {
-  title: 'Nightly Wind-Down 🌙',
-  body: 'Check your daily strain and sleep prep.',
-  url: '/',
-  tag: 'evening',
+function buildPayload(type, scores) {
+  if (type === 'morning') {
+    return {
+      title: 'Morning Brief 🌅',
+      body: scores
+        ? `Recovery ${scores.recovery}% · HRV ${scores.hrv}ms · RHR ${scores.rhr}bpm`
+        : 'Your recovery and HRV summary is ready.',
+      url: '/',
+      tag: 'morning',
+    }
+  }
+  if (type === 'evening') {
+    return {
+      title: 'Nightly Wind-Down 🌙',
+      body: scores
+        ? `Strain ${scores.strain}/21 · Stress ${scores.stress}/100`
+        : 'Check your daily strain and sleep prep.',
+      url: '/',
+      tag: 'evening',
+    }
+  }
+  // winddown
+  return {
+    title: 'Wind-Down Time 🌙',
+    body: 'Target bedtime in 30 minutes. Start your wind-down routine.',
+    url: '/',
+    tag: 'winddown',
+  }
 }
 
 function localHourMin(timezone) {
@@ -39,18 +55,25 @@ export async function sendScheduledPush(type) {
   if (!subscription) return { skipped: 'no subscription' }
 
   const prefs = await kv.get('push:prefs') || {}
-  const enabledKey = type === 'morning' ? 'morningEnabled' : 'eveningEnabled'
-  if (prefs[enabledKey] === false) return { skipped: 'disabled' }
 
-  const defaultTime = type === 'morning' ? '07:00' : '21:00'
-  const preferredTime = prefs[type === 'morning' ? 'morningTime' : 'eveningTime'] || defaultTime
-  const timezone = prefs.timezone || 'America/New_York'
-
-  if (!withinWindow(preferredTime, timezone)) {
-    return { skipped: 'outside window' }
+  if (type === 'morning') {
+    if (prefs.morningEnabled === false) return { skipped: 'disabled' }
+    const preferredTime = prefs.morningTime || '07:00'
+    const timezone = prefs.timezone || 'America/New_York'
+    if (!withinWindow(preferredTime, timezone)) return { skipped: 'outside window' }
+  } else if (type === 'evening') {
+    if (prefs.eveningEnabled === false) return { skipped: 'disabled' }
+    const preferredTime = prefs.eveningTime || '21:00'
+    const timezone = prefs.timezone || 'America/New_York'
+    if (!withinWindow(preferredTime, timezone)) return { skipped: 'outside window' }
+  } else if (type === 'winddown') {
+    if (!prefs.winddownEnabled) return { skipped: 'disabled' }
+    const preferredTime = prefs.winddownTime || '22:00'
+    const timezone = prefs.timezone || 'America/New_York'
+    if (!withinWindow(preferredTime, timezone, 15)) return { skipped: 'outside window' }
   }
 
-  // Idempotent: only fire once per day
+  // Idempotent: only fire once per day per type
   const today = new Date().toISOString().split('T')[0]
   const sentKey = `push:sent:${type}:${today}`
   if (await kv.get(sentKey)) return { skipped: 'already sent' }
@@ -61,11 +84,13 @@ export async function sendScheduledPush(type) {
     process.env.VAPID_PRIVATE_KEY,
   )
 
-  const payload = type === 'morning' ? MORNING_PAYLOAD : EVENING_PAYLOAD
+  // Fetch latest health scores for rich notification body
+  const scores = await kv.get('push:latest_scores').catch(() => null)
+  const payload = buildPayload(type, scores)
+
   try {
     await webPush.sendNotification(subscription, JSON.stringify(payload))
   } catch (err) {
-    // Delivery failed (expired/invalid subscription) — don't mark sent so next cron can retry
     console.error('Push delivery failed:', err.message)
     return { error: err.message }
   }

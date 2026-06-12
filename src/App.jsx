@@ -4,6 +4,7 @@ import { loadDashboardData } from './lib/api'
 import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
+  calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -41,11 +42,19 @@ function makeCalendarDays() {
 
 const DEMO_CALENDAR = makeCalendarDays()
 
+const DEMO_WEEKLY = (() => {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const scores = [72, 58, 64, 63, 70, 67, 75]
+  return days.map((day, i) => ({ day, avgRecovery: scores[i], count: 4 + (i % 2) }))
+})()
+
 const DEMO = {
   recoveryScore: 74, strainScore: 11.2, sleepScore: 78, stressScore: 28,
   todayHRV: 58, todayRHR: 54, todaySpO2: 97, todayBR: 14,
   steps: 8340, calories: 2180, activeMinutes: 42,
   zoneMinutes: [18, 32, 25, 8, 2],
+  vo2Max: 47,
+  skinTempDev: 0.10,
   todaySleep: {
     minutesAsleep: 447, timeInBed: 490, efficiency: 91,
     levels: { summary: { deep: { minutes: 72 }, rem: { minutes: 98 }, light: { minutes: 277 }, wake: { minutes: 43 } } },
@@ -67,6 +76,11 @@ const DEMO = {
   streaks: { recovery: 3, sleep: 2, lowStress: 5 },
   unlockedAchievements: ['first_green', 'step_king'],
   alerts: [],
+  trainingLoad: { atl: 9.2, ctl: 10.5, tsb: 1.3, form: 'Neutral' },
+  weeklyPattern: DEMO_WEEKLY,
+  recoveryVelocity: 5,
+  stressVelocity: -3,
+  strainVelocity: 1,
   isDemo: true,
 }
 
@@ -162,6 +176,9 @@ export default function App() {
       }))
     })
 
+    const recoveryVelocity = getTrendVelocity(recoveryHistory)
+    const stressVelocity = getTrendVelocity(stressHistory)
+
     const offset = recoveryHistory.length - parsed.sleepHistory.length
     const calendarDays = parsed.sleepHistory.map((s, i) => ({
       date: s.date,
@@ -172,6 +189,7 @@ export default function App() {
     const base = {
       ...parsed, recoveryScore, strainScore, zoneMinutes, stressScore, sleepScore,
       sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays, stressHistory,
+      recoveryVelocity, stressVelocity,
     }
 
     const pr = updatePersonalRecords({
@@ -186,7 +204,6 @@ export default function App() {
     const result = { ...base, personalRecords: pr, streaks, unlockedAchievements: unlocked, alerts }
 
     fireDataNotifications(result, newUnlocks)
-
     return result
   }, [])
 
@@ -201,7 +218,7 @@ export default function App() {
 
       const result = { ...processData(raw), date: raw.date }
 
-      // Extend calendar with older IndexedDB history beyond the 30-day Fitbit window
+      // Persist today and extend calendar with IndexedDB history
       await saveDay(result)
       const dbHistory = await getHistory(90)
       const fitbitDates = new Set(result.calendarDays.map(d => d.date))
@@ -212,7 +229,15 @@ export default function App() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-90)
 
-      const finalResult = { ...result, calendarDays: mergedCalendar }
+      // Training load from full strain history in DB
+      const strainHistory = dbHistory.map(d => d.strain).filter(Boolean)
+      const trainingLoad = calculateTrainingLoad(strainHistory)
+      const strainVelocity = getTrendVelocity(strainHistory)
+
+      // Weekly pattern from merged 90-day calendar
+      const weeklyPattern = calculateWeeklyPattern(mergedCalendar)
+
+      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity }
       await saveSnapshot(finalResult)
       setAppData(finalResult)
       setDemo(false)
@@ -220,6 +245,19 @@ export default function App() {
       const now = Date.now()
       setLastSyncedAt(now)
       localStorage.setItem('last_synced_at', String(now))
+
+      // Store latest scores in KV for rich push notifications (fire-and-forget)
+      fetch('/api/push-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recovery: result.recoveryScore,
+          strain: result.strainScore,
+          stress: result.stressScore,
+          hrv: result.todayHRV,
+          rhr: result.todayRHR,
+        }),
+      }).catch(() => {})
     } catch (e) {
       console.error(e)
       setSyncFailed(true)
@@ -241,7 +279,6 @@ export default function App() {
       }
       if (!isConnected()) return
 
-      // Instant-open: show cached snapshot immediately, refresh in background
       const snapshot = await getLatestSnapshot()
       if (snapshot?.data) {
         setAppData(snapshot.data)

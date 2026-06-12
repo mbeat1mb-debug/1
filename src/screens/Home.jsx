@@ -11,7 +11,10 @@ import { CSS } from '@dnd-kit/utilities'
 
 import ScoreRing from '../components/ScoreRing'
 import DailyReport, { getTimeOfDay } from '../components/DailyReport'
-import { getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel } from '../lib/calculations'
+import {
+  getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
+  getTrainingLoadColor,
+} from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 
 function Pill({ label, value, unit = '' }) {
@@ -22,6 +25,17 @@ function Pill({ label, value, unit = '' }) {
         {value}<span className="text-gray-500 text-xs ml-0.5">{unit}</span>
       </span>
     </div>
+  )
+}
+
+function VelocityBadge({ value }) {
+  if (value === null || value === undefined) return null
+  const color = value > 0 ? '#00c9a7' : value < 0 ? '#ef4444' : '#888'
+  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '→'
+  return (
+    <span className="text-xs font-bold ml-1" style={{ color }}>
+      {arrow}{Math.abs(value)}
+    </span>
   )
 }
 
@@ -41,7 +55,7 @@ function GripIcon() {
 // ── Section content renderers ────────────────────────────────────────────────
 
 function RecoveryContent({ data }) {
-  const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySleep, todaySpO2 = 0 } = data
+  const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySleep, todaySpO2 = 0, vo2Max = 0, recoveryVelocity } = data
   const color = getRecoveryColor(recoveryScore)
   const label = getRecoveryLabel(recoveryScore)
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
@@ -49,7 +63,10 @@ function RecoveryContent({ data }) {
     <>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recovery</span>
-        <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: color + '22', color }}>{label}</span>
+        <div className="flex items-center gap-1">
+          <VelocityBadge value={recoveryVelocity} />
+          <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: color + '22', color }}>{label}</span>
+        </div>
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={recoveryScore} color={color} size={120} strokeWidth={10} />
@@ -58,6 +75,7 @@ function RecoveryContent({ data }) {
           <Pill label="Resting HR" value={todayRHR} unit="bpm" />
           <Pill label="Sleep" value={sleepHours} />
           <Pill label="SpO₂" value={todaySpO2} unit="%" />
+          {vo2Max > 0 && <Pill label="VO₂ Max" value={`~${vo2Max}`} unit="ml/kg" />}
         </div>
       </div>
     </>
@@ -65,12 +83,16 @@ function RecoveryContent({ data }) {
 }
 
 function StrainContent({ data }) {
-  const { strainScore = 0, calories = 0, activeMinutes = 0, steps = 0 } = data
+  const { strainScore = 0, calories = 0, activeMinutes = 0, steps = 0, trainingLoad, strainVelocity } = data
+  const tsbColor = trainingLoad ? getTrainingLoadColor(trainingLoad.tsb) : '#3b82f6'
   return (
     <>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Strain</span>
-        <span className="text-xs text-gray-500">0 – 21</span>
+        <div className="flex items-center gap-1">
+          <VelocityBadge value={strainVelocity} />
+          <span className="text-xs text-gray-500">0 – 21</span>
+        </div>
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={strainScore} max={21} color="#3b82f6" size={100} strokeWidth={9} />
@@ -78,6 +100,12 @@ function StrainContent({ data }) {
           <Pill label="Calories" value={calories.toLocaleString()} unit="kcal" />
           <Pill label="Active" value={activeMinutes} unit="min" />
           <Pill label="Steps" value={steps.toLocaleString()} />
+          {trainingLoad && (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Form</span>
+              <span className="text-sm font-semibold" style={{ color: tsbColor }}>{trainingLoad.form}</span>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -106,7 +134,7 @@ function SleepContent({ data }) {
 }
 
 function StressContent({ data }) {
-  const { stressScore = 0 } = data
+  const { stressScore = 0, stressVelocity } = data
   const color = getStressColor(stressScore)
   const label = getStressLabel(stressScore)
   return (
@@ -116,6 +144,7 @@ function StressContent({ data }) {
         <div className="flex items-baseline gap-2 mt-2">
           <span className="text-3xl font-bold" style={{ color }}>{stressScore}</span>
           <span className="text-sm font-bold" style={{ color }}>{label}</span>
+          <VelocityBadge value={stressVelocity !== undefined ? -stressVelocity : null} />
         </div>
         <span className="text-xs text-gray-600 mt-1 block">HRV vs 14-day baseline</span>
       </div>
@@ -152,6 +181,56 @@ function HealthspanContent() {
   )
 }
 
+function WeeklyPatternContent({ data }) {
+  const { weeklyPattern = [] } = data
+  if (!weeklyPattern.length || weeklyPattern.every(d => d.count === 0)) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Pattern</span>
+          <p className="text-gray-600 text-sm mt-1">Needs 4+ weeks of synced data</p>
+        </div>
+        <span className="text-2xl">📊</span>
+      </div>
+    )
+  }
+  const validDays = weeklyPattern.filter(d => d.avgRecovery != null)
+  const best = validDays.length ? validDays.reduce((a, b) => a.avgRecovery > b.avgRecovery ? a : b) : null
+  const worst = validDays.length ? validDays.reduce((a, b) => a.avgRecovery < b.avgRecovery ? a : b) : null
+  const maxVal = Math.max(...validDays.map(d => d.avgRecovery))
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Pattern</span>
+        <span className="text-xs text-gray-600">Avg Recovery</span>
+      </div>
+      <div className="flex items-end gap-1 h-12">
+        {weeklyPattern.map(d => {
+          const color = d.avgRecovery != null ? getRecoveryColor(d.avgRecovery) : '#333'
+          const height = d.avgRecovery != null ? Math.max(16, (d.avgRecovery / maxVal) * 44) : 6
+          return (
+            <div key={d.day} className="flex flex-col items-center flex-1 gap-1">
+              <div
+                className="w-full rounded-sm transition-all"
+                style={{ height: `${height}px`, background: color + (d.count ? 'cc' : '44') }}
+              />
+              <span className="text-[9px] text-gray-600">{d.day}</span>
+            </div>
+          )
+        })}
+      </div>
+      {best && worst && best.day !== worst.day && (
+        <p className="text-xs text-gray-600 mt-2">
+          Best: <span className="text-white">{best.day} ({best.avgRecovery}%)</span>
+          {' · '}
+          Worst: <span className="text-white">{worst.day} ({worst.avgRecovery}%)</span>
+        </p>
+      )}
+    </>
+  )
+}
+
 function JournalContent() {
   return (
     <div className="flex items-center justify-between">
@@ -168,14 +247,16 @@ const SECTION_CONTENT = {
   stress: StressContent,
   records: RecordsContent,
   healthspan: HealthspanContent,
+  weeklypattern: WeeklyPatternContent,
   journal: JournalContent,
 }
 
 // ── Sortable card ────────────────────────────────────────────────────────────
 
-function SortableCard({ id, editing, onNav, data }) {
+function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const Content = SECTION_CONTENT[id]
+  const meta = SECTION_META[id]
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -189,24 +270,48 @@ function SortableCard({ id, editing, onNav, data }) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div className="flex items-stretch rounded-2xl overflow-hidden" style={cardStyle}>
-        {editing && (
-          <div
-            className="flex items-center justify-center px-3 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none select-none"
-            style={{ background: '#1a1a1a', borderRight: '1px solid #222' }}
-            {...attributes}
-            {...listeners}
+      <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+        <div className="flex items-stretch">
+          {editing && (
+            <div
+              className="flex items-center justify-center px-3 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none select-none"
+              style={{ background: '#1a1a1a', borderRight: '1px solid #222' }}
+              {...attributes}
+              {...listeners}
+            >
+              <GripIcon />
+            </div>
+          )}
+          <button
+            onClick={() => !editing && onNav(id)}
+            className="flex-1 p-4 text-left transition-opacity active:opacity-70 min-w-0"
+            style={{ cursor: editing ? 'default' : 'pointer' }}
           >
-            <GripIcon />
-          </div>
-        )}
-        <button
-          onClick={() => !editing && onNav(id)}
-          className="flex-1 p-4 text-left transition-opacity active:opacity-70"
-          style={{ cursor: editing ? 'default' : 'pointer' }}
-        >
-          <Content data={data} />
-        </button>
+            {minimized ? (
+              <div className="flex items-center gap-2 py-0.5">
+                <span className="text-base">{meta?.emoji}</span>
+                <span className="text-sm font-semibold text-gray-400">{meta?.label}</span>
+              </div>
+            ) : (
+              <Content data={data} />
+            )}
+          </button>
+          {!editing && (
+            <button
+              onClick={e => { e.stopPropagation(); onToggleMinimized(id) }}
+              className="flex items-center justify-center px-3 flex-shrink-0 transition-opacity active:opacity-60"
+              style={{ borderLeft: '1px solid #1a1a1a' }}
+              aria-label={minimized ? 'Expand' : 'Minimize'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth={2.5} className="w-4 h-4">
+                {minimized
+                  ? <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                }
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -218,6 +323,9 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const [order, setOrder] = useState(getHomeLayout)
   const [editing, setEditing] = useState(false)
   const [activeId, setActiveId] = useState(null)
+  const [minimized, setMinimized] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cards_minimized') || '{}') } catch { return {} }
+  })
   const timeOfDay = getTimeOfDay()
 
   const sensors = useSensors(
@@ -235,8 +343,15 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
     })
   }, [])
 
-  const finishEditing = () => setEditing(false)
+  const toggleMinimized = useCallback((id) => {
+    setMinimized(prev => {
+      const next = { ...prev, [id]: !prev[id] }
+      localStorage.setItem('cards_minimized', JSON.stringify(next))
+      return next
+    })
+  }, [])
 
+  const finishEditing = () => setEditing(false)
   const ActiveContent = activeId ? SECTION_CONTENT[activeId] : null
 
   return (
@@ -297,12 +412,11 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
         </div>
       </div>
 
-      {/* Edit mode hint */}
       {editing && (
-        <p className="text-center text-xs text-gray-600 pb-2">Hold the grip handle and drag to reorder</p>
+        <p className="text-center text-xs text-gray-600 pb-2">Hold grip to reorder · Chevron to minimize</p>
       )}
 
-      {/* Morning / Nightly report — auto-shown by time of day */}
+      {/* Morning / Nightly report */}
       {!editing && timeOfDay && (
         <div className="mb-1 mt-2">
           <DailyReport data={data} type={timeOfDay === 'morning' ? 'morning' : 'evening'} />
@@ -320,12 +434,19 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           <div className="space-y-3 px-4 mt-2">
             {order.map(id => (
-              <SortableCard key={id} id={id} editing={editing} onNav={onNav} data={data} />
+              <SortableCard
+                key={id}
+                id={id}
+                editing={editing}
+                onNav={onNav}
+                data={data}
+                minimized={!!minimized[id]}
+                onToggleMinimized={toggleMinimized}
+              />
             ))}
           </div>
         </SortableContext>
 
-        {/* Drag overlay — renders a ghost while dragging */}
         <DragOverlay>
           {activeId && ActiveContent ? (
             <div className="rounded-2xl p-4 opacity-90 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid #00c9a755' }}>

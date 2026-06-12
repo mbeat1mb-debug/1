@@ -146,5 +146,7 @@ export const DEFAULT_PREFS = {
   morningTime: '07:00',
   eveningEnabled: true,
   eveningTime: '21:00',
+  winddownEnabled: false,
+  winddownTime: '22:00',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 }

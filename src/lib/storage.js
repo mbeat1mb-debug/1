@@ -28,10 +28,10 @@ export function getJournalEntries() {
   }
 }
 
-export function saveJournalEntry(date, tagIds, notes = '') {
+export function saveJournalEntry(date, tagIds, notes = '', energy = null) {
   const entries = getJournalEntries()
   const existing = entries.findIndex(e => e.date === date)
-  const entry = { date, tagIds, notes, updatedAt: Date.now() }
+  const entry = { date, tagIds, notes, energy, updatedAt: Date.now() }
   if (existing >= 0) entries[existing] = entry
   else entries.push(entry)
   localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries))
@@ -39,7 +39,7 @@ export function saveJournalEntry(date, tagIds, notes = '') {
 }
 
 export function getEntryForDate(date) {
-  return getJournalEntries().find(e => e.date === date) || { date, tagIds: [], notes: '' }
+  return getJournalEntries().find(e => e.date === date) || { date, tagIds: [], notes: '', energy: null }
 }
 
 export function getCustomTags() {
@@ -91,4 +91,21 @@ export function analyzeTagCorrelation(tagId, healthHistory) {
     sampleSize: withTag.length,
     trend: diff > 5 ? 'positive' : diff < -5 ? 'negative' : 'neutral',
   }
+}
+
+// Analyze how self-reported energy correlates with recovery score
+export function analyzeEnergyCorrelation(healthHistory) {
+  const entries = getJournalEntries().filter(e => e.energy != null)
+  const pairs = []
+  for (const entry of entries) {
+    const day = healthHistory.find(d => d.date === entry.date)
+    if (day) pairs.push({ energy: entry.energy, recovery: day.recovery })
+  }
+  if (pairs.length < 5) return null
+  const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length
+  const byEnergy = [1, 2, 3, 4, 5].map(n => {
+    const days = pairs.filter(p => p.energy === n)
+    return { energy: n, avgRecovery: days.length ? Math.round(avg(days.map(p => p.recovery))) : null, count: days.length }
+  })
+  return byEnergy.filter(e => e.count > 0)
 }

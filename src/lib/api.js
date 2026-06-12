@@ -70,9 +70,12 @@ export async function getCardioFitness() {
   return fitbitFetch(`/1/user/-/cardioscore/date/${daysAgo(7)}/${today()}.json`)
 }
 
+export async function getSkinTemp(date = today()) {
+  return fitbitFetch(`/1/user/-/temp/skin/date/${date}.json`)
+}
+
 export async function loadDashboardData() {
   const date = today()
-  const rangeStart = daysAgo(30)
   const [
     summary,
     hrIntraday,
@@ -83,6 +86,8 @@ export async function loadDashboardData() {
     hrvRange,
     hrRange,
     sleepRange,
+    cardioFitness,
+    skinTemp,
   ] = await Promise.all([
     getDailySummary(date),
     getHeartRateIntraday(date),
@@ -93,7 +98,9 @@ export async function loadDashboardData() {
     getHRVRange(daysAgo(30), date),
     getHeartRateRange(daysAgo(7), date),
     getSleepRange(daysAgo(30), date),
+    getCardioFitness(),
+    getSkinTemp(date),
   ])
 
-  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, date }
+  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, date }
 }

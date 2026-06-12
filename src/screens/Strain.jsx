@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { MAX_HR } from '../lib/calculations'
+import { getMaxHR, getTrainingLoadColor } from '../lib/calculations'
 
 const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444']
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
@@ -9,12 +9,14 @@ const ZONE_DESCS = ['Warm-Up', 'Fat Burn', 'Cardio', 'Threshold', 'Max']
 
 export default function Strain({ data }) {
   const { strainScore = 0, steps = 0, calories = 0, activeMinutes = 0,
-    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0 } = data
+    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad } = data
 
+  const maxHR = getMaxHR()
   const strainColor = '#3b82f6'
   const totalZoneMinutes = zoneMinutes.reduce((a, b) => a + b, 0)
-
   const optimalStrain = recoveryScore >= 67 ? 14 : recoveryScore >= 34 ? 10 : 7
+
+  const tsbColor = trainingLoad ? getTrainingLoadColor(trainingLoad.tsb) : '#888'
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
@@ -36,6 +38,36 @@ export default function Strain({ data }) {
         </div>
       </div>
 
+      {/* Training Load (ATL/CTL/TSB) */}
+      {trainingLoad && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Training Load</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl p-3 text-center" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Fatigue (ATL)</p>
+              <p className="text-xl font-bold text-white">{trainingLoad.atl}</p>
+              <p className="text-[10px] text-gray-600">7-day avg</p>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Fitness (CTL)</p>
+              <p className="text-xl font-bold text-white">{trainingLoad.ctl}</p>
+              <p className="text-[10px] text-gray-600">42-day avg</p>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: tsbColor + '15', border: `1px solid ${tsbColor}33` }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Form (TSB)</p>
+              <p className="text-xl font-bold" style={{ color: tsbColor }}>{trainingLoad.tsb > 0 ? '+' : ''}{trainingLoad.tsb}</p>
+              <p className="text-[10px] font-semibold" style={{ color: tsbColor }}>{trainingLoad.form}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600 mt-3">
+            {trainingLoad.form === 'Fresh' && 'CTL > ATL — well rested, good time to train hard or race.'}
+            {trainingLoad.form === 'Neutral' && 'Balanced fitness and fatigue. Maintain current training load.'}
+            {trainingLoad.form === 'Loaded' && 'ATL > CTL — accumulated fatigue. Consider an easy day.'}
+            {trainingLoad.form === 'Overreached' && 'High fatigue relative to fitness. Rest is essential now.'}
+          </p>
+        </div>
+      )}
+
       {/* Activity stats */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
         <div className="px-4 pt-4 pb-2">
@@ -45,7 +77,7 @@ export default function Strain({ data }) {
           <StatRow label="Steps" value={steps.toLocaleString()} />
           <StatRow label="Calories Burned" value={calories.toLocaleString()} unit="kcal" />
           <StatRow label="Active Minutes" value={activeMinutes} unit="min" />
-          <StatRow label="Max HR Target" value={MAX_HR} unit="bpm" color="#f59e0b" />
+          <StatRow label="Max HR Target" value={maxHR} unit="bpm" color="#f59e0b" />
         </div>
       </div>
 
@@ -79,7 +111,8 @@ export default function Strain({ data }) {
         <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2">How Strain is Calculated</p>
         <p className="text-sm text-gray-400">
           Based on time spent in each heart rate zone throughout the day. Higher zones count exponentially more.
-          Your personal max HR is <span className="text-white font-semibold">{MAX_HR} bpm</span> (Gellish formula, age 39).
+          Your personal max HR is <span className="text-white font-semibold">{maxHR} bpm</span>
+          {parseInt(localStorage.getItem('observed_max_hr') || '0', 10) > 0 ? ' (from your Fitbit data)' : ' (Gellish formula)'}.
         </p>
       </div>
     </div>

@@ -5,6 +5,7 @@ import {
   subscribeToPush, unsubscribeFromPush, savePushPrefs,
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
+import { getHistory } from '../lib/db'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ function makeTimes(startH, startM, endH, endM) {
 
 const MORNING_TIMES = makeTimes(5, 0, 9, 30)
 const EVENING_TIMES = makeTimes(19, 0, 23, 30)
+const WINDDOWN_TIMES = makeTimes(20, 0, 23, 30)
 
 const TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern (ET)', utcOffset: -5 },
@@ -38,7 +40,7 @@ const TIMEZONES = [
 
 function localTimeToUTC(localTime, utcOffset) {
   const [h, m] = localTime.split(':').map(Number)
-  let utcH = ((h - utcOffset) % 24 + 24) % 24
+  const utcH = ((h - utcOffset) % 24 + 24) % 24
   return `${String(utcH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
@@ -74,32 +76,25 @@ function PushNotificationsSection() {
     TIMEZONES[0]
 
   const handleSubscribe = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       await subscribeToPush(prefs)
-      setSubscribed(true)
-      setSaved(true)
+      setSubscribed(true); setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (e) {
       setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleSavePrefs = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       await savePushPrefs(prefs)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (e) {
       setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleUnsubscribe = async () => {
@@ -109,6 +104,7 @@ function PushNotificationsSection() {
 
   const morningCron = toCronExpression(prefs.morningTime, tzEntry.utcOffset)
   const eveningCron = toCronExpression(prefs.eveningTime, tzEntry.utcOffset)
+  const winddownCron = prefs.winddownEnabled ? toCronExpression(prefs.winddownTime, tzEntry.utcOffset) : null
   const defaultMorningCron = '0 12 * * *'
   const defaultEveningCron = '0 2 * * *'
   const needsCronUpdate = morningCron !== defaultMorningCron || eveningCron !== defaultEveningCron
@@ -141,7 +137,7 @@ function PushNotificationsSection() {
         )}
       </div>
 
-      {/* Morning toggle + time */}
+      {/* Morning toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm text-white">🌅 Morning Brief</span>
@@ -160,14 +156,12 @@ function PushNotificationsSection() {
             onChange={e => setPrefs(p => ({ ...p, morningTime: e.target.value }))}
             className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
           >
-            {MORNING_TIMES.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
+            {MORNING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         )}
       </div>
 
-      {/* Evening toggle + time */}
+      {/* Evening toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm text-white">🌙 Nightly Wind-Down</span>
@@ -186,10 +180,46 @@ function PushNotificationsSection() {
             onChange={e => setPrefs(p => ({ ...p, eveningTime: e.target.value }))}
             className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
           >
-            {EVENING_TIMES.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
+            {EVENING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
+        )}
+      </div>
+
+      {/* Wind-down reminder toggle */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm text-white">💤 Bedtime Reminder</span>
+            <p className="text-[11px] text-gray-600 mt-0.5">30-min heads-up before your target bedtime</p>
+          </div>
+          <button
+            onClick={() => setPrefs(p => ({ ...p, winddownEnabled: !p.winddownEnabled }))}
+            className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
+            style={{ background: prefs.winddownEnabled ? '#8b5cf6' : '#333' }}
+          >
+            <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
+              style={{ left: prefs.winddownEnabled ? '22px' : '4px' }} />
+          </button>
+        </div>
+        {prefs.winddownEnabled && (
+          <>
+            <select
+              value={prefs.winddownTime || '22:00'}
+              onChange={e => setPrefs(p => ({ ...p, winddownTime: e.target.value }))}
+              className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+            >
+              {WINDDOWN_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <div className="rounded-xl p-3" style={{ background: '#1a0f2e', border: '1px solid #3a2a5e' }}>
+              <p className="text-xs text-purple-400 font-semibold mb-1">Requires Vercel Pro plan</p>
+              <p className="text-[11px] text-gray-600">Wind-down uses a 3rd cron job. Add to vercel.json:</p>
+              {winddownCron && (
+                <pre className="text-[11px] font-mono text-green-400 mt-1 overflow-x-auto">
+                  {`{"path": "/api/push-winddown", "schedule": "${winddownCron}"}`}
+                </pre>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -201,9 +231,7 @@ function PushNotificationsSection() {
           onChange={e => setPrefs(p => ({ ...p, timezone: e.target.value }))}
           className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
         >
-          {TIMEZONES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
+          {TIMEZONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
 
@@ -212,7 +240,7 @@ function PushNotificationsSection() {
         <div className="rounded-xl p-3 space-y-2" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>
           <p className="text-xs text-yellow-500 font-semibold">One more step to apply your times</p>
           <p className="text-xs text-gray-500">
-            Update <span className="text-white font-mono">vercel.json</span> crons to match your timezone:
+            Update <span className="text-white font-mono">vercel.json</span> crons:
           </p>
           <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-green-400" style={{ background: '#0a0a0a' }}>
 {`"crons": [
@@ -220,21 +248,18 @@ function PushNotificationsSection() {
   {"path": "/api/push-evening", "schedule": "${eveningCron}"}
 ]`}
           </pre>
-          <p className="text-xs text-gray-600">Edit vercel.json in your repo, then redeploy. One-time fix.</p>
         </div>
       )}
 
       {error && <p className="text-xs text-red-400">{error}</p>}
 
-      {/* Action button */}
       <button
         onClick={subscribed ? handleSavePrefs : handleSubscribe}
         disabled={loading}
         className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
         style={{ background: saved ? '#00c9a7' : '#00c9a720', color: saved ? '#000' : '#00c9a7', border: '1px solid #00c9a733' }}
       >
-        {loading ? 'Saving…' : saved ? '✓ Saved'
-          : subscribed ? 'Update Schedule' : 'Enable Push Notifications'}
+        {loading ? 'Saving…' : saved ? '✓ Saved' : subscribed ? 'Update Schedule' : 'Enable Push Notifications'}
       </button>
 
       {/* Setup guide */}
@@ -249,46 +274,18 @@ function PushNotificationsSection() {
         <div className="rounded-xl p-3 space-y-3" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">One-time Vercel setup</p>
           {[
-            {
-              step: '1',
-              title: 'Generate VAPID keys',
-              code: 'npx web-push generate-vapid-keys',
-              desc: 'Run in your terminal. Copy the two keys.',
-            },
-            {
-              step: '2',
-              title: 'Add to Vercel environment variables',
-              code: 'VAPID_PUBLIC_KEY\nVAPID_PRIVATE_KEY\nVAPID_SUBJECT=mailto:your@email.com',
-              desc: 'Vercel Dashboard → Project → Settings → Environment Variables',
-            },
-            {
-              step: '3',
-              title: 'Create a Vercel KV database',
-              code: null,
-              desc: 'Vercel Dashboard → Storage → Create Database → KV → Link to project. Env vars are added automatically.',
-            },
-            {
-              step: '4',
-              title: 'Add a cron secret',
-              code: 'CRON_SECRET=any-random-string-you-choose',
-              desc: 'Add to Vercel env vars. Protects your cron endpoints.',
-            },
-            {
-              step: '5',
-              title: 'Redeploy',
-              code: null,
-              desc: 'Vercel Dashboard → Deployments → Redeploy. Then tap Enable Push Notifications above.',
-            },
+            { step: '1', title: 'Generate VAPID keys', code: 'npx web-push generate-vapid-keys', desc: 'Run in your terminal. Copy both keys.' },
+            { step: '2', title: 'Add to Vercel env vars', code: 'VAPID_PUBLIC_KEY\nVAPID_PRIVATE_KEY\nVAPID_SUBJECT=mailto:your@email.com', desc: 'Vercel Dashboard → Project → Settings → Environment Variables' },
+            { step: '3', title: 'Create a Vercel KV database', code: null, desc: 'Vercel Dashboard → Storage → Create Database → KV → Link to project.' },
+            { step: '4', title: 'Add a cron secret', code: 'CRON_SECRET=any-random-string-you-choose', desc: 'Add to Vercel env vars. Protects cron endpoints.' },
+            { step: '5', title: 'Redeploy', code: null, desc: 'Vercel Dashboard → Deployments → Redeploy. Then tap Enable Push Notifications above.' },
           ].map(s => (
             <div key={s.step} className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[10px] font-bold text-gray-400 flex-shrink-0">{s.step}</span>
                 <p className="text-xs font-semibold text-gray-300">{s.title}</p>
               </div>
-              {s.code && (
-                <pre className="text-[11px] font-mono text-green-400 rounded-lg p-2 overflow-x-auto ml-7"
-                  style={{ background: '#0a0a0a' }}>{s.code}</pre>
-              )}
+              {s.code && <pre className="text-[11px] font-mono text-green-400 rounded-lg p-2 overflow-x-auto ml-7" style={{ background: '#0a0a0a' }}>{s.code}</pre>}
               <p className="text-[11px] text-gray-600 ml-7">{s.desc}</p>
             </div>
           ))}
@@ -298,23 +295,49 @@ function PushNotificationsSection() {
   )
 }
 
+// ── CSV Export ────────────────────────────────────────────────────────────────
+
+async function exportCSV() {
+  const history = await getHistory(365)
+  if (!history.length) { alert('No data to export yet.'); return }
+  const header = 'Date,Recovery,Strain,Sleep (min),Sleep Efficiency (%),Stress,HRV (ms),RHR (bpm),Steps,Calories'
+  const rows = history.map(d =>
+    [d.date, d.recovery ?? '', d.strain ?? '', d.sleep ?? '', d.sleepEfficiency ?? '',
+      d.stressScore ?? '', d.hrv ?? '', d.rhr ?? '', d.steps ?? '', d.calories ?? ''].join(',')
+  )
+  const csv = [header, ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `health-export-${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Main Settings screen ──────────────────────────────────────────────────────
 
 export default function Settings({ onBack }) {
   const [clientId, setClientId] = useState(() => localStorage.getItem('fitbit_client_id') || '')
   const [connected, setConnected] = useState(isConnected)
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('claude_api_key') || '')
+  const [userAge, setUserAge] = useState(() => localStorage.getItem('user_age') || '39')
   const [saved, setSaved] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const saveAndConnect = () => {
     if (!clientId.trim()) return
     localStorage.setItem('fitbit_client_id', clientId.trim())
     if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
+    const age = parseInt(userAge, 10)
+    if (!isNaN(age) && age > 0) localStorage.setItem('user_age', String(age))
     startOAuth(clientId.trim())
   }
 
   const saveSettings = () => {
     if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
+    const age = parseInt(userAge, 10)
+    if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -323,6 +346,11 @@ export default function Settings({ onBack }) {
     disconnect()
     localStorage.removeItem('fitbit_client_id')
     setConnected(false)
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    try { await exportCSV() } finally { setExporting(false) }
   }
 
   return (
@@ -387,6 +415,22 @@ export default function Settings({ onBack }) {
         </div>
       )}
 
+      {/* Age */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">Your Age</p>
+          <p className="text-xs text-gray-500">Used for max HR zones and physiological age calculations.</p>
+        </div>
+        <input
+          type="number"
+          min={15} max={100}
+          className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
+          placeholder="39"
+          value={userAge}
+          onChange={e => setUserAge(e.target.value)}
+        />
+      </div>
+
       {/* Claude API key */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
         <div>
@@ -413,6 +457,22 @@ export default function Settings({ onBack }) {
 
       {/* Push Notifications */}
       <PushNotificationsSection />
+
+      {/* Data export */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">Export Data</p>
+          <p className="text-xs text-gray-500">Download your full health history as a CSV file.</p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+          style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+        >
+          {exporting ? 'Preparing…' : '⬇ Export Health History (CSV)'}
+        </button>
+      </div>
 
       {/* Note on API migration */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>

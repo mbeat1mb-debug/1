@@ -1,8 +1,6 @@
-import { calculatePhysiologicalAge } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge } from '../lib/calculations'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-
-const USER_AGE = 39
 
 function AgeMeter({ physAge, chronAge }) {
   const diff = physAge - chronAge
@@ -53,6 +51,7 @@ function MetricContribution({ label, value, unit, contribution, color }) {
 
 export default function Healthspan({ data }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [], steps = 0 } = data
+  const userAge = getUserAge()
 
   const avgHRV = hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1)
   const avgRHR = data.rhrHistory?.filter(Boolean).reduce((a, b) => a + b, 0) / (data.rhrHistory?.filter(Boolean).length || 1) || 0
@@ -79,7 +78,7 @@ export default function Healthspan({ data }) {
     weeklyAZM,
   })
 
-  const diff = physAge - USER_AGE
+  const diff = physAge - userAge
 
   const contributions = [
     {
@@ -121,7 +120,7 @@ export default function Healthspan({ data }) {
         <h1 className="text-xl font-bold">Your biological age</h1>
       </div>
 
-      <AgeMeter physAge={physAge} chronAge={USER_AGE} />
+      <AgeMeter physAge={physAge} chronAge={userAge} />
 
       {/* What's moving the needle */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
@@ -136,19 +135,19 @@ export default function Healthspan({ data }) {
         </div>
       </div>
 
-      {/* Pace of aging — ratio of biological to calendar age */}
+      {/* Pace of aging */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Pace of Aging</p>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold" style={{ color: diff <= 0 ? '#00c9a7' : '#f59e0b' }}>
-            {(Math.round((physAge / USER_AGE) * 100) / 100).toFixed(2)}x
+            {(Math.round((physAge / userAge) * 100) / 100).toFixed(2)}x
           </span>
           <span className="text-gray-500 text-sm">
             {diff < 0 ? 'aging slower than the calendar' : diff > 0 ? 'aging faster than the calendar' : 'on track with the calendar'}
           </span>
         </div>
         <p className="text-xs text-gray-600 mt-2">
-          Calculated from 30-day averages of your key health metrics vs. population norms for age 39.
+          Calculated from 30-day averages of your key health metrics vs. population norms for age {userAge}.
         </p>
       </div>
 

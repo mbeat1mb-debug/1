@@ -5,7 +5,8 @@ import { getRecoveryColor, getRecoveryLabel } from '../lib/calculations'
 
 export default function Recovery({ data }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
-    todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [] } = data
+    todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [],
+    vo2Max = 0, skinTempDev } = data
 
   const color = getRecoveryColor(recoveryScore)
   const label = getRecoveryLabel(recoveryScore)
@@ -14,8 +15,16 @@ export default function Recovery({ data }) {
   const rhrChartData = rhrHistory.slice(-14).map((v, i) => ({ label: i === rhrHistory.slice(-14).length - 1 ? 'Today' : `-${rhrHistory.slice(-14).length - 1 - i}d`, rhr: Math.round(v) }))
 
   const avgHRV = hrvHistory.length ? Math.round(hrvHistory.reduce((a, b) => a + b, 0) / hrvHistory.length) : 0
-
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
+
+  const skinTempColor = skinTempDev == null ? '#888'
+    : Math.abs(skinTempDev) < 0.1 ? '#00c9a7'
+    : Math.abs(skinTempDev) < 0.3 ? '#f59e0b'
+    : '#ef4444'
+  const skinTempLabel = skinTempDev == null ? 'No data'
+    : skinTempDev > 0.3 ? 'Elevated — potential illness'
+    : skinTempDev < -0.3 ? 'Below baseline'
+    : 'Normal'
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
@@ -63,8 +72,36 @@ export default function Recovery({ data }) {
           <StatRow label="Sleep Efficiency" value={todaySleep?.efficiency ?? '--'} unit="%" />
           <StatRow label="Blood Oxygen (SpO₂)" value={todaySpO2} unit="%" />
           <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
+          {vo2Max > 0 && <StatRow label="VO₂ Max (Cardio Fitness)" value={`~${vo2Max}`} unit="ml/kg/min" color="#3b82f6" />}
         </div>
       </div>
+
+      {/* Skin temperature */}
+      {skinTempDev !== undefined && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Skin Temperature</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-300">{skinTempLabel}</p>
+              <p className="text-xs text-gray-600 mt-1">
+                {skinTempDev == null
+                  ? 'Not supported on your device or no recent sleep data'
+                  : `${skinTempDev > 0 ? '+' : ''}${skinTempDev?.toFixed(2)}°C vs personal baseline`}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: skinTempColor + '20' }}>
+              <span className="text-xl">🌡️</span>
+            </div>
+          </div>
+          {skinTempDev != null && Math.abs(skinTempDev) >= 0.3 && (
+            <p className="text-xs mt-2 p-2 rounded-lg" style={{ background: skinTempColor + '15', color: skinTempColor }}>
+              {skinTempDev > 0.3
+                ? 'Elevated skin temp can signal early illness, inflammation, or ovulation. Cross-check with HRV and RHR.'
+                : 'Below-baseline skin temp may indicate cold exposure, adequate recovery, or device variability.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* HRV trend */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>

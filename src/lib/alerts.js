@@ -1,5 +1,9 @@
 export function detectAlerts(data) {
-  const { hrvHistory = [], rhrHistory = [], recoveryHistory = [], stressScore = 0, sleepDebt = 0 } = data
+  const {
+    hrvHistory = [], rhrHistory = [], recoveryHistory = [],
+    stressScore = 0, sleepDebt = 0,
+    todayHRV = 0, todayRHR = 0, todayBR = 0,
+  } = data
   const alerts = []
 
   // HRV declining 5+ consecutive days
@@ -45,6 +49,28 @@ export function detectAlerts(data) {
         message: `Your resting HR is ${Math.round(recentAvg - priorAvg)} bpm above your recent baseline.`,
         action: 'Watch for signs of illness or accumulated fatigue.',
         icon: '💓',
+      })
+    }
+  }
+
+  // Compound illness signal: HRV drop + RHR elevation (+ elevated breathing rate)
+  const avgHRV7 = hrvHistory.slice(-7).filter(Boolean)
+  const avgRHR7 = rhrHistory.slice(-7).filter(Boolean)
+  if (avgHRV7.length >= 5 && avgRHR7.length >= 5 && todayHRV > 0 && todayRHR > 0) {
+    const hrvAvg = avgHRV7.reduce((a, b) => a + b, 0) / avgHRV7.length
+    const rhrAvg = avgRHR7.reduce((a, b) => a + b, 0) / avgRHR7.length
+    const hrvDrop = todayHRV < hrvAvg * 0.85
+    const rhrElevated = todayRHR > rhrAvg + 5
+    const brElevated = todayBR > 0 && todayBR > 17
+    const signals = [hrvDrop, rhrElevated, brElevated].filter(Boolean).length
+    if (signals >= 2 && !alerts.find(a => a.id === 'hrv_declining')) {
+      alerts.push({
+        id: 'illness_signal',
+        severity: 'warning',
+        title: 'Possible Illness Signal',
+        message: 'Multiple physiological indicators (HRV, resting HR, breathing) are simultaneously outside your norms.',
+        action: 'Rest today and monitor closely. Stay hydrated.',
+        icon: '🤒',
       })
     }
   }
