@@ -223,8 +223,8 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else adj -= 1
   }
 
-  // Bloodwork lab panel — each entered marker contributes its own adjustment
-  adj += getLabAgeAdjustment()
+  // Bloodwork lab panel — clamped to ±8y so no single category dominates
+  adj += Math.max(-8, Math.min(8, getLabAgeAdjustment()))
 
   return userAge + adj
 }

@@ -12,7 +12,6 @@ export default function Recovery({ data }) {
   const label = getRecoveryLabel(recoveryScore)
   const avgBP = getAverageBP()
   const bpReadings = getBPReadings()
-  const lastBPDate = bpReadings.length ? bpReadings[bpReadings.length - 1].date : null
   const hasBP = avgBP.sys > 0
 
   const hrvChartData = hrvHistory.slice(-14).map((v, i) => ({ label: i === hrvHistory.slice(-14).length - 1 ? 'Today' : `-${hrvHistory.slice(-14).length - 1 - i}d`, hrv: Math.round(v) }))

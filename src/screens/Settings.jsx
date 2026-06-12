@@ -361,7 +361,7 @@ export default function Settings({ onBack }) {
     localStorage.setItem('fitbit_client_id', clientId.trim())
     if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
     const age = parseInt(userAge, 10)
-    if (!isNaN(age) && age > 0) localStorage.setItem('user_age', String(age))
+    if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
     startOAuth(clientId.trim())
   }
 

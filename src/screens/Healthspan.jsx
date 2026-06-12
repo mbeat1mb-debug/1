@@ -43,7 +43,7 @@ function MetricContribution({ label, value, unit, contribution, color, sublabel 
         <p className="text-sm text-white">{label}</p>
         <p className="text-xs text-gray-500">{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
       </div>
-      <span className="text-sm font-bold px-2 py.5 rounded" style={{ background: color + '20', color }}>
+      <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ background: color + '20', color }}>
         {contribution > 0 ? '+' : ''}{contribution}y
       </span>
     </div>
@@ -252,7 +252,7 @@ export default function Healthspan({ data }) {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Pace of Aging</p>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold" style={{ color: diff <= 0 ? '#00c9a7' : '#f59e0b' }}>
-            {(Math.round((physAge / userAge) * 100) / 100).toFixed(2)}x
+            {userAge > 0 ? (Math.round((physAge / userAge) * 100) / 100).toFixed(2) + 'x' : '--'}
           </span>
           <span className="text-gray-500 text-sm">
             {diff < 0 ? 'aging slower than the calendar' : diff > 0 ? 'aging faster than the calendar' : 'on track with the calendar'}
