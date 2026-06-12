@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { isConnected, startOAuth, disconnect } from '../lib/auth'
 import {
   getPermission, isPushSupported, getPushSubscription,
@@ -6,7 +6,9 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading } from '../lib/calculations'
+import { getLabResults, saveLabResults } from '../lib/labs'
+import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import LabResultsSection from '../components/LabResultsSection'
 
 // ── Time options ──────────────────────────────────────────────────────────────
@@ -297,6 +299,224 @@ function PushNotificationsSection() {
   )
 }
 
+// ── PIN Management ────────────────────────────────────────────────────────────
+
+function PinKeypad({ onComplete, onCancel, label }) {
+  const [digits, setDigits] = useState('')
+  const [error, setError] = useState('')
+
+  const handleDigit = (d) => {
+    if (digits.length >= 4) return
+    const next = digits + d
+    setDigits(next)
+    setError('')
+    if (next.length === 4) setTimeout(() => onComplete(next), 80)
+  }
+
+  const handleBack = () => {
+    setDigits(d => d.slice(0, -1))
+    setError('')
+  }
+
+  return (
+    <div className="pt-2 space-y-4">
+      <p className="text-sm text-gray-400 text-center">{label}</p>
+      <div className="flex justify-center gap-4">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className="w-3 h-3 rounded-full transition-all duration-150"
+            style={{ background: i < digits.length ? '#00c9a7' : '#333' }} />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 max-w-[220px] mx-auto">
+        {[1,2,3,4,5,6,7,8,9].map(n => (
+          <button key={n} onClick={() => handleDigit(String(n))}
+            className="h-14 rounded-2xl text-xl font-light text-white active:opacity-60 transition-opacity"
+            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            {n}
+          </button>
+        ))}
+        <div />
+        <button onClick={() => handleDigit('0')}
+          className="h-14 rounded-2xl text-xl font-light text-white active:opacity-60 transition-opacity"
+          style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+          0
+        </button>
+        <button onClick={handleBack}
+          className="h-14 rounded-2xl flex items-center justify-center active:opacity-60 transition-opacity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1.5} className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
+          </svg>
+        </button>
+      </div>
+      {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+      <button onClick={onCancel} className="w-full text-xs text-gray-600 py-1">Cancel</button>
+    </div>
+  )
+}
+
+function PinSection() {
+  const [pinActive, setPinActive] = useState(isPinSet)
+  const [mode, setMode] = useState(null) // 'create' | 'change-verify' | 'change-new' | 'change-confirm' | 'new-confirm'
+  const [newPin, setNewPin] = useState('')
+  const [msg, setMsg] = useState('')
+
+  const startCreate = () => { setMode('create'); setMsg('') }
+  const startChange = () => { setMode('change-verify'); setMsg('') }
+
+  const handleRemove = () => {
+    removePin()
+    setPinActive(false)
+    setMode(null)
+    setMsg('PIN removed')
+    setTimeout(() => setMsg(''), 2500)
+  }
+
+  const handleComplete = async (pin) => {
+    if (mode === 'create') {
+      setNewPin(pin)
+      setMode('create-confirm')
+    } else if (mode === 'create-confirm') {
+      if (pin === newPin) {
+        await setPin(pin)
+        setPinActive(true)
+        setMode(null)
+        setMsg('PIN enabled')
+        setTimeout(() => setMsg(''), 2500)
+      } else {
+        setMode('create')
+        setNewPin('')
+        setMsg("PINs didn't match — try again")
+        setTimeout(() => setMsg(''), 3000)
+      }
+    } else if (mode === 'change-verify') {
+      const ok = await verifyPin(pin)
+      if (ok) { setMode('change-new'); setMsg('') }
+      else { setMsg('Incorrect PIN'); setTimeout(() => setMsg(''), 2500); setMode(null) }
+    } else if (mode === 'change-new') {
+      setNewPin(pin)
+      setMode('change-confirm')
+    } else if (mode === 'change-confirm') {
+      if (pin === newPin) {
+        await setPin(pin)
+        setMode(null)
+        setMsg('PIN updated')
+        setTimeout(() => setMsg(''), 2500)
+      } else {
+        setMode('change-new')
+        setNewPin('')
+        setMsg("PINs didn't match — try again")
+        setTimeout(() => setMsg(''), 3000)
+      }
+    }
+  }
+
+  const phaseLabel = {
+    'create': 'Enter a 4-digit PIN',
+    'create-confirm': 'Confirm your PIN',
+    'change-verify': 'Enter your current PIN',
+    'change-new': 'Enter new PIN',
+    'change-confirm': 'Confirm new PIN',
+  }
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">App PIN Lock</p>
+          <p className="text-xs mt-0.5" style={{ color: pinActive ? '#00c9a7' : '#888' }}>
+            {pinActive ? '● Enabled — required on every open' : '○ Off'}
+          </p>
+        </div>
+        {pinActive && !mode && (
+          <div className="flex gap-2">
+            <button onClick={startChange} className="text-xs text-gray-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">Change</button>
+            <button onClick={handleRemove} className="text-xs text-red-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">Remove</button>
+          </div>
+        )}
+      </div>
+
+      {msg && <p className="text-xs text-center" style={{ color: msg.includes('❌') || msg.includes("didn't") || msg.includes('Incorrect') ? '#ef4444' : '#00c9a7' }}>{msg}</p>}
+
+      {!pinActive && !mode && (
+        <button onClick={startCreate}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold"
+          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}>
+          Enable PIN Lock
+        </button>
+      )}
+
+      {mode && (
+        <PinKeypad
+          label={phaseLabel[mode]}
+          onComplete={handleComplete}
+          onCancel={() => { setMode(null); setNewPin('') }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── CSV Import ────────────────────────────────────────────────────────────────
+
+async function parseAndImportCSV(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.onload = e => {
+      try {
+        const lines = e.target.result.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+        if (lines.length < 2) { reject(new Error('File appears empty')); return }
+
+        const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
+        const hasSys = headers.some(h => h === 'systolic' || h === 'sys')
+        const hasMarker = headers.includes('marker')
+
+        if (hasSys) {
+          const dateIdx = headers.indexOf('date')
+          const sysIdx = headers.findIndex(h => h === 'systolic' || h === 'sys')
+          const diaIdx = headers.findIndex(h => h === 'diastolic' || h === 'dia')
+          if (sysIdx < 0 || diaIdx < 0) { reject(new Error('Expected columns: date, systolic/sys, diastolic/dia')); return }
+
+          let count = 0
+          lines.slice(1).forEach(line => {
+            const cols = line.split(',').map(c => c.trim())
+            const date = dateIdx >= 0 ? cols[dateIdx] : new Date().toISOString().split('T')[0]
+            const sys = parseInt(cols[sysIdx], 10)
+            const dia = parseInt(cols[diaIdx], 10)
+            if (date && !isNaN(sys) && !isNaN(dia)) { saveBPReading(date, sys, dia); count++ }
+          })
+          resolve({ type: 'Blood Pressure', count })
+
+        } else if (hasMarker) {
+          const markerIdx = headers.indexOf('marker')
+          const valueIdx = headers.indexOf('value')
+          const dateIdx = headers.indexOf('date')
+          if (valueIdx < 0) { reject(new Error('Expected columns: marker, value[, date]')); return }
+
+          const today = new Date().toISOString().split('T')[0]
+          const existing = getLabResults()
+          let count = 0
+          lines.slice(1).forEach(line => {
+            const cols = line.split(',').map(c => c.trim())
+            const marker = cols[markerIdx]?.toLowerCase().replace(/\s+/g, '_')
+            const value = parseFloat(cols[valueIdx])
+            const date = dateIdx >= 0 && cols[dateIdx] ? cols[dateIdx] : today
+            if (marker && !isNaN(value)) { existing[marker] = { value, date }; count++ }
+          })
+          saveLabResults(existing)
+          resolve({ type: 'Lab Results', count })
+
+        } else {
+          reject(new Error('Unrecognized format. Supported:\n• BP: date,systolic,diastolic\n• Labs: marker,value,date'))
+        }
+      } catch (err) {
+        reject(err)
+      }
+    }
+    reader.readAsText(file)
+  })
+}
+
 // ── CSV Export ────────────────────────────────────────────────────────────────
 
 async function exportCSV() {
@@ -331,6 +551,9 @@ export default function Settings({ onBack }) {
   })
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
+  const csvInputRef = useRef(null)
 
   // Height/weight stored in metric; displayed per unit preference
   const storedHCm = parseFloat(localStorage.getItem('user_height_cm') || '0') || 0
@@ -402,6 +625,23 @@ export default function Settings({ onBack }) {
     try { await exportCSV() } finally { setExporting(false) }
   }
 
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    setImportMsg('')
+    try {
+      const result = await parseAndImportCSV(file)
+      setImportMsg(`Imported ${result.count} ${result.type} record${result.count !== 1 ? 's' : ''}`)
+    } catch (err) {
+      setImportMsg(`Error: ${err.message}`)
+    } finally {
+      setImporting(false)
+      setTimeout(() => setImportMsg(''), 5000)
+    }
+  }
+
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
       <div className="pt-2 flex items-center gap-3">
@@ -463,6 +703,9 @@ export default function Settings({ onBack }) {
           </div>
         </div>
       )}
+
+      {/* PIN Lock */}
+      <PinSection />
 
       {/* Age */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
@@ -650,12 +893,37 @@ export default function Settings({ onBack }) {
       {/* Push Notifications */}
       <PushNotificationsSection />
 
-      {/* Data export */}
+      {/* Data import / export */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">Export Data</p>
-          <p className="text-xs text-gray-500">Download your full health history as a CSV file.</p>
+          <p className="text-sm font-semibold text-white mb-1">Data</p>
+          <p className="text-xs text-gray-500">Import blood pressure or lab results from CSV, or export your full history.</p>
         </div>
+
+        {/* Import */}
+        <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+        <button
+          onClick={() => csvInputRef.current?.click()}
+          disabled={importing}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+          style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+        >
+          {importing ? 'Importing…' : '⬆ Import CSV (BP or Labs)'}
+        </button>
+        {importMsg && (
+          <p className="text-xs text-center" style={{ color: importMsg.startsWith('Error') ? '#ef4444' : '#00c9a7' }}>
+            {importMsg}
+          </p>
+        )}
+
+        {/* Template hint */}
+        <div className="rounded-xl p-3 space-y-1" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+          <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Accepted formats</p>
+          <pre className="text-[11px] font-mono text-gray-600 leading-relaxed">{`BP:   date,systolic,diastolic
+Labs: marker,value,date`}</pre>
+        </div>
+
+        {/* Export */}
         <button
           onClick={handleExport}
           disabled={exporting}

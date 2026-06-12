@@ -15,7 +15,9 @@ import { saveDay, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
+import PinLock from './components/PinLock'
 import Home from './screens/Home'
+import { isPinSet } from './lib/pin'
 
 const Recovery = lazy(() => import('./screens/Recovery'))
 const Strain = lazy(() => import('./screens/Strain'))
@@ -134,6 +136,7 @@ function ConnectScreen({ onNav }) {
 }
 
 export default function App() {
+  const [pinUnlocked, setPinUnlocked] = useState(() => !isPinSet())
   const [tab, setTab] = useState('home')
   const [loading, setLoading] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -300,6 +303,7 @@ export default function App() {
     setTab(id)
   }
 
+  if (!pinUnlocked) return <PinLock onUnlock={() => setPinUnlocked(true)} />
   if (loading) return <Spinner />
   if (!connected && !demo) return <ConnectScreen onNav={handleNav} />
 
