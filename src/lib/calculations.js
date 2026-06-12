@@ -97,8 +97,10 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, hrvHistory, rhrHi
     sleepScore = clamp((hours / 8) * 70, 0, 70) + clamp((efficiency / 100) * 30, 0, 30)
   }
 
-  const spo2Score = spo2 >= 97 ? 100 : spo2 >= 95 ? 80 : spo2 >= 93 ? 60 : 40
-  const brScore = br >= 12 && br <= 18 ? 100 : 70
+  // SpO2: gradient penalties; each 2% drop below 97 is clinically significant
+  const spo2Score = spo2 >= 97 ? 100 : spo2 >= 95 ? 75 : spo2 >= 93 ? 50 : spo2 >= 90 ? 25 : 0
+  // BR: graduated penalty reflects that 20 br/min is a mild signal; 25+ is an acute concern
+  const brScore = br >= 12 && br <= 18 ? 100 : br >= 10 && br <= 22 ? 75 : br >= 8 && br <= 25 ? 50 : 25
 
   const score = hrvScore * 0.40 + rhrScore * 0.25 + sleepScore * 0.25 + spo2Score * 0.05 + brScore * 0.05
   return Math.round(clamp(score, 0, 100))
@@ -157,17 +159,23 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else adj += 4
   }
 
-  if (avgHRV > 70) adj -= 4
-  else if (avgHRV > 60) adj -= 3
-  else if (avgHRV > 50) adj -= 1
-  else if (avgHRV > 40) adj += 1
-  else if (avgHRV > 30) adj += 2
+  // HRV norms decline ~1ms/year. Expected median ≈ 65 - 0.6*(age-25) for healthy adults.
+  // Adjustments are relative to age-expected HRV so a 60-year-old isn't penalized for
+  // having lower absolute HRV than a 25-year-old.
+  const ageExpectedHRV = Math.max(20, 65 - 0.6 * (userAge - 25))
+  const hrvRatio = avgHRV > 0 ? avgHRV / ageExpectedHRV : 1
+  if (hrvRatio > 1.4) adj -= 4
+  else if (hrvRatio > 1.2) adj -= 3
+  else if (hrvRatio > 1.0) adj -= 1
+  else if (hrvRatio > 0.8) adj += 1
+  else if (hrvRatio > 0.6) adj += 2
   else adj += 4
 
+  // RHR: <50 is elite regardless of age; >80 is a meaningful concern at any age
   if (avgRHR < 50) adj -= 4
   else if (avgRHR < 58) adj -= 2
   else if (avgRHR < 68) adj -= 1
-  else if (avgRHR > 78) adj += 2
+  else if (avgRHR > 80) adj += 2
   else adj += 1
 
   if (avgSleep >= 7.5 && sleepConsistency >= 0.8) adj -= 3
@@ -183,13 +191,16 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   else if (weeklyAZM >= 150) adj -= 1
   else if (weeklyAZM < 50) adj += 2
 
-  // VO2 Max — strongest single longevity predictor in exercise science
+  // VO2 Max — strongest single longevity predictor (Mandsager et al., JAMA 2018)
+  // Age-normalize: healthy 40-year-old baseline ~40 ml/kg/min, declining ~0.3/yr after 25
   if (vo2Max > 0) {
-    if (vo2Max >= 55) adj -= 3
-    else if (vo2Max >= 45) adj -= 1
-    else if (vo2Max >= 35) adj += 0
-    else if (vo2Max >= 25) adj += 2
-    else adj += 4
+    const ageExpectedVO2 = Math.max(20, 43 - 0.3 * (userAge - 40))
+    const vo2Ratio = vo2Max / ageExpectedVO2
+    if (vo2Ratio >= 1.35) adj -= 3      // elite: >135% of age-expected
+    else if (vo2Ratio >= 1.10) adj -= 1  // above average
+    else if (vo2Ratio >= 0.85) adj += 0  // average
+    else if (vo2Ratio >= 0.65) adj += 2  // below average
+    else adj += 4                         // poor (strong mortality predictor)
   }
 
   // Sleep stages — deep sleep drives cellular repair, REM drives cognitive health
@@ -291,8 +302,17 @@ export function parseFitbitData(raw) {
 
 // ── Sleep Debt ──────────────────────────────────────────────────────────────
 
-export function calculateSleepDebt(sleepHistory, optimalHours = 8) {
-  const optimalMins = optimalHours * 60
+export function calculateSleepDebt(sleepHistory) {
+  // Use average of top-quartile sleep nights as personal optimum (not a hardcoded 8h target).
+  // If less than 7 nights of data, fall back to 8h.
+  let optimalMins = 480
+  if (sleepHistory.length >= 7) {
+    const sorted = [...sleepHistory].sort((a, b) => b.minutes - a.minutes)
+    const topQuartile = sorted.slice(0, Math.max(1, Math.floor(sorted.length * 0.25)))
+    const personalOptimal = topQuartile.reduce((a, s) => a + s.minutes, 0) / topQuartile.length
+    // Clamp to sane range (6.5h – 9.5h)
+    optimalMins = Math.min(570, Math.max(390, personalOptimal))
+  }
   const last7 = sleepHistory.slice(-7)
   const debt = last7.reduce((acc, s) => acc + Math.max(0, optimalMins - (s.minutes || 0)), 0)
   return Math.round(debt / 60 * 10) / 10
