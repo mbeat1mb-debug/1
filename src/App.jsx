@@ -145,15 +145,22 @@ export default function App() {
     const sleepDebt = calculateSleepDebt(parsed.sleepHistory)
     const optimalSleepWindow = calculateOptimalSleepWindow(parsed.sleepHistory)
 
-    const recoveryHistory = parsed.hrvHistory.map((hrv, i) => {
-      if (!hrv) return null
-      return calculateRecovery({
+    const recoveryHistory = []
+    const stressHistory = []
+    parsed.hrvHistory.forEach((hrv, i) => {
+      if (!hrv) return
+      recoveryHistory.push(calculateRecovery({
         hrv, rhr: parsed.rhrHistory[i] || parsed.todayRHR,
         sleep: parsed.sleepHistory[i] ? { minutesAsleep: parsed.sleepHistory[i].minutes, efficiency: parsed.sleepHistory[i].efficiency } : null,
         spo2: parsed.todaySpO2, br: parsed.todayBR,
         hrvHistory: parsed.hrvHistory.slice(0, i), rhrHistory: parsed.rhrHistory.slice(0, i),
-      })
-    }).filter(Boolean)
+      }))
+      stressHistory.push(calculateStressScore({
+        hrv, rhr: parsed.rhrHistory[i] || parsed.todayRHR,
+        hrvHistory: parsed.hrvHistory.slice(0, i),
+        rhrHistory: parsed.rhrHistory.slice(0, i),
+      }))
+    })
 
     const offset = recoveryHistory.length - parsed.sleepHistory.length
     const calendarDays = parsed.sleepHistory.map((s, i) => ({
@@ -164,15 +171,14 @@ export default function App() {
 
     const base = {
       ...parsed, recoveryScore, strainScore, zoneMinutes, stressScore, sleepScore,
-      sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays,
-      stressHistory: Array(recoveryHistory.length).fill(0),
+      sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays, stressHistory,
     }
 
     const pr = updatePersonalRecords({
       todayHRV: parsed.todayHRV, todayRHR: parsed.todayRHR,
       recoveryScore, strainScore, steps: parsed.steps,
     })
-    const streaks = calculateStreaks(recoveryHistory, parsed.sleepHistory)
+    const streaks = calculateStreaks(recoveryHistory, parsed.sleepHistory, stressHistory)
     const { unlocked, newUnlocks } = checkAndUnlockAchievements({
       pr, streaks, recoveryHistory, sleepHistory: parsed.sleepHistory,
     })
@@ -195,11 +201,8 @@ export default function App() {
 
       const result = { ...processData(raw), date: raw.date }
 
-      // Persist to IndexedDB
-      await saveDay(result)
-      await saveSnapshot(result)
-
       // Extend calendar with older IndexedDB history beyond the 30-day Fitbit window
+      await saveDay(result)
       const dbHistory = await getHistory(90)
       const fitbitDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory
@@ -209,7 +212,9 @@ export default function App() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-90)
 
-      setAppData({ ...result, calendarDays: mergedCalendar })
+      const finalResult = { ...result, calendarDays: mergedCalendar }
+      await saveSnapshot(finalResult)
+      setAppData(finalResult)
       setDemo(false)
 
       const now = Date.now()

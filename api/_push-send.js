@@ -54,7 +54,6 @@ export async function sendScheduledPush(type) {
   const today = new Date().toISOString().split('T')[0]
   const sentKey = `push:sent:${type}:${today}`
   if (await kv.get(sentKey)) return { skipped: 'already sent' }
-  await kv.set(sentKey, 1, { ex: 90000 }) // expire after ~25 hours
 
   webPush.setVapidDetails(
     process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
@@ -63,6 +62,15 @@ export async function sendScheduledPush(type) {
   )
 
   const payload = type === 'morning' ? MORNING_PAYLOAD : EVENING_PAYLOAD
-  await webPush.sendNotification(subscription, JSON.stringify(payload))
+  try {
+    await webPush.sendNotification(subscription, JSON.stringify(payload))
+  } catch (err) {
+    // Delivery failed (expired/invalid subscription) — don't mark sent so next cron can retry
+    console.error('Push delivery failed:', err.message)
+    return { error: err.message }
+  }
+
+  // Mark sent only after confirmed delivery, expire after ~25 hours
+  await kv.set(sentKey, 1, { ex: 90000 })
   return { sent: true }
 }

@@ -190,7 +190,7 @@ export function parseFitbitData(raw) {
 
   // Extract today's values
   const todayHRV = hrv?.hrv?.[0]?.value?.dailyRmssd ?? hrv?.hrv?.[0]?.value?.deepRmssd ?? 0
-  const todayRHR = summary?.activities?.heart?.[0]?.value?.restingHeartRate ??
+  const todayRHR = hrIntraday?.['activities-heart']?.[0]?.value?.restingHeartRate ??
     hrRange?.['activities-heart']?.slice(-1)[0]?.value?.restingHeartRate ?? 0
   const todaySleep = sleep?.sleep?.find(s => s.isMainSleep) ?? sleep?.sleep?.[0]
   const todaySpO2 = spo2?.value?.avg ?? spo2?.value ?? 97
