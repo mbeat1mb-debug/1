@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getRecoveryColor, getRecoveryLabel } from '../lib/calculations'
+import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings } from '../lib/calculations'
 
 export default function Recovery({ data }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
@@ -10,6 +10,10 @@ export default function Recovery({ data }) {
 
   const color = getRecoveryColor(recoveryScore)
   const label = getRecoveryLabel(recoveryScore)
+  const avgBP = getAverageBP()
+  const bpReadings = getBPReadings()
+  const lastBPDate = bpReadings.length ? bpReadings[bpReadings.length - 1].date : null
+  const hasBP = avgBP.sys > 0
 
   const hrvChartData = hrvHistory.slice(-14).map((v, i) => ({ label: i === hrvHistory.slice(-14).length - 1 ? 'Today' : `-${hrvHistory.slice(-14).length - 1 - i}d`, hrv: Math.round(v) }))
   const rhrChartData = rhrHistory.slice(-14).map((v, i) => ({ label: i === rhrHistory.slice(-14).length - 1 ? 'Today' : `-${rhrHistory.slice(-14).length - 1 - i}d`, rhr: Math.round(v) }))
@@ -73,6 +77,14 @@ export default function Recovery({ data }) {
           <StatRow label="Blood Oxygen (SpO₂)" value={todaySpO2} unit="%" />
           <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
           {vo2Max > 0 && <StatRow label="VO₂ Max (Cardio Fitness)" value={`~${vo2Max}`} unit="ml/kg/min" color="#3b82f6" />}
+          {hasBP && (
+            <StatRow
+              label={`Blood Pressure${bpReadings.length > 1 ? ` (${bpReadings.length}-reading avg)` : ''}`}
+              value={`${avgBP.sys}/${avgBP.dia}`}
+              unit=" mmHg"
+              color={avgBP.sys >= 140 ? '#ef4444' : avgBP.sys >= 130 ? '#f59e0b' : '#00c9a7'}
+            />
+          )}
         </div>
       </div>
 

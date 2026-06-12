@@ -1,3 +1,5 @@
+import { getLabAgeAdjustment } from './labs'
+
 // Dynamic user age from settings
 export function getUserAge() {
   try {
@@ -212,14 +214,17 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else if (alcohol >= 7) adj += 1
   }
 
-  // Blood pressure — only applied when user has entered values
-  const bp = getUserBP()
+  // Blood pressure — rolling average of periodic readings, falls back to static setting
+  const bp = getAverageBP()
   if (bp.sys > 0) {
     if (bp.sys >= 160 || bp.dia >= 100) adj += 4
     else if (bp.sys >= 140 || bp.dia >= 90) adj += 2
     else if (bp.sys >= 130 || bp.dia >= 80) adj += 1
     else adj -= 1
   }
+
+  // Bloodwork lab panel — each entered marker contributes its own adjustment
+  adj += getLabAgeAdjustment()
 
   return userAge + adj
 }
@@ -444,6 +449,34 @@ export function getUserBP() {
     const dia = parseInt(localStorage.getItem('user_bp_diastolic') || '0', 10)
     return { sys: isNaN(sys) ? 0 : sys, dia: isNaN(dia) ? 0 : dia }
   } catch { return { sys: 0, dia: 0 } }
+}
+
+// ── Blood Pressure time-series (logged a few times/week in Journal) ────────────
+
+export function getBPReadings() {
+  try { return JSON.parse(localStorage.getItem('bp_readings') || '[]') } catch { return [] }
+}
+
+export function saveBPReading(date, sys, dia) {
+  if (!sys || !dia || sys < 50 || dia < 30) return
+  try {
+    const readings = getBPReadings()
+    const idx = readings.findIndex(r => r.date === date)
+    if (idx >= 0) readings[idx] = { date, sys, dia }
+    else readings.push({ date, sys, dia })
+    readings.sort((a, b) => a.date.localeCompare(b.date))
+    localStorage.setItem('bp_readings', JSON.stringify(readings.slice(-90)))
+  } catch {}
+}
+
+// Rolling average of last n readings; falls back to static setting if no readings exist
+export function getAverageBP(n = 10) {
+  const readings = getBPReadings().slice(-n).filter(r => r.sys > 0)
+  if (!readings.length) return getUserBP()
+  return {
+    sys: Math.round(readings.reduce((a, r) => a + r.sys, 0) / readings.length),
+    dia: Math.round(readings.reduce((a, r) => a + r.dia, 0) / readings.length),
+  }
 }
 
 // Steps → distance using height-based stride estimate

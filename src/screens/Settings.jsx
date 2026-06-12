@@ -7,6 +7,7 @@ import {
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
 import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP } from '../lib/calculations'
+import LabResultsSection from '../components/LabResultsSection'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -328,12 +329,6 @@ export default function Settings({ onBack }) {
   const [alcoholWeek, setAlcoholWeek] = useState(() => {
     const v = getUserAlcohol(); return v !== null ? String(v) : ''
   })
-  const [bpSys, setBpSys] = useState(() => {
-    const v = getUserBP().sys; return v > 0 ? String(v) : ''
-  })
-  const [bpDia, setBpDia] = useState(() => {
-    const v = getUserBP().dia; return v > 0 ? String(v) : ''
-  })
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -391,9 +386,6 @@ export default function Settings({ onBack }) {
     localStorage.setItem('user_smoking', smoking)
     const alcohol = parseInt(alcoholWeek, 10)
     if (!isNaN(alcohol) && alcohol >= 0) localStorage.setItem('user_alcohol_week', String(alcohol))
-    const sys = parseInt(bpSys, 10), dia = parseInt(bpDia, 10)
-    if (!isNaN(sys) && sys > 0) localStorage.setItem('user_bp_systolic', String(sys))
-    if (!isNaN(dia) && dia > 0) localStorage.setItem('user_bp_diastolic', String(dia))
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -621,35 +613,15 @@ export default function Settings({ onBack }) {
           </div>
         </div>
 
-        {/* Blood pressure */}
-        <div className="space-y-2">
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Resting Blood Pressure (mmHg)</p>
-          <div className="flex gap-2 items-center">
-            <input
-              type="number" min={70} max={220}
-              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
-              placeholder="120"
-              value={bpSys}
-              onChange={e => setBpSys(e.target.value)}
-            />
-            <span className="text-xs text-gray-600">/</span>
-            <input
-              type="number" min={40} max={140}
-              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
-              placeholder="80"
-              value={bpDia}
-              onChange={e => setBpDia(e.target.value)}
-            />
-            {bpSys && bpDia && (
-              <span className="text-xs" style={{
-                color: parseInt(bpSys) >= 160 ? '#ef4444' : parseInt(bpSys) >= 140 ? '#f97316' : parseInt(bpSys) >= 130 ? '#f59e0b' : '#00c9a7'
-              }}>
-                {parseInt(bpSys) >= 160 ? 'Stage 2 HTN' : parseInt(bpSys) >= 140 ? 'Stage 1 HTN' : parseInt(bpSys) >= 130 ? 'Elevated' : parseInt(bpSys) < 120 ? 'Optimal' : 'Normal'}
-              </span>
-            )}
-          </div>
+        {/* Blood pressure note */}
+        <div className="space-y-1">
+          <p className="text-xs text-gray-400 uppercase tracking-wider">Blood Pressure</p>
+          <p className="text-xs text-gray-600">Log readings a few times a week in the <span className="text-gray-400">Journal</span> tab. A rolling average is used in your biological age calculation.</p>
         </div>
       </div>
+
+      {/* Lab Results */}
+      <LabResultsSection />
 
       {/* Claude API key */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation } from '../lib/storage'
+import { getBPReadings, saveBPReading } from '../lib/calculations'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -36,6 +37,8 @@ export default function Journal({ data }) {
   const [selectedTags, setSelectedTags] = useState([])
   const [notes, setNotes] = useState('')
   const [energy, setEnergy] = useState(null)
+  const [bpSys, setBpSys] = useState('')
+  const [bpDia, setBpDia] = useState('')
   const [saved, setSaved] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [newTagLabel, setNewTagLabel] = useState('')
@@ -49,6 +52,9 @@ export default function Journal({ data }) {
     setSelectedTags(entry.tagIds || [])
     setNotes(entry.notes || '')
     setEnergy(entry.energy ?? null)
+    // Pre-fill BP if logged today already
+    const existing = getBPReadings().find(r => r.date === today())
+    if (existing) { setBpSys(String(existing.sys)); setBpDia(String(existing.dia)) }
   }, [])
 
   const toggle = (id) => {
@@ -58,6 +64,8 @@ export default function Journal({ data }) {
 
   const save = () => {
     saveJournalEntry(today(), selectedTags, notes, energy)
+    const sys = parseInt(bpSys, 10), dia = parseInt(bpDia, 10)
+    if (sys > 0 && dia > 0) saveBPReading(today(), sys, dia)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -167,6 +175,37 @@ export default function Journal({ data }) {
           {energy !== null && <span style={{ color: ENERGY_COLORS[energy] }}>{ENERGY_LABELS[energy]}</span>}
           <span>Energized</span>
         </div>
+      </div>
+
+      {/* Vitals — blood pressure */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Blood Pressure <span className="normal-case font-normal text-gray-600">(optional)</span></p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number" min={70} max={220}
+            className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+            placeholder="120"
+            value={bpSys}
+            onChange={e => { setBpSys(e.target.value); setSaved(false) }}
+          />
+          <span className="text-gray-600 text-sm">/</span>
+          <input
+            type="number" min={40} max={140}
+            className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+            placeholder="80"
+            value={bpDia}
+            onChange={e => { setBpDia(e.target.value); setSaved(false) }}
+          />
+          <span className="text-xs text-gray-600">mmHg</span>
+          {bpSys && bpDia && (
+            <span className="text-xs font-semibold" style={{
+              color: parseInt(bpSys) >= 160 ? '#ef4444' : parseInt(bpSys) >= 140 ? '#f97316' : parseInt(bpSys) >= 130 ? '#f59e0b' : '#00c9a7'
+            }}>
+              {parseInt(bpSys) >= 160 ? 'Stage 2 HTN' : parseInt(bpSys) >= 140 ? 'Stage 1 HTN' : parseInt(bpSys) >= 130 ? 'Elevated' : parseInt(bpSys) < 120 ? 'Optimal' : 'Normal'}
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-gray-600 mt-2">Saved readings build a rolling average used in your biological age.</p>
       </div>
 
       {/* Notes */}

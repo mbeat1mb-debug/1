@@ -1,4 +1,5 @@
-import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
+import { getLabContributions } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 
@@ -84,7 +85,8 @@ export default function Healthspan({ data }) {
   const weeklyAZM = data.activeMinutes ? data.activeMinutes * 7 : 0
   const smoking = getUserSmoking()
   const alcoholWeek = getUserAlcohol()
-  const bp = getUserBP()
+  const bp = getAverageBP()
+  const labContributions = getLabContributions()
 
   const physAge = calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
@@ -182,6 +184,8 @@ export default function Healthspan({ data }) {
     }] : []),
   ]
 
+  const allOpportunities = [...contributions, ...labContributions].filter(c => c.contribution > 0).sort((a, b) => b.contribution - a.contribution)
+
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
       <div className="pt-2">
@@ -259,22 +263,34 @@ export default function Healthspan({ data }) {
         </p>
       </div>
 
-      {/* Recommendations */}
+      {/* Lab results impact */}
+      {labContributions.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+          <div className="px-4 pt-4 pb-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Bloodwork Impact</span>
+            <p className="text-xs text-gray-600 mt-1">{labContributions.length} marker{labContributions.length !== 1 ? 's' : ''} entered</p>
+          </div>
+          <div className="px-4 pb-2">
+            {labContributions.map((c) => {
+              const color = c.contribution < 0 ? '#00c9a7' : c.contribution > 1 ? '#ef4444' : '#f59e0b'
+              return <MetricContribution key={c.label} {...c} color={color} />
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Biggest Opportunities */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Biggest Opportunities</p>
-        {contributions
-          .filter(c => c.contribution > 0)
-          .sort((a, b) => b.contribution - a.contribution)
-          .slice(0, 3)
-          .map(c => (
-            <div key={c.label} className="flex gap-3 items-start">
-              <span className="text-yellow-500 mt-0.5">→</span>
-              <p className="text-sm text-gray-300">
-                Improve <span className="text-white font-medium">{c.label}</span> — currently adding ~{c.contribution} year{c.contribution !== 1 ? 's' : ''} to your biological age.
-              </p>
-            </div>
-          ))}
-        {contributions.filter(c => c.contribution > 0).length === 0 && (
+        {allOpportunities.slice(0, 4).map(c => (
+          <div key={c.label} className="flex gap-3 items-start">
+            <span className="text-yellow-500 mt-0.5">→</span>
+            <p className="text-sm text-gray-300">
+              Improve <span className="text-white font-medium">{c.label}</span> — currently adding ~{c.contribution} year{c.contribution !== 1 ? 's' : ''} to your biological age.
+            </p>
+          </div>
+        ))}
+        {allOpportunities.length === 0 && (
           <p className="text-sm text-green-400">All metrics are trending in a healthy direction. Keep it up.</p>
         )}
       </div>
