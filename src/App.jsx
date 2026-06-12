@@ -308,6 +308,7 @@ export default function App() {
 
   const handleNav = (id) => {
     if (id === 'demo') { setDemo(true); setTab('home'); return }
+    if (id === 'weeklypattern') { setTab('records'); return }
     setTab(id)
   }
 

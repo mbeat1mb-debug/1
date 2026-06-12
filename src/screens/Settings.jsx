@@ -44,9 +44,9 @@ const TIMEZONES = [
 
 function getCurrentUTCOffset(timezone) {
   const now = new Date()
-  const local = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
-  return Math.round((local - utc) / 3600000)
+  // en-CA produces "YYYY-MM-DD, HH:mm:ss" — reliably parseable as ISO on all browsers
+  const toMs = tz => new Date(now.toLocaleString('en-CA', { timeZone: tz, hour12: false }).replace(', ', 'T') + 'Z').getTime()
+  return Math.round((toMs(timezone) - toMs('UTC')) / 3600000)
 }
 
 function localTimeToUTC(localTime, timezone) {

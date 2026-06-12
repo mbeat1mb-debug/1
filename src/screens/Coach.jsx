@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import DailyReport from '../components/DailyReport'
+import { getUserAge } from '../lib/calculations'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 const REPORT_KEY = 'weekly_report'
@@ -37,7 +38,8 @@ function buildWeeklyPrompt(data) {
   const prior7HRV = hrvHistory.slice(-14, -7).filter(Boolean)
   const priorAvgHRV = prior7HRV.length ? Math.round(prior7HRV.reduce((a, b) => a + b, 0) / prior7HRV.length) : avgHRV7
 
-  return `Generate a concise but insightful weekly health report for this person. Age 39, male.
+  const age = getUserAge()
+  return `Generate a concise but insightful weekly health report for this person. Age ${age}.
 
 THIS WEEK:
 - Avg HRV: ${avgHRV7}ms (prior week: ${priorAvgHRV}ms, ${avgHRV7 >= priorAvgHRV ? 'UP' : 'DOWN'} ${Math.abs(avgHRV7 - priorAvgHRV)}ms)
@@ -61,7 +63,7 @@ function buildSystemPrompt(data) {
 You give specific, actionable, evidence-based advice tailored to their exact numbers — never generic.
 You are direct, encouraging, and concise. You understand HRV, strain, recovery science deeply.
 
-USER PROFILE: Age 39, male. Uses Fitbit Air tracker.
+USER PROFILE: Age ${getUserAge()}. Uses Fitbit Air tracker.
 
 TODAY'S DATA:
 - Recovery Score: ${recoveryScore}/100

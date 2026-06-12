@@ -37,6 +37,20 @@ function sentToday(id) {
 
 function markSent(id) {
   localStorage.setItem(todayFlag(id), '1')
+  pruneNotifFlags()
+}
+
+function pruneNotifFlags() {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 7)
+  const cutoffStr = cutoff.toISOString().split('T')[0]
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i)
+    if (key?.startsWith('notif_')) {
+      const date = key.slice(-10)
+      if (date < cutoffStr) localStorage.removeItem(key)
+    }
+  }
 }
 
 export function showNotification(title, body) {
