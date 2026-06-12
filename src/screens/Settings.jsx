@@ -6,7 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP } from '../lib/calculations'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -324,6 +324,16 @@ export default function Settings({ onBack }) {
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [userAge, setUserAge] = useState(() => localStorage.getItem('user_age') || '39')
   const [units, setUnits] = useState(() => localStorage.getItem('user_units') || 'imperial')
+  const [smoking, setSmoking] = useState(() => getUserSmoking())
+  const [alcoholWeek, setAlcoholWeek] = useState(() => {
+    const v = getUserAlcohol(); return v !== null ? String(v) : ''
+  })
+  const [bpSys, setBpSys] = useState(() => {
+    const v = getUserBP().sys; return v > 0 ? String(v) : ''
+  })
+  const [bpDia, setBpDia] = useState(() => {
+    const v = getUserBP().dia; return v > 0 ? String(v) : ''
+  })
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -377,6 +387,13 @@ export default function Settings({ onBack }) {
       const kg = parseFloat(weightKg)
       if (!isNaN(kg) && kg > 0) localStorage.setItem('user_weight_kg', String(kg))
     }
+
+    localStorage.setItem('user_smoking', smoking)
+    const alcohol = parseInt(alcoholWeek, 10)
+    if (!isNaN(alcohol) && alcohol >= 0) localStorage.setItem('user_alcohol_week', String(alcohol))
+    const sys = parseInt(bpSys, 10), dia = parseInt(bpDia, 10)
+    if (!isNaN(sys) && sys > 0) localStorage.setItem('user_bp_systolic', String(sys))
+    if (!isNaN(dia) && dia > 0) localStorage.setItem('user_bp_diastolic', String(dia))
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -558,6 +575,80 @@ export default function Settings({ onBack }) {
             </span>
           </p>
         )}
+      </div>
+
+      {/* Lifestyle factors */}
+      <div className="rounded-2xl p-4 space-y-5" style={{ background: '#111', border: '1px solid #222' }}>
+        <div>
+          <p className="text-sm font-semibold text-white">Lifestyle Factors</p>
+          <p className="text-xs text-gray-500 mt-0.5">Factored into your biological age calculation.</p>
+        </div>
+
+        {/* Smoking */}
+        <div className="space-y-2">
+          <p className="text-xs text-gray-400 uppercase tracking-wider">Smoking</p>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #333' }}>
+            {[['never', 'Never'], ['former', 'Former'], ['current', 'Current']].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setSmoking(val)}
+                className="flex-1 py-2 text-xs font-semibold transition-colors"
+                style={{
+                  background: smoking === val ? (val === 'never' ? '#00c9a7' : val === 'former' ? '#f59e0b' : '#ef4444') : '#1a1a1a',
+                  color: smoking === val ? '#000' : '#888',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Alcohol */}
+        <div className="space-y-2">
+          <p className="text-xs text-gray-400 uppercase tracking-wider">Alcohol (drinks/week)</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number" min={0} max={50}
+              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              placeholder="0"
+              value={alcoholWeek}
+              onChange={e => setAlcoholWeek(e.target.value)}
+            />
+            <span className="text-xs text-gray-500">
+              {alcoholWeek === '' ? '' : parseInt(alcoholWeek) === 0 ? 'None' : parseInt(alcoholWeek) < 7 ? 'Light' : parseInt(alcoholWeek) < 14 ? 'Moderate' : 'Heavy'}
+            </span>
+          </div>
+        </div>
+
+        {/* Blood pressure */}
+        <div className="space-y-2">
+          <p className="text-xs text-gray-400 uppercase tracking-wider">Resting Blood Pressure (mmHg)</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number" min={70} max={220}
+              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              placeholder="120"
+              value={bpSys}
+              onChange={e => setBpSys(e.target.value)}
+            />
+            <span className="text-xs text-gray-600">/</span>
+            <input
+              type="number" min={40} max={140}
+              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              placeholder="80"
+              value={bpDia}
+              onChange={e => setBpDia(e.target.value)}
+            />
+            {bpSys && bpDia && (
+              <span className="text-xs" style={{
+                color: parseInt(bpSys) >= 160 ? '#ef4444' : parseInt(bpSys) >= 140 ? '#f97316' : parseInt(bpSys) >= 130 ? '#f59e0b' : '#00c9a7'
+              }}>
+                {parseInt(bpSys) >= 160 ? 'Stage 2 HTN' : parseInt(bpSys) >= 140 ? 'Stage 1 HTN' : parseInt(bpSys) >= 130 ? 'Elevated' : parseInt(bpSys) < 120 ? 'Optimal' : 'Normal'}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Claude API key */}

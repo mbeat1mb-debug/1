@@ -1,4 +1,4 @@
-import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP } from '../lib/calculations'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 
@@ -82,6 +82,9 @@ export default function Healthspan({ data }) {
     : 0
 
   const weeklyAZM = data.activeMinutes ? data.activeMinutes * 7 : 0
+  const smoking = getUserSmoking()
+  const alcoholWeek = getUserAlcohol()
+  const bp = getUserBP()
 
   const physAge = calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
@@ -155,6 +158,27 @@ export default function Healthspan({ data }) {
       unit: '',
       contribution: bmi < 18.5 ? 1 : bmi < 25 ? -1 : bmi < 30 ? 1 : bmi < 35 ? 2 : 4,
       sublabel: getBMILabel(bmi),
+    }] : []),
+    {
+      label: 'Smoking',
+      value: smoking === 'never' ? 'Never' : smoking === 'former' ? 'Former' : 'Current',
+      unit: '',
+      contribution: smoking === 'current' ? 7 : smoking === 'former' ? 2 : 0,
+      sublabel: smoking === 'never' ? 'No lifetime risk' : smoking === 'former' ? 'Residual risk' : 'Active risk',
+    },
+    ...(alcoholWeek !== null ? [{
+      label: 'Alcohol',
+      value: alcoholWeek,
+      unit: ' drinks/wk',
+      contribution: alcoholWeek >= 14 ? 3 : alcoholWeek >= 7 ? 1 : 0,
+      sublabel: alcoholWeek === 0 ? 'None' : alcoholWeek < 7 ? 'Light' : alcoholWeek < 14 ? 'Moderate' : 'Heavy',
+    }] : []),
+    ...(bp.sys > 0 ? [{
+      label: 'Blood Pressure',
+      value: `${bp.sys}/${bp.dia}`,
+      unit: ' mmHg',
+      contribution: bp.sys >= 160 || bp.dia >= 100 ? 4 : bp.sys >= 140 || bp.dia >= 90 ? 2 : bp.sys >= 130 || bp.dia >= 80 ? 1 : -1,
+      sublabel: bp.sys >= 160 || bp.dia >= 100 ? 'Stage 2 HTN' : bp.sys >= 140 || bp.dia >= 90 ? 'Stage 1 HTN' : bp.sys >= 130 || bp.dia >= 80 ? 'Elevated' : bp.sys < 120 ? 'Optimal' : 'Normal',
     }] : []),
   ]
 

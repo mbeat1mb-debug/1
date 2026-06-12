@@ -200,6 +200,27 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else if (avgRemPct < 0.15) adj += 1
   }
 
+  // Smoking
+  const smoking = getUserSmoking()
+  if (smoking === 'current') adj += 7
+  else if (smoking === 'former') adj += 2
+
+  // Alcohol (drinks/week) — only applied when user has entered a value
+  const alcohol = getUserAlcohol()
+  if (alcohol !== null) {
+    if (alcohol >= 14) adj += 3
+    else if (alcohol >= 7) adj += 1
+  }
+
+  // Blood pressure — only applied when user has entered values
+  const bp = getUserBP()
+  if (bp.sys > 0) {
+    if (bp.sys >= 160 || bp.dia >= 100) adj += 4
+    else if (bp.sys >= 140 || bp.dia >= 90) adj += 2
+    else if (bp.sys >= 130 || bp.dia >= 80) adj += 1
+    else adj -= 1
+  }
+
   return userAge + adj
 }
 
@@ -400,6 +421,29 @@ export function getBMIColor(bmi) {
   if (bmi < 25) return '#00c9a7'
   if (bmi < 30) return '#f59e0b'
   return '#ef4444'
+}
+
+// ── Lifestyle factors ──────────────────────────────────────────────────────────
+
+export function getUserSmoking() {
+  try { return localStorage.getItem('user_smoking') || 'never' } catch { return 'never' }
+}
+
+export function getUserAlcohol() {
+  try {
+    const raw = localStorage.getItem('user_alcohol_week')
+    if (raw === null) return null
+    const v = parseInt(raw, 10)
+    return isNaN(v) ? null : v
+  } catch { return null }
+}
+
+export function getUserBP() {
+  try {
+    const sys = parseInt(localStorage.getItem('user_bp_systolic') || '0', 10)
+    const dia = parseInt(localStorage.getItem('user_bp_diastolic') || '0', 10)
+    return { sys: isNaN(sys) ? 0 : sys, dia: isNaN(dia) ? 0 : dia }
+  } catch { return { sys: 0, dia: 0 } }
 }
 
 // Steps → distance using height-based stride estimate
