@@ -141,7 +141,7 @@ export function getStressColor(score) {
   return '#ef4444'
 }
 
-export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM }) {
+export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0 }) {
   const userAge = getUserAge()
   let adj = 0
 
@@ -180,6 +180,25 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   if (weeklyAZM >= 300) adj -= 2
   else if (weeklyAZM >= 150) adj -= 1
   else if (weeklyAZM < 50) adj += 2
+
+  // VO2 Max — strongest single longevity predictor in exercise science
+  if (vo2Max > 0) {
+    if (vo2Max >= 55) adj -= 3
+    else if (vo2Max >= 45) adj -= 1
+    else if (vo2Max >= 35) adj += 0
+    else if (vo2Max >= 25) adj += 2
+    else adj += 4
+  }
+
+  // Sleep stages — deep sleep drives cellular repair, REM drives cognitive health
+  if (avgDeepPct > 0) {
+    if (avgDeepPct >= 0.18) adj -= 1
+    else if (avgDeepPct < 0.10) adj += 2
+  }
+  if (avgRemPct > 0) {
+    if (avgRemPct >= 0.20) adj -= 1
+    else if (avgRemPct < 0.15) adj += 1
+  }
 
   return userAge + adj
 }
@@ -231,6 +250,8 @@ export function parseFitbitData(raw) {
       efficiency: s.efficiency,
       startTime: s.startTime,
       endTime: s.endTime,
+      deepMinutes: s.levels?.summary?.deep?.minutes ?? 0,
+      remMinutes: s.levels?.summary?.rem?.minutes ?? 0,
     }))
 
   return {

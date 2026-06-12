@@ -50,7 +50,8 @@ function MetricContribution({ label, value, unit, contribution, color, sublabel 
 }
 
 export default function Healthspan({ data }) {
-  const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [], steps = 0 } = data
+  const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [],
+    steps = 0, vo2Max = 0, todaySpO2 = 0, todayBR = 0 } = data
   const userAge = getUserAge()
   const heightCm = getUserHeightCm()
   const weightKg = getUserWeightKg()
@@ -71,15 +72,21 @@ export default function Healthspan({ data }) {
       }, 0) / 6) / 2
     : 0.7
 
+  // Sleep stage averages — only entries that have stage data
+  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
+  const avgDeepPct = stageEntries.length
+    ? stageEntries.reduce((a, s) => a + (s.deepMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
+    : 0
+  const avgRemPct = stageEntries.length
+    ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
+    : 0
+
   const weeklyAZM = data.activeMinutes ? data.activeMinutes * 7 : 0
 
   const physAge = calculatePhysiologicalAge({
-    avgHRV,
-    avgRHR,
-    avgSleep: avgSleepHours,
-    sleepConsistency,
-    avgSteps: steps,
-    weeklyAZM,
+    avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
+    avgSteps: steps, weeklyAZM,
+    vo2Max, avgDeepPct, avgRemPct,
   })
 
   const diff = physAge - userAge
@@ -103,6 +110,12 @@ export default function Healthspan({ data }) {
       unit: 'h avg',
       contribution: avgSleepHours >= 7.5 ? -2 : avgSleepHours >= 7 ? -1 : avgSleepHours < 6 ? 3 : 1,
     },
+    ...(avgDeepPct > 0 ? [{
+      label: 'Sleep Quality',
+      value: `${Math.round(avgDeepPct * 100)}% deep / ${Math.round(avgRemPct * 100)}% REM`,
+      unit: '',
+      contribution: (avgDeepPct >= 0.18 ? -1 : avgDeepPct < 0.10 ? 2 : 0) + (avgRemPct >= 0.20 ? -1 : avgRemPct < 0.15 ? 1 : 0),
+    }] : []),
     {
       label: 'Daily Steps',
       value: steps.toLocaleString(),
@@ -115,6 +128,27 @@ export default function Healthspan({ data }) {
       unit: '/week',
       contribution: weeklyAZM >= 150 ? -1 : weeklyAZM < 50 ? 2 : 0,
     },
+    ...(vo2Max > 0 ? [{
+      label: 'VO2 Max',
+      value: vo2Max,
+      unit: ' mL/kg/min',
+      contribution: vo2Max >= 55 ? -3 : vo2Max >= 45 ? -1 : vo2Max >= 35 ? 0 : vo2Max >= 25 ? 2 : 4,
+      sublabel: vo2Max >= 55 ? 'Superior' : vo2Max >= 45 ? 'Excellent' : vo2Max >= 35 ? 'Good' : vo2Max >= 25 ? 'Fair' : 'Poor',
+    }] : []),
+    ...(todaySpO2 > 0 ? [{
+      label: 'Blood Oxygen (SpO2)',
+      value: todaySpO2,
+      unit: '%',
+      contribution: todaySpO2 >= 97 ? -1 : todaySpO2 >= 95 ? 0 : todaySpO2 >= 93 ? 1 : 2,
+      sublabel: todaySpO2 >= 97 ? 'Excellent' : todaySpO2 >= 95 ? 'Normal' : 'Low',
+    }] : []),
+    ...(todayBR > 0 ? [{
+      label: 'Respiratory Rate',
+      value: todayBR,
+      unit: ' br/min',
+      contribution: todayBR <= 16 ? -1 : todayBR <= 18 ? 0 : 1,
+      sublabel: todayBR <= 16 ? 'Optimal' : todayBR <= 18 ? 'Normal' : 'Elevated',
+    }] : []),
     ...(bmi !== null ? [{
       label: 'BMI',
       value: bmi,

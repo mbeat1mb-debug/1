@@ -61,12 +61,17 @@ const DEMO = {
   },
   hrvHistory: [44, 48, 52, 55, 49, 53, 56, 58, 51, 54, 57, 60, 55, 58],
   rhrHistory: [57, 56, 55, 58, 54, 56, 55, 53, 55, 54, 56, 53, 54, 54],
-  sleepHistory: Array.from({ length: 30 }, (_, i) => ({
-    date: (() => { const d = new Date(); d.setDate(d.getDate() - (29 - i)); return d.toISOString().split('T')[0] })(),
-    minutes: 420 + Math.round((Math.random() - 0.4) * 90),
-    efficiency: 80 + Math.round(Math.random() * 15),
-    startTime: null, endTime: null,
-  })),
+  sleepHistory: Array.from({ length: 30 }, (_, i) => {
+    const mins = 420 + Math.round((Math.random() - 0.4) * 90)
+    return {
+      date: (() => { const d = new Date(); d.setDate(d.getDate() - (29 - i)); return d.toISOString().split('T')[0] })(),
+      minutes: mins,
+      efficiency: 80 + Math.round(Math.random() * 15),
+      startTime: null, endTime: null,
+      deepMinutes: Math.round(mins * (0.14 + Math.random() * 0.08)),
+      remMinutes: Math.round(mins * (0.18 + Math.random() * 0.07)),
+    }
+  }),
   recoveryHistory: DEMO_CALENDAR.map(d => d.recovery),
   stressHistory: Array.from({ length: 30 }, () => Math.round(20 + Math.random() * 40)),
   calendarDays: DEMO_CALENDAR,
