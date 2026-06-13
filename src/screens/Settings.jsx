@@ -562,6 +562,7 @@ export default function Settings({ onBack }) {
     const v = getUserAlcohol(); return v !== null ? String(v) : ''
   })
   const [saved, setSaved] = useState(false)
+  const [settingsError, setSettingsError] = useState('')
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
@@ -599,8 +600,8 @@ export default function Settings({ onBack }) {
       const age = parseInt(userAge, 10)
       if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
     } catch {
-      setImportMsg('Error: Settings could not be saved (storage full or restricted)')
-      setTimeout(() => setImportMsg(''), 5000)
+      setSettingsError('Could not save settings (storage full or restricted)')
+      setTimeout(() => setSettingsError(''), 5000)
       return
     }
     startOAuth(clientId.trim())
@@ -629,8 +630,8 @@ export default function Settings({ onBack }) {
       const alcohol = parseInt(alcoholWeek, 10)
       if (!isNaN(alcohol) && alcohol >= 0) localStorage.setItem('user_alcohol_week', String(alcohol))
     } catch {
-      setImportMsg('Error: Settings could not be saved (storage full or restricted)')
-      setTimeout(() => setImportMsg(''), 5000)
+      setSettingsError('Could not save settings (storage full or restricted)')
+      setTimeout(() => setSettingsError(''), 5000)
       return
     }
 
@@ -913,6 +914,9 @@ export default function Settings({ onBack }) {
       >
         {saved ? '✓ Saved' : 'Save Settings'}
       </button>
+      {settingsError && (
+        <p className="text-xs text-center" style={{ color: '#ef4444' }}>{settingsError}</p>
+      )}
 
       {/* Push Notifications */}
       <PushNotificationsSection />

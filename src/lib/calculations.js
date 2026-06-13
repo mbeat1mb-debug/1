@@ -21,8 +21,8 @@ export function getMaxHR() {
 // Kept for backwards compat (Strain.jsx)
 export const MAX_HR = Math.round(192 - 0.007 * 39 * 39)
 
-export function getHRZone(hr) {
-  const maxHR = getMaxHR()
+// Internal variant accepts a pre-computed maxHR to avoid repeated localStorage reads
+function hrZone(hr, maxHR) {
   const pct = hr / maxHR
   if (pct >= 0.90) return 5
   if (pct >= 0.80) return 4
@@ -32,18 +32,23 @@ export function getHRZone(hr) {
   return 0
 }
 
+export function getHRZone(hr) {
+  return hrZone(hr, getMaxHR())
+}
+
 // Exponential zone weighting — mirrors Whoop's approach
 const ZONE_WEIGHTS = [0, 1, 2, 4, 8, 16]
 
 export function calculateStrain(hrIntradayData) {
   if (!hrIntradayData?.['activities-heart-intraday']?.dataset) return 5.0
   const points = hrIntradayData['activities-heart-intraday'].dataset
+  const maxHR = getMaxHR()
 
   let sessionMax = 0
   let raw = 0
   for (const p of points) {
     if (p.value > sessionMax) sessionMax = p.value
-    raw += ZONE_WEIGHTS[getHRZone(p.value)]
+    raw += ZONE_WEIGHTS[hrZone(p.value, maxHR)]
   }
   // Persist observed peak HR to improve zone accuracy on future syncs
   try {
@@ -57,9 +62,10 @@ export function calculateStrain(hrIntradayData) {
 
 export function calculateZoneMinutes(hrIntradayData) {
   if (!hrIntradayData?.['activities-heart-intraday']?.dataset) return [0, 0, 0, 0, 0]
+  const maxHR = getMaxHR()
   const counts = [0, 0, 0, 0, 0]
   for (const p of hrIntradayData['activities-heart-intraday'].dataset) {
-    const z = getHRZone(p.value)
+    const z = hrZone(p.value, maxHR)
     if (z >= 1) counts[z - 1]++
   }
   return counts
