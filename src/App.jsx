@@ -12,6 +12,7 @@ import {
 } from './lib/achievements'
 import { fireDataNotifications } from './lib/notifications'
 import { saveDay, saveDaysBatch, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
+import { createBackup, getLastBackupAt } from './lib/backup'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
@@ -323,6 +324,13 @@ export default function App() {
           rhr: result.todayRHR,
         }),
       }).catch(() => {})
+
+      // Auto-backup once per day after a successful sync (fire-and-forget)
+      const lastBackup = getLastBackupAt()
+      const today = new Date().toISOString().split('T')[0]
+      if (!lastBackup || !lastBackup.startsWith(today)) {
+        createBackup().catch(() => {})
+      }
     } catch (e) {
       console.error(e)
       setSyncFailed(true)
