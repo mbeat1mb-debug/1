@@ -105,11 +105,21 @@ function formatSyncTime(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function Spinner() {
+function SkeletonScreen() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4">
-      <div className="w-12 h-12 rounded-full border-2 border-[#222] border-t-[#00c9a7] animate-spin" />
-      <p className="text-gray-500 text-sm">Syncing Fitbit Air…</p>
+    <div className="pt-safe pb-28 px-4 space-y-4">
+      <div className="flex items-center justify-between mt-4">
+        <div className="skeleton h-5 w-32" />
+        <div className="skeleton h-5 w-16" />
+      </div>
+      <div className="flex flex-col items-center gap-2 py-6">
+        <div className="skeleton rounded-full" style={{ width: 192, height: 192 }} />
+      </div>
+      {[100, 80, 90].map((w, i) => (
+        <div key={i} className="skeleton rounded-2xl" style={{ height: 88 }} />
+      ))}
+      <div className="skeleton rounded-2xl" style={{ height: 72 }} />
+      <div className="skeleton rounded-2xl" style={{ height: 72 }} />
     </div>
   )
 }
@@ -136,9 +146,13 @@ function ConnectScreen({ onNav }) {
   )
 }
 
+const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'healthspan', 'journal', 'records', 'coach', 'settings']
+
 export default function App() {
   const [pinUnlocked, setPinUnlocked] = useState(() => !isPinSet())
   const [tab, setTab] = useState('home')
+  const [transDir, setTransDir] = useState(1)
+  const prevTabRef = useRef('home')
   const [loading, setLoading] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncFailed, setSyncFailed] = useState(false)
@@ -366,21 +380,27 @@ export default function App() {
 
   const handleNav = (id) => {
     if (id === 'demo') { setDemo(true); setTab('home'); return }
-    if (id === 'weeklypattern') { setTab('records'); return }
+    if (id === 'weeklypattern') { setTab('records'); id = 'records' }
     if (id === 'insights') return
+    const oldIdx = TAB_ORDER.indexOf(prevTabRef.current)
+    const newIdx = TAB_ORDER.indexOf(id)
+    setTransDir(newIdx >= oldIdx ? 1 : -1)
+    prevTabRef.current = id
     setTab(id)
   }
 
   if (!pinUnlocked) return <PinLock onUnlock={() => setPinUnlocked(true)} />
-  if (loading) return <Spinner />
+  if (loading) return <SkeletonScreen />
   if (!connected && !demo) return <ConnectScreen onNav={handleNav} />
 
   const data = demo ? DEMO : (appData || DEMO)
   const showNav = tab !== 'settings' && tab !== 'coach'
   const showAlerts = tab === 'home' && data.alerts?.length > 0
 
+  const screenCls = transDir >= 0 ? 'screen-fwd' : 'screen-back'
+
   return (
-    <div className="min-h-screen bg-black">
+    <div className="bg-black" style={{ minHeight: '100dvh' }}>
       {showAlerts && <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />}
 
       {tab === 'home' && (
@@ -393,16 +413,16 @@ export default function App() {
           lastSyncedAt={!demo ? formatSyncTime(lastSyncedAt) : null}
         />
       )}
-      <Suspense fallback={<Spinner />}>
-        {tab === 'recovery' && <div className="screen-enter"><Recovery data={data} onNav={handleNav} /></div>}
-        {tab === 'strain' && <div className="screen-enter"><Strain data={data} onNav={handleNav} /></div>}
-        {tab === 'sleep' && <div className="screen-enter"><Sleep data={data} onNav={handleNav} /></div>}
-        {tab === 'stress' && <div className="screen-enter"><Stress data={data} onNav={handleNav} /></div>}
-        {tab === 'journal' && <div className="screen-enter"><Journal data={data} onNav={handleNav} /></div>}
-        {tab === 'coach' && <div className="screen-enter"><Coach data={data} onNav={handleNav} /></div>}
-        {tab === 'healthspan' && <div className="screen-enter"><Healthspan data={data} onNav={handleNav} /></div>}
-        {tab === 'records' && <div className="screen-enter"><Records data={data} onNav={handleNav} /></div>}
-        {tab === 'settings' && <div className="screen-enter"><Settings onBack={() => setTab('home')} /></div>}
+      <Suspense fallback={<SkeletonScreen />}>
+        {tab === 'recovery'   && <div key="recovery"   className={screenCls}><Recovery   data={data} onNav={handleNav} /></div>}
+        {tab === 'strain'     && <div key="strain"     className={screenCls}><Strain     data={data} onNav={handleNav} /></div>}
+        {tab === 'sleep'      && <div key="sleep"      className={screenCls}><Sleep      data={data} onNav={handleNav} /></div>}
+        {tab === 'stress'     && <div key="stress"     className={screenCls}><Stress     data={data} onNav={handleNav} /></div>}
+        {tab === 'journal'    && <div key="journal"    className={screenCls}><Journal    data={data} onNav={handleNav} /></div>}
+        {tab === 'coach'      && <div key="coach"      className={screenCls}><Coach      data={data} onNav={handleNav} /></div>}
+        {tab === 'healthspan' && <div key="healthspan" className={screenCls}><Healthspan data={data} onNav={handleNav} /></div>}
+        {tab === 'records'    && <div key="records"    className={screenCls}><Records    data={data} onNav={handleNav} /></div>}
+        {tab === 'settings'   && <div key="settings"   className="screen-fade"><Settings onBack={() => handleNav('home')} /></div>}
       </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (

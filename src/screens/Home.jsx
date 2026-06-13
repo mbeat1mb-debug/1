@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { haptic } from '../lib/haptics'
 import {
   DndContext, closestCenter, TouchSensor, MouseSensor,
   useSensor, useSensors, DragOverlay,
@@ -419,8 +420,8 @@ function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }
           )}
           <button
             onClick={() => !editing && !meta?.noNav && onNav(id)}
-            className={`flex-1 p-4 text-left min-w-0 ${!editing && !meta?.noNav ? 'transition-opacity active:opacity-70' : ''}`}
-            style={{ cursor: editing || meta?.noNav ? 'default' : 'pointer' }}
+            className={`flex-1 p-4 text-left min-w-0 ${!editing && !meta?.noNav ? 'card-tap' : ''}`}
+            style={{ cursor: editing || meta?.noNav ? 'default' : 'pointer', WebkitUserSelect: 'none' }}
           >
             {minimized ? (
               <div className="flex items-center gap-2 py-0.5">
@@ -484,7 +485,10 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
   const handleTouchEnd = useCallback(() => {
     if (isPullingRef.current) {
-      if (pullY >= PULL_THRESHOLD && onRefresh && !isSyncing) onRefresh()
+      if (pullY >= PULL_THRESHOLD && onRefresh && !isSyncing) {
+        haptic('medium')
+        onRefresh()
+      }
       setPullY(0)
     }
     isPullingRef.current = false
@@ -524,12 +528,15 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       onTouchEnd={handleTouchEnd}
       style={{ transform: pullY > 0 ? `translateY(${pullY}px)` : undefined, transition: pullY === 0 ? 'transform 0.2s ease' : undefined }}
     >
-      {pullY > 0 && (
-        <div className="flex justify-center items-center pb-2" style={{ opacity: pullY / PULL_THRESHOLD }}>
+      {(pullY > 0 || isSyncing) && (
+        <div
+          className="flex justify-center items-center pb-2"
+          style={{ opacity: isSyncing ? 1 : pullY / PULL_THRESHOLD, transition: 'opacity 0.15s ease' }}
+        >
           <svg
             viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth={2}
-            className="w-5 h-5"
-            style={{ transform: `rotate(${pullY / PULL_THRESHOLD * 180}deg)` }}
+            className={`w-5 h-5 ${isSyncing ? 'spin' : ''}`}
+            style={!isSyncing ? { transform: `rotate(${(pullY / PULL_THRESHOLD) * 180}deg)` } : undefined}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
