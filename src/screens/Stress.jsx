@@ -14,7 +14,7 @@ function BackButton({ onNav }) {
 }
 
 export default function Stress({ data, onNav }) {
-  const { stressScore = 0, todayHRV = 0, todayRHR = 0, hrvHistory = [], rhrHistory = [] } = data
+  const { stressScore = 0, todayHRV = 0, todayRHR = 0, hrvHistory = [], rhrHistory = [], daytimeStress } = data
 
   const color = getStressColor(stressScore)
   const label = getStressLabel(stressScore)
@@ -97,13 +97,51 @@ export default function Stress({ data, onNav }) {
         <p className="text-xs text-gray-600 mt-1 text-center">Dashed line = 14-day baseline</p>
       </div>
 
+      {/* Daytime stress */}
+      {daytimeStress && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Daytime Autonomic Load</p>
+          <div className="flex items-center gap-4 mb-3">
+            <div>
+              <p className="text-4xl font-bold" style={{ color: daytimeStress.score < 35 ? '#00c9a7' : daytimeStress.score < 65 ? '#f59e0b' : '#ef4444' }}>
+                {daytimeStress.score}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {daytimeStress.score < 35 ? 'Low — calm day' : daytimeStress.score < 65 ? 'Moderate — some tension' : 'High — stressed day'}
+              </p>
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Avg waking HR</span>
+                <span className="text-white font-semibold">{daytimeStress.avgHR} bpm</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Above resting HR</span>
+                <span className="font-semibold" style={{ color: daytimeStress.delta < 5 ? '#00c9a7' : '#f59e0b' }}>
+                  +{daytimeStress.delta} bpm
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${daytimeStress.score}%`,
+                background: daytimeStress.score < 35 ? '#00c9a7' : daytimeStress.score < 65 ? '#f59e0b' : '#ef4444',
+              }}
+            />
+          </div>
+          <p className="text-[11px] text-gray-600 mt-2">Measured from waking HR vs your resting HR, excluding exercise periods.</p>
+        </div>
+      )}
+
       {/* How it works */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">How This Works</p>
         <p className="text-sm text-gray-500">
-          Stress is calculated by comparing today's HRV (60% weight) and resting heart rate (40% weight)
-          against your 14-day personal baselines. When HRV is suppressed and HR is elevated, stress is high.
-          Since the Fitbit Air measures HRV during sleep, this reflects overnight physiological stress.
+          Overnight stress reflects HRV (60%) and resting HR (40%) vs your 14-day baselines — your nervous system's
+          recovery quality. Daytime load measures how elevated your HR stays during waking hours vs your RHR —
+          a proxy for sympathetic nervous system activation throughout the day.
         </p>
       </div>
     </div>

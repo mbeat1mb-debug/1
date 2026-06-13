@@ -287,7 +287,7 @@ export function calculatePaceOfAging(recentAge, baselineAge) {
 }
 
 export function parseFitbitData(raw) {
-  const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp } = raw
+  const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat } = raw
 
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
@@ -332,13 +332,27 @@ export function parseFitbitData(raw) {
       remMinutes: s.levels?.summary?.rem?.minutes ?? 0,
     }))
 
+  // Sleep end hour for daytime stress calculation
+  const sleepEndHour = todaySleep?.endTime
+    ? new Date(todaySleep.endTime).getHours()
+    : null
+
+  // Sync Fitbit-logged body weight/fat into local history if available
+  const weightLogs = bodyWeight?.weight ?? []
+  const fatLogs = bodyFat?.fat ?? []
+  const fatByDate = {}
+  for (const f of fatLogs) fatByDate[f.date] = f.fat
+  for (const w of weightLogs) {
+    if (w.date && w.weight) saveBodyWeightEntry(w.date, w.weight, fatByDate[w.date] ?? null)
+  }
+
   return {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
     steps, calories, activeMinutes,
     hrvHistory, rhrHistory, historyDates, sleepHistory,
     hrvByDate, rhrByDate,
     hrIntradayData: hrIntraday,
-    vo2Max, skinTempDev,
+    vo2Max, skinTempDev, sleepEndHour,
   }
 }
 
@@ -463,6 +477,43 @@ export function getUserWeightKg() {
   } catch { return 0 }
 }
 
+export function getUserBodyFatPct() {
+  try {
+    const v = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
+    return isNaN(v) || v <= 0 ? null : v
+  } catch { return null }
+}
+
+export function getBodyWeightHistory() {
+  try { return JSON.parse(localStorage.getItem('weight_history') || '[]') } catch { return [] }
+}
+
+export function saveBodyWeightEntry(date, kg, fatPct) {
+  if (!kg || kg < 20 || kg > 300) return
+  try {
+    const history = getBodyWeightHistory()
+    const idx = history.findIndex(e => e.date === date)
+    const entry = { date, kg: Math.round(kg * 10) / 10, fatPct: fatPct || null }
+    if (idx >= 0) history[idx] = entry
+    else history.push(entry)
+    history.sort((a, b) => a.date.localeCompare(b.date))
+    localStorage.setItem('weight_history', JSON.stringify(history.slice(-365)))
+    // Keep latest as quick-access value
+    localStorage.setItem('user_weight_kg', String(entry.kg))
+    if (fatPct) localStorage.setItem('user_body_fat_pct', String(fatPct))
+  } catch {}
+}
+
+export function calculateLeanMass(weightKg, fatPct) {
+  if (!weightKg || !fatPct) return null
+  return Math.round((weightKg * (1 - fatPct / 100)) * 10) / 10
+}
+
+export function calculateFatMass(weightKg, fatPct) {
+  if (!weightKg || !fatPct) return null
+  return Math.round((weightKg * (fatPct / 100)) * 10) / 10
+}
+
 export function getUserUnits() {
   try { return localStorage.getItem('user_units') || 'imperial' } catch { return 'imperial' }
 }
@@ -562,4 +613,62 @@ export function calculateWeeklyPattern(calendarDays) {
       : null,
     count: byDay[i].length,
   }))
+}
+
+// ── Training Effect ─────────────────────────────────────────────────────────
+// zoneMinutes = [z1, z2, z3, z4, z5] matching HR zones 1-5
+// Aerobic TE from Z2+Z3 (60-80% max HR); Anaerobic TE from Z4+Z5 (80%+ max HR)
+
+const TE_LABELS = ['None', 'Minor Effect', 'Maintaining', 'Improving', 'Highly Improving', 'Overreaching']
+
+function teScore(mins, thresholds) {
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (mins >= thresholds[i]) {
+      const base = i + 1
+      const next = thresholds[i + 1] ?? thresholds[i] * 2
+      const frac = (mins - thresholds[i]) / (next - thresholds[i])
+      return Math.round(Math.min(5, base + Math.min(0.9, frac)) * 10) / 10
+    }
+  }
+  return 0
+}
+
+export function calculateTrainingEffect(zoneMinutes) {
+  const [z1, z2, z3, z4, z5] = zoneMinutes ?? [0, 0, 0, 0, 0]
+  const aerobicMins = (z2 || 0) + (z3 || 0)
+  const anaerobicMins = (z4 || 0) + (z5 || 0)
+  // Aerobic: meaningful base-building starts at 10 min in Z2/Z3
+  const aerobic = teScore(aerobicMins, [0, 10, 30, 60, 90])
+  // Anaerobic: intensity work; fewer minutes needed for effect
+  const anaerobic = teScore(anaerobicMins, [0, 3, 8, 15, 25])
+  return {
+    aerobic,
+    anaerobic,
+    aerobicLabel: TE_LABELS[Math.min(5, Math.floor(aerobic))],
+    anaerobicLabel: TE_LABELS[Math.min(5, Math.floor(anaerobic))],
+  }
+}
+
+// ── Daytime Stress ──────────────────────────────────────────────────────────
+// Measures sympathetic nervous system activation during waking hours using
+// intraday HR. Elevated resting HR above personal RHR = autonomic stress load.
+
+export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
+  const points = hrIntradayData?.['activities-heart-intraday']?.dataset
+  if (!points?.length || !rhr) return null
+
+  const maxHR = getMaxHR()
+  const start = wakeHour ?? 7
+  // Only non-exercise minutes after waking (HR below 85% of max = not exercising)
+  const restingDaytime = points.filter(p => {
+    const h = parseInt(p.time, 10)
+    return h >= start && h < 22 && p.value >= 40 && p.value < maxHR * 0.85
+  })
+  if (restingDaytime.length < 30) return null
+
+  const avgHR = restingDaytime.reduce((a, p) => a + p.value, 0) / restingDaytime.length
+  const delta = Math.max(0, avgHR - rhr)
+  // delta 0→5 bpm = score 0→25 (relaxed), 5→15 = 25→75 (moderate), 15+ = 75→100 (high)
+  const score = Math.min(100, Math.round(delta < 5 ? delta * 5 : 25 + (delta - 5) * 5))
+  return { score, avgHR: Math.round(avgHR), delta: Math.round(delta * 10) / 10 }
 }

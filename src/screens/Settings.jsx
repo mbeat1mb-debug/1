@@ -580,6 +580,7 @@ export default function Settings({ onBack }) {
   const [weightLbs, setWeightLbs] = useState(() => storedWKg ? String(Math.round(storedWKg * 2.2046)) : '')
   const [heightCm, setHeightCm] = useState(() => storedHCm ? String(Math.round(storedHCm)) : '')
   const [weightKg, setWeightKg] = useState(() => storedWKg ? String(Math.round(storedWKg * 10) / 10) : '')
+  const [bodyFatPct, setBodyFatPct] = useState(() => localStorage.getItem('user_body_fat_pct') || '')
 
   // Live BMI preview
   const previewBMI = (() => {
@@ -629,6 +630,9 @@ export default function Settings({ onBack }) {
         const kg = parseFloat(weightKg)
         if (!isNaN(kg) && kg > 0) localStorage.setItem('user_weight_kg', String(kg))
       }
+
+      const fatPct = parseFloat(bodyFatPct)
+      if (!isNaN(fatPct) && fatPct > 0 && fatPct < 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
       localStorage.setItem('user_smoking', smoking)
       const alcohol = parseInt(alcoholWeek, 10)
@@ -861,6 +865,31 @@ export default function Settings({ onBack }) {
             </div>
           </div>
         )}
+
+        <div>
+          <p className="text-xs text-gray-500 mb-1.5">Body Fat %</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number" min={3} max={60} step={0.1}
+              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              placeholder="18"
+              value={bodyFatPct}
+              onChange={e => setBodyFatPct(e.target.value)}
+            />
+            <span className="text-xs text-gray-600">%</span>
+            {bodyFatPct && !isNaN(parseFloat(bodyFatPct)) && (
+              <span className="text-xs font-semibold" style={{
+                color: parseFloat(bodyFatPct) < 6 ? '#3b82f6'
+                  : parseFloat(bodyFatPct) < 14 ? '#00c9a7'
+                  : parseFloat(bodyFatPct) < 18 ? '#f59e0b'
+                  : parseFloat(bodyFatPct) < 25 ? '#f97316'
+                  : '#ef4444'
+              }}>
+                {parseFloat(bodyFatPct) < 6 ? 'Essential' : parseFloat(bodyFatPct) < 14 ? 'Athletic' : parseFloat(bodyFatPct) < 18 ? 'Fitness' : parseFloat(bodyFatPct) < 25 ? 'Acceptable' : 'High'}
+              </span>
+            )}
+          </div>
+        </div>
 
         {previewBMI && (
           <p className="text-xs">

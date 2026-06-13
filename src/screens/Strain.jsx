@@ -19,7 +19,7 @@ function BackButton({ onNav }) {
 
 export default function Strain({ data, onNav }) {
   const { strainScore = 0, steps = 0, calories = 0, activeMinutes = 0,
-    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad } = data
+    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad, trainingEffect } = data
 
   const maxHR = getMaxHR()
   const strainColor = '#3b82f6'
@@ -125,6 +125,29 @@ export default function Strain({ data, onNav }) {
           })}
         </div>
       </div>
+
+      {/* Training Effect */}
+      {trainingEffect && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Training Effect</p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Aerobic', value: trainingEffect.aerobic, desc: trainingEffect.aerobicLabel, color: '#00c9a7' },
+              { label: 'Anaerobic', value: trainingEffect.anaerobic, desc: trainingEffect.anaerobicLabel, color: '#f97316' },
+            ].map(({ label, value, desc, color }) => (
+              <div key={label} className="rounded-xl p-3" style={{ background: color + '12', border: `1px solid ${color}30` }}>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+                <p className="text-3xl font-bold" style={{ color }}>{value.toFixed(1)}</p>
+                <p className="text-[11px] font-semibold mt-1" style={{ color }}>{desc}</p>
+                <div className="mt-2 h-1.5 rounded-full bg-[#222] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${(value / 5) * 100}%`, background: color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-600 mt-3">Aerobic = Z2+Z3 time. Anaerobic = Z4+Z5 time. Scale 0–5.</p>
+        </div>
+      )}
 
       {/* Strain guidance */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1f2e', border: '1px solid #2a3a5e' }}>

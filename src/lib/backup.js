@@ -7,6 +7,7 @@ const BACKUP_KEYS = [
   'personal_records', 'unlocked_achievements',
   'observed_max_hr', 'fitbit_client_id',
   'user_age', 'user_units', 'user_height_cm', 'user_weight_kg',
+  'user_body_fat_pct', 'weight_history',
   'user_smoking', 'user_alcohol_week',
   'home_layout', 'cards_minimized',
   'lab_results',

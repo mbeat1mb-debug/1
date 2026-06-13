@@ -5,6 +5,7 @@ import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
+  calculateTrainingEffect, calculateDaytimeStress,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -177,6 +178,8 @@ export default function App() {
     })
     const strainScore = calculateStrain(parsed.hrIntradayData)
     const zoneMinutes = calculateZoneMinutes(parsed.hrIntradayData)
+    const trainingEffect = calculateTrainingEffect(zoneMinutes)
+    const daytimeStress = calculateDaytimeStress(parsed.hrIntradayData, parsed.sleepEndHour, parsed.todayRHR)
     const stressScore = calculateStressScore({
       hrv: parsed.todayHRV, rhr: parsed.todayRHR,
       hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
@@ -238,9 +241,9 @@ export default function App() {
     }))
 
     const base = {
-      ...parsed, recoveryScore, strainScore, zoneMinutes, stressScore, sleepScore,
-      sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays, stressHistory,
-      recoveryVelocity, stressVelocity,
+      ...parsed, recoveryScore, strainScore, zoneMinutes, trainingEffect, daytimeStress,
+      stressScore, sleepScore, sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays,
+      stressHistory, recoveryVelocity, stressVelocity,
     }
 
     const pr = updatePersonalRecords({

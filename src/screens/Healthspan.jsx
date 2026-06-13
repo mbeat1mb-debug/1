@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -70,6 +70,14 @@ export default function Healthspan({ data, onNav }) {
   const weightKg = getUserWeightKg()
   const units = getUserUnits()
   const bmi = calculateBMI(heightCm, weightKg)
+  const bodyFatPct = getUserBodyFatPct()
+  const weightHistory = getBodyWeightHistory()
+  const leanMass = calculateLeanMass(weightKg, bodyFatPct)
+  const fatMass = calculateFatMass(weightKg, bodyFatPct)
+  const weightChartData = weightHistory.slice(-30).map((entry, i, arr) => ({
+    label: i === arr.length - 1 ? 'Today' : entry.date.slice(5),
+    weight: units === 'imperial' ? Math.round(entry.kg * 2.2046) : Math.round(entry.kg * 10) / 10,
+  }))
 
   const avgHRV = hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1)
   const avgRHR = data.rhrHistory?.filter(Boolean).reduce((a, b) => a + b, 0) / (data.rhrHistory?.filter(Boolean).length || 1) || 0
@@ -262,40 +270,74 @@ export default function Healthspan({ data, onNav }) {
       )}
 
       {/* Body composition */}
-      {(bmi !== null || heightCm > 0 || weightKg > 0) && (
+      {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
         <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Body Composition</p>
-          <div className="flex gap-4">
-            {heightCm > 0 && (
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-600 uppercase tracking-wider">Height</span>
-                <span className="text-sm font-semibold text-white">
-                  {units === 'imperial'
-                    ? `${Math.floor(heightCm / 30.48)}'${Math.round((heightCm / 2.54) % 12)}"`
-                    : `${Math.round(heightCm)} cm`}
-                </span>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {weightKg > 0 && (
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Weight</p>
+                <p className="text-base font-bold text-white">
+                  {units === 'imperial' ? Math.round(weightKg * 2.2046) : Math.round(weightKg * 10) / 10}
+                </p>
+                <p className="text-[10px] text-gray-600">{units === 'imperial' ? 'lbs' : 'kg'}</p>
               </div>
             )}
-            {weightKg > 0 && (
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-600 uppercase tracking-wider">Weight</span>
-                <span className="text-sm font-semibold text-white">
-                  {units === 'imperial'
-                    ? `${Math.round(weightKg * 2.2046)} lbs`
-                    : `${Math.round(weightKg * 10) / 10} kg`}
-                </span>
+            {bodyFatPct !== null && (
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Body Fat</p>
+                <p className="text-base font-bold" style={{ color: bodyFatPct < 14 ? '#00c9a7' : bodyFatPct < 25 ? '#f59e0b' : '#ef4444' }}>
+                  {bodyFatPct}%
+                </p>
+                <p className="text-[10px]" style={{ color: bodyFatPct < 6 ? '#3b82f6' : bodyFatPct < 14 ? '#00c9a7' : bodyFatPct < 18 ? '#f59e0b' : bodyFatPct < 25 ? '#f97316' : '#ef4444' }}>
+                  {bodyFatPct < 6 ? 'Essential' : bodyFatPct < 14 ? 'Athletic' : bodyFatPct < 18 ? 'Fitness' : bodyFatPct < 25 ? 'Acceptable' : 'High'}
+                </p>
               </div>
             )}
             {bmi !== null && (
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-600 uppercase tracking-wider">BMI</span>
-                <span className="text-sm font-semibold" style={{ color: getBMIColor(bmi) }}>{bmi}</span>
-                <span className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</span>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">BMI</p>
+                <p className="text-base font-bold" style={{ color: getBMIColor(bmi) }}>{bmi}</p>
+                <p className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</p>
               </div>
             )}
           </div>
-          {bmi === null && (heightCm === 0 || weightKg === 0) && (
-            <p className="text-xs text-gray-600 mt-1">Set both height and weight in Settings to see BMI.</p>
+
+          {/* Lean / fat mass */}
+          {leanMass !== null && (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="rounded-xl p-3" style={{ background: '#00c9a710', border: '1px solid #00c9a720' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Lean Mass</p>
+                <p className="text-sm font-bold text-white">
+                  {units === 'imperial' ? Math.round(leanMass * 2.2046) : leanMass}
+                  <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
+                </p>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: '#f59e0b10', border: '1px solid #f59e0b20' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Fat Mass</p>
+                <p className="text-sm font-bold text-white">
+                  {units === 'imperial' ? Math.round(fatMass * 2.2046) : fatMass}
+                  <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Weight trend chart */}
+          {weightChartData.length >= 2 && (
+            <>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Weight Trend</p>
+              <LineGraph data={weightChartData} dataKey="weight" color="#3b82f6" unit={units === 'imperial' ? 'lbs' : 'kg'} height={80} />
+            </>
+          )}
+
+          {weightKg === 0 && bodyFatPct === null && (
+            <p className="text-xs text-gray-600">Set height, weight, and body fat % in Settings to see composition metrics.</p>
+          )}
+          {weightKg > 0 && bodyFatPct === null && (
+            <p className="text-xs text-gray-600 mt-1">Add body fat % in Settings to see lean and fat mass.</p>
           )}
         </div>
       )}

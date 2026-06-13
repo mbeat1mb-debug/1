@@ -1,5 +1,5 @@
 const FITBIT_AUTH_URL = 'https://www.fitbit.com/oauth2/authorize'
-const SCOPES = 'activity heartrate profile sleep settings oxygen_saturation respiratory_rate cardio_fitness'
+const SCOPES = 'activity heartrate profile sleep settings oxygen_saturation respiratory_rate cardio_fitness weight'
 const REDIRECT_PATH = '/'
 
 function getRedirectUri() {
