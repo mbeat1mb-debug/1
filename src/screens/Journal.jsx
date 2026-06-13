@@ -77,10 +77,12 @@ export default function Journal({ data, onNav }) {
     setShowAdd(false)
   }
 
-  const healthHistory = data.sleepHistory?.map((s, i) => ({
-    date: s.date,
-    recovery: data.recoveryHistory?.[i] ?? 50,
-  })) || []
+  // calendarDays pairs each date with its own recovery score; sleepHistory and
+  // recoveryHistory are not index-aligned (different lengths/date sets), so joining
+  // them by index attributes the wrong recovery to each day's correlations.
+  const healthHistory = (data.calendarDays || [])
+    .filter(d => d.recovery != null)
+    .map(d => ({ date: d.date, recovery: d.recovery }))
 
   const filteredTags = activeCategory === 'all' ? tags : tags.filter(t => t.category === activeCategory)
   const energyCorrelation = analyzeEnergyCorrelation(healthHistory)
