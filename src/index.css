@@ -32,6 +32,15 @@ html, body {
 :root {
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
+  --gold: #C9A84C;
+  --gold-dim: #C9A84C18;
+  --gold-border: #C9A84C33;
+}
+
+.soma-wordmark {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--gold);
+  letter-spacing: -0.02em;
 }
 
 .pt-safe { padding-top: max(16px, env(safe-area-inset-top)); }

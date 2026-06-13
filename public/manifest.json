@@ -1,7 +1,7 @@
 {
-  "name": "Health Dashboard",
-  "short_name": "Health",
-  "description": "Personal Fitbit Air health dashboard",
+  "name": "Soma",
+  "short_name": "Soma",
+  "description": "Your body, understood.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

@@ -76,7 +76,7 @@ export default function PinLock({ onUnlock, setup = false }) {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center select-none" style={{ zIndex: 100 }}>
-      <p className="text-gray-600 text-xs uppercase tracking-widest mb-1">Health Dashboard</p>
+      <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '0.2em' }}>Soma</p>
       <h2 className="text-lg font-semibold text-white mb-8">{headings[phase]}</h2>
 
       <Dots count={digits.length} error={!!error} />

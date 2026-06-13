@@ -127,17 +127,16 @@ function SkeletonScreen() {
 function ConnectScreen({ onNav }) {
   return (
     <div className="flex flex-col items-center justify-center h-screen px-6 gap-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-[#00c9a710] flex items-center justify-center">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth={1.5} className="w-10 h-10">
-          <path strokeLinecap="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
-      </div>
       <div>
-        <h1 className="text-2xl font-bold text-white">Health Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-2">Your personal Fitbit Air dashboard with Whoop-style analytics</p>
+        <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-2" style={{ background: '#C9A84C18', border: '1px solid #C9A84C33' }}>
+          <span className="text-3xl font-bold" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif', letterSpacing: '-1px' }}>Σ</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</h1>
+        <p className="text-gray-600 text-xs uppercase tracking-widest mt-1">σῶμα · body</p>
       </div>
+      <p className="text-gray-500 text-sm">Connect your Fitbit to begin tracking recovery, strain, sleep, and longevity.</p>
       <button onClick={() => onNav('settings')} className="w-full max-w-xs py-4 rounded-2xl font-bold text-black" style={{ background: '#00c9a7' }}>
-        Connect Fitbit Air
+        Connect Fitbit
       </button>
       <button onClick={() => onNav('demo')} className="text-gray-500 text-sm underline">
         View demo first

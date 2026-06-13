@@ -1,4 +1,4 @@
-const CACHE = 'health-v1'
+const CACHE = 'soma-v1'
 const PRECACHE = ['/', '/index.html']
 
 self.addEventListener('install', e => {
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
 })
 
 self.addEventListener('push', e => {
-  let data = { title: 'Health Dashboard', body: 'Check your stats today.' }
+  let data = { title: 'Soma', body: 'Check your stats today.' }
   try { data = e.data?.json() || data } catch {}
   e.waitUntil(
     self.registration.showNotification(data.title, {

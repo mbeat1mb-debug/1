@@ -548,7 +548,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           <p className="text-gray-500 text-xs uppercase tracking-wider">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <h1 className="text-xl font-bold text-white">Daily Report</h1>
+          <h1 className="text-xl font-bold" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</h1>
           {!editing && (
             <p className="text-[10px] mt-0.5" style={{ color: syncFailed ? '#f59e0b' : '#444' }}>
               {isSyncing

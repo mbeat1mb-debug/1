@@ -1062,8 +1062,8 @@ Labs: marker,value,date`}</pre>
 
       {/* About */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">About</p>
-        <p className="text-xs text-gray-600">Personal Fitbit Air dashboard. Data stays on your device. No third-party servers. Built for personal use only.</p>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</p>
+        <p className="text-xs text-gray-600">σῶμα · Your body, understood. Data stays on your device. No third-party servers. Built for personal use only.</p>
       </div>
     </div>
   )
