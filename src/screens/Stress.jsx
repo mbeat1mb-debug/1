@@ -14,21 +14,26 @@ function BackButton({ onNav }) {
 }
 
 export default function Stress({ data, onNav }) {
-  const { stressScore = 0, todayHRV = 0, todayRHR = 0, hrvHistory = [], rhrHistory = [], daytimeStress } = data
+  const { stressScore = 0, todayHRV = 0, todayRHR = 0, hrvHistory = [], rhrHistory = [], historyDates = [], daytimeStress } = data
 
   const color = getStressColor(stressScore)
   const label = getStressLabel(stressScore)
 
-  const avgHRV14 = hrvHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.slice(-14).filter(Boolean).length || 1)
+  const hrv14 = hrvHistory.slice(-14)
+  const avgHRV14 = hrv14.filter(Boolean).reduce((a, b) => a + b, 0) / (hrv14.filter(Boolean).length || 1)
   const avgRHR14 = rhrHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.slice(-14).filter(Boolean).length || 1)
 
   const hrvRatio = avgHRV14 > 0 ? Math.round((todayHRV / avgHRV14) * 100) : 100
   const rhrDiff = Math.round(todayRHR - avgRHR14)
 
-  const stressChartData = hrvHistory.slice(-14).map((v, i) => ({
-    label: i === hrvHistory.slice(-14).length - 1 ? 'Today' : `-${hrvHistory.slice(-14).length - 1 - i}d`,
-    hrv: Math.round(v),
-  }))
+  const todayStr = new Date().toISOString().split('T')[0]
+  const dates14 = historyDates.slice(-14)
+  const stressChartData = hrv14.map((v, i) => {
+    const d = dates14[i]
+    const lbl = !d ? (i === hrv14.length - 1 ? 'Today' : `-${hrv14.length - 1 - i}d`)
+      : d === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(d)) / 86400000)}d`
+    return { label: lbl, hrv: Math.round(v) }
+  })
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">

@@ -18,7 +18,7 @@ function BackButton({ onNav }) {
 export default function Recovery({ data, onNav }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
     todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [],
-    vo2Max = 0, skinTempDev } = data
+    historyDates = [], vo2Max = 0, skinTempDev } = data
 
   const [spo2History, setSpo2History] = useState([])
   const [brHistory, setBrHistory] = useState([])
@@ -44,8 +44,17 @@ export default function Recovery({ data, onNav }) {
   const bpReadings = getBPReadings()
   const hasBP = avgBP.sys > 0
 
-  const hrvChartData = hrvHistory.slice(-14).map((v, i) => ({ label: i === hrvHistory.slice(-14).length - 1 ? 'Today' : `-${hrvHistory.slice(-14).length - 1 - i}d`, hrv: Math.round(v) }))
-  const rhrChartData = rhrHistory.slice(-14).map((v, i) => ({ label: i === rhrHistory.slice(-14).length - 1 ? 'Today' : `-${rhrHistory.slice(-14).length - 1 - i}d`, rhr: Math.round(v) }))
+  const todayStr = new Date().toISOString().split('T')[0]
+  const hrv14 = hrvHistory.slice(-14)
+  const rhr14 = rhrHistory.slice(-14)
+  const dates14 = historyDates.slice(-14)
+  const chartLabel = (i, len) => {
+    const d = dates14[i]
+    if (!d) return i === len - 1 ? 'Today' : `-${len - 1 - i}d`
+    return d === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(d)) / 86400000)}d`
+  }
+  const hrvChartData = hrv14.map((v, i) => ({ label: chartLabel(i, hrv14.length), hrv: Math.round(v) }))
+  const rhrChartData = rhr14.map((v, i) => ({ label: chartLabel(i, rhr14.length), rhr: Math.round(v) }))
 
   const validHRV = hrvHistory.filter(Boolean)
   const avgHRV = validHRV.length ? Math.round(validHRV.reduce((a, b) => a + b, 0) / validHRV.length) : 0

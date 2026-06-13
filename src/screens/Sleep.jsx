@@ -48,8 +48,9 @@ export default function Sleep({ data, onNav }) {
   const hours = Math.floor(totalMins / 60)
   const mins = totalMins % 60
 
-  const sleepChartData = sleepHistory.slice(-14).map((s, i) => ({
-    label: i === sleepHistory.slice(-14).length - 1 ? 'Today' : `-${sleepHistory.slice(-14).length - 1 - i}d`,
+  const todayStr = new Date().toISOString().split('T')[0]
+  const sleepChartData = sleepHistory.slice(-14).map(s => ({
+    label: s.date === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(s.date)) / 86400000)}d`,
     hours: Math.round((s.minutes / 60) * 10) / 10,
   }))
 
