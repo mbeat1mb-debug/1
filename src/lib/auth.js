@@ -76,21 +76,34 @@ export function isTokenExpired() {
   return Date.now() >= token_expiry
 }
 
+// Single-flight guard: when many parallel requests hit an expired token at once,
+// they share one refresh instead of each POSTing the (rotating) refresh token,
+// which would let all but the first fail and tear down a valid session.
+let refreshPromise = null
+
 export async function refreshAccessToken() {
-  const { refresh_token } = getTokens()
-  if (!refresh_token) return false
+  if (refreshPromise) return refreshPromise
+  refreshPromise = (async () => {
+    const { refresh_token } = getTokens()
+    if (!refresh_token) return false
+    try {
+      const res = await fetch('/api/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token }),
+      })
+      if (!res.ok) return false
+      const tokens = await res.json()
+      saveTokens(tokens)
+      return true
+    } catch {
+      return false
+    }
+  })()
   try {
-    const res = await fetch('/api/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token }),
-    })
-    if (!res.ok) return false
-    const tokens = await res.json()
-    saveTokens(tokens)
-    return true
-  } catch {
-    return false
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
   }
 }
 

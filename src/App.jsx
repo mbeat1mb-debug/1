@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
 import { loadDashboardData } from './lib/api'
 import {
@@ -148,6 +148,7 @@ export default function App() {
     const ts = localStorage.getItem('last_synced_at')
     return ts ? Number(ts) : null
   })
+  const syncInFlight = useRef(false)
 
   const processData = useCallback((raw) => {
     const parsed = parseFitbitData(raw)
@@ -224,6 +225,10 @@ export default function App() {
   }, [])
 
   const doSync = useCallback(async (showSpinner) => {
+    // Prevent overlapping syncs (e.g. init's background sync racing a manual refresh),
+    // where the slower one resolves last and clobbers the newer snapshot/state.
+    if (syncInFlight.current) return
+    syncInFlight.current = true
     if (showSpinner) setLoading(true)
     else setIsSyncing(true)
     setSyncFailed(false)
@@ -278,6 +283,7 @@ export default function App() {
       console.error(e)
       setSyncFailed(true)
     } finally {
+      syncInFlight.current = false
       setLoading(false)
       setIsSyncing(false)
     }

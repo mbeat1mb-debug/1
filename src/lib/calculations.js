@@ -178,12 +178,15 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   else if (hrvRatio > 0.6) adj += 2
   else adj += 4
 
-  // RHR: <50 is elite regardless of age; >80 is a meaningful concern at any age
-  if (avgRHR < 50) adj -= 4
-  else if (avgRHR < 58) adj -= 2
-  else if (avgRHR < 68) adj -= 1
-  else if (avgRHR > 80) adj += 2
-  else adj += 1
+  // RHR: <50 is elite regardless of age; >80 is a meaningful concern at any age.
+  // Guard avgRHR > 0 so a missing-data day (0) stays neutral instead of scoring as elite.
+  if (avgRHR > 0) {
+    if (avgRHR < 50) adj -= 4
+    else if (avgRHR < 58) adj -= 2
+    else if (avgRHR < 68) adj -= 1
+    else if (avgRHR > 80) adj += 2
+    else adj += 1
+  }
 
   if (avgSleep >= 7.5 && sleepConsistency >= 0.8) adj -= 3
   else if (avgSleep >= 7.0 && sleepConsistency >= 0.65) adj -= 1
