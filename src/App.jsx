@@ -145,7 +145,7 @@ function ConnectScreen({ onNav }) {
   )
 }
 
-const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'healthspan', 'journal', 'records', 'coach', 'settings']
+const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'stress', 'healthspan', 'journal', 'records', 'coach', 'settings']
 
 export default function App() {
   const [pinUnlocked, setPinUnlocked] = useState(() => !isPinSet())
@@ -383,7 +383,7 @@ export default function App() {
     if (id === 'insights') return
     const oldIdx = TAB_ORDER.indexOf(prevTabRef.current)
     const newIdx = TAB_ORDER.indexOf(id)
-    setTransDir(newIdx >= oldIdx ? 1 : -1)
+    if (oldIdx !== -1 && newIdx !== -1) setTransDir(newIdx >= oldIdx ? 1 : -1)
     prevTabRef.current = id
     setTab(id)
   }
