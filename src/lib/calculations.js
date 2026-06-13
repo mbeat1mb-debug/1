@@ -80,9 +80,19 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v))
 }
 
-export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvHistory, rhrHistory, sleepHistory = [] }) {
-  const avgHRV = average(hrvHistory.filter(Boolean))
-  const avgRHR = average(rhrHistory.filter(Boolean))
+export function computeOptimalSleepHours(sleepHistory) {
+  if (sleepHistory.length >= 7) {
+    const sorted = [...sleepHistory].sort((a, b) => (b.minutes || b.minutesAsleep || 0) - (a.minutes || a.minutesAsleep || 0))
+    const topQ = sorted.slice(0, Math.max(1, Math.floor(sorted.length * 0.25)))
+    const personalMins = topQ.reduce((a, s) => a + (s.minutes || s.minutesAsleep || 0), 0) / topQ.length
+    return Math.min(9.5, Math.max(6.5, personalMins / 60))
+  }
+  return 8
+}
+
+export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvHistory = [], rhrHistory = [], sleepHistory = [], preAvgHRV, preAvgRHR, preOptimalSleepHours }) {
+  const avgHRV = preAvgHRV ?? average(hrvHistory.filter(Boolean))
+  const avgRHR = preAvgRHR ?? average(rhrHistory.filter(Boolean))
 
   let hrvScore = 50
   if (avgHRV > 0 && hrv > 0) {
@@ -100,14 +110,22 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvH
   if (sleep) {
     const hours = sleep.minutesAsleep / 60
     const efficiency = sleep.efficiency || 85
-    let optimalHours = 8
-    if (sleepHistory.length >= 7) {
-      const sorted = [...sleepHistory].sort((a, b) => (b.minutes || b.minutesAsleep || 0) - (a.minutes || a.minutesAsleep || 0))
-      const topQ = sorted.slice(0, Math.max(1, Math.floor(sorted.length * 0.25)))
-      const personalMins = topQ.reduce((a, s) => a + (s.minutes || s.minutesAsleep || 0), 0) / topQ.length
-      optimalHours = Math.min(9.5, Math.max(6.5, personalMins / 60))
+    const optimalHours = preOptimalSleepHours ?? computeOptimalSleepHours(sleepHistory)
+    const base = clamp((hours / optimalHours) * 70, 0, 70) + clamp((efficiency / 100) * 30, 0, 30)
+    // Deep sleep = physical repair; REM = cognitive restoration.
+    // Guard with > 0 so devices without stage data don't get penalized.
+    const deepMins = sleep.deepMinutes ?? sleep.levels?.summary?.deep?.minutes ?? 0
+    const remMins = sleep.remMinutes ?? sleep.levels?.summary?.rem?.minutes ?? 0
+    let stageMod = 0
+    if (sleep.minutesAsleep > 0 && (deepMins > 0 || remMins > 0)) {
+      const deepPct = deepMins / sleep.minutesAsleep
+      const remPct = remMins / sleep.minutesAsleep
+      if (deepPct > 0.20) stageMod += 3
+      else if (deepPct < 0.10) stageMod -= 3
+      if (remPct > 0.22) stageMod += 2
+      else if (remPct < 0.12) stageMod -= 2
     }
-    sleepScore = clamp((hours / optimalHours) * 70, 0, 70) + clamp((efficiency / 100) * 30, 0, 30)
+    sleepScore = clamp(base + stageMod, 0, 100)
   }
 
   // SpO2: gradient penalties; each 2% drop below 97 is clinically significant
@@ -318,6 +336,7 @@ export function parseFitbitData(raw) {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
     steps, calories, activeMinutes,
     hrvHistory, rhrHistory, historyDates, sleepHistory,
+    hrvByDate, rhrByDate,
     hrIntradayData: hrIntraday,
     vo2Max, skinTempDev,
   }

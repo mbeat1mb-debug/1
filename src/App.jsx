@@ -4,7 +4,7 @@ import { loadDashboardData } from './lib/api'
 import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
-  calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity,
+  calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -153,11 +153,13 @@ export default function App() {
   const processData = useCallback((raw) => {
     const parsed = parseFitbitData(raw)
 
+    const optimalSleepHours = computeOptimalSleepHours(parsed.sleepHistory)
+
     const recoveryScore = calculateRecovery({
       hrv: parsed.todayHRV, rhr: parsed.todayRHR, sleep: parsed.todaySleep,
       spo2: parsed.todaySpO2, br: parsed.todayBR, skinTempDev: parsed.skinTempDev,
       hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
-      sleepHistory: parsed.sleepHistory,
+      preOptimalSleepHours: optimalSleepHours,
     })
     const strainScore = calculateStrain(parsed.hrIntradayData)
     const zoneMinutes = calculateZoneMinutes(parsed.hrIntradayData)
@@ -175,17 +177,27 @@ export default function App() {
     const recoveryHistory = []
     const stressHistory = []
     const recoveryByDate = {}
+    let hrvRunSum = 0, hrvRunCount = 0, rhrRunSum = 0, rhrRunCount = 0
     parsed.hrvHistory.forEach((hrv, i) => {
       if (!hrv) return
       const date = parsed.historyDates[i]
       const sleepEntry = sleepByDate[date]
-      const rhr = parsed.rhrHistory[i]  // 0 = no data; calculateRecovery guards with rhr > 0
+      const rhr = parsed.rhrHistory[i]
+      // Use running average of all PRIOR entries (not the current one) as baseline
+      const preAvgHRV = hrvRunCount > 0 ? hrvRunSum / hrvRunCount : 0
+      const preAvgRHR = rhrRunCount > 0 ? rhrRunSum / rhrRunCount : 0
       const recovery = calculateRecovery({
         hrv, rhr,
-        sleep: sleepEntry ? { minutesAsleep: sleepEntry.minutes, efficiency: sleepEntry.efficiency } : null,
-        spo2: 97, br: 14,  // per-day historical data not available from Fitbit API; use neutral defaults
-        hrvHistory: parsed.hrvHistory.slice(0, i), rhrHistory: parsed.rhrHistory.slice(0, i),
-        sleepHistory: parsed.sleepHistory,
+        sleep: sleepEntry ? {
+          minutesAsleep: sleepEntry.minutes,
+          efficiency: sleepEntry.efficiency,
+          deepMinutes: sleepEntry.deepMinutes,
+          remMinutes: sleepEntry.remMinutes,
+        } : null,
+        spo2: 97, br: 14,
+        preAvgHRV: preAvgHRV || undefined,
+        preAvgRHR: preAvgRHR || undefined,
+        preOptimalSleepHours: optimalSleepHours,
       })
       recoveryHistory.push(recovery)
       if (date) recoveryByDate[date] = recovery
@@ -194,6 +206,9 @@ export default function App() {
         hrvHistory: parsed.hrvHistory.slice(0, i),
         rhrHistory: parsed.rhrHistory.slice(0, i),
       }))
+      // Update running sums AFTER using them (so current day is included in next iteration's baseline)
+      hrvRunSum += hrv; hrvRunCount++
+      if (rhr) { rhrRunSum += rhr; rhrRunCount++ }
     })
 
     const recoveryVelocity = getTrendVelocity(recoveryHistory)
@@ -203,6 +218,9 @@ export default function App() {
       date: s.date,
       recovery: recoveryByDate[s.date] ?? null,
       sleep: s.minutes,
+      sleepEfficiency: s.efficiency ?? 0,
+      hrv: parsed.hrvByDate[s.date] ?? null,
+      rhr: parsed.rhrByDate[s.date] ?? null,
     }))
 
     const base = {

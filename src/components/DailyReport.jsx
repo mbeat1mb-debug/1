@@ -54,10 +54,25 @@ export default function DailyReport({ data, type }) {
 
   const [brief, setBrief] = useState(() => localStorage.getItem(cacheKey) || '')
   const [loading, setLoading] = useState(false)
-  const [topCorr, setTopCorr] = useState(null)
+  const [topCorr, setTopCorr] = useState(() => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const cached = localStorage.getItem(`top_corr_${today}`)
+      return cached ? JSON.parse(cached) : null
+    } catch { return null }
+  })
   useEffect(() => {
-    getTopCorrelations(1).then(r => setTopCorr(r[0] ?? null)).catch(() => {})
-  }, [])
+    if (topCorr !== null) return
+    const today = new Date().toISOString().split('T')[0]
+    getTopCorrelations(1).then(r => {
+      const result = r[0] ?? null
+      setTopCorr(result)
+      try {
+        if (result) localStorage.setItem(`top_corr_${today}`, JSON.stringify(result))
+        else localStorage.setItem(`top_corr_${today}`, 'null')
+      } catch {}
+    }).catch(() => {})
+  }, [topCorr])
 
   // Reset brief when type or date changes so the new type's cache is loaded
   useEffect(() => {
@@ -68,7 +83,7 @@ export default function DailyReport({ data, type }) {
     recoveryScore = 0, strainScore = 0, stressScore = 0,
     todayHRV = 0, todayRHR = 0, todaySleep, steps = 0, calories = 0,
     hrvHistory = [], rhrHistory = [], sleepDebt = 0, optimalSleepWindow,
-    trainingLoad = null,
+    trainingLoad = null, recoveryVelocity = 0,
   } = data
 
   const avgHRV14 = hrvHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.slice(-14).filter(Boolean).length || 1)
@@ -83,8 +98,10 @@ export default function DailyReport({ data, type }) {
   const optimalStrain = (() => {
     const [lo, hi] = recoveryScore >= 67 ? [12, 16] : recoveryScore >= 34 ? [8, 12] : [5, 8]
     const tsb = trainingLoad?.tsb ?? 0
-    const adj = tsb < -20 ? -2 : tsb < -10 ? -1 : tsb > 15 ? 1 : 0
-    return `${lo + adj}–${hi + adj}`
+    const tsbAdj = tsb < -20 ? -2 : tsb < -10 ? -1 : tsb > 15 ? 1 : 0
+    // Falling recovery trend (3+ consecutive days down) → pull back 1 point
+    const velAdj = recoveryVelocity < -3 ? -1 : 0
+    return `${lo + tsbAdj + velAdj}–${hi + tsbAdj + velAdj}`
   })()
 
   useEffect(() => {
