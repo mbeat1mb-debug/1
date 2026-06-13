@@ -59,8 +59,8 @@ export async function saveDay(result) {
       br: result.todayBR ?? null,
       skinTempDev: result.skinTempDev ?? null,
     })
-  } catch (e) {
-    console.warn('db saveDay:', e)
+  } catch {
+    // IndexedDB write failures are non-fatal; history reconstructs from Fitbit API on next sync
   }
 }
 
@@ -71,7 +71,7 @@ export async function saveDaysBatch(rows) {
     for (const row of rows) {
       await dbPut(db, 'health_days', row)
     }
-  } catch (e) { console.warn('db saveDaysBatch:', e) }
+  } catch {}
 }
 
 export async function getHistory(days = 90) {
@@ -93,9 +93,7 @@ export async function saveSnapshot(data) {
   try {
     const db = await openDB()
     await dbPut(db, 'snapshot', { id: 1, data, savedAt: Date.now() })
-  } catch (e) {
-    console.warn('db saveSnapshot:', e)
-  }
+  } catch {}
 }
 
 export async function getLatestSnapshot() {

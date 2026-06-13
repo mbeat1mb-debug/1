@@ -1,5 +1,4 @@
 const PR_KEY = 'personal_records'
-const STREAK_KEY = 'streak_data'
 const UNLOCK_KEY = 'achievements_unlocked'
 
 export const ACHIEVEMENT_DEFS = [
@@ -94,6 +93,3 @@ export function checkAndUnlockAchievements({ pr, streaks, recoveryHistory, sleep
   return { unlocked: [...unlocked], newUnlocks }
 }
 
-export function getStreakData() {
-  try { return JSON.parse(localStorage.getItem(STREAK_KEY) || '{}') } catch { return {} }
-}

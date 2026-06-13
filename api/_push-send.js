@@ -73,16 +73,19 @@ export async function sendScheduledPush(type) {
     if (!withinWindow(preferredTime, timezone, 15)) return { skipped: 'outside window' }
   }
 
-  // Idempotent: only fire once per day per type
+  // Idempotent: claim the send slot before attempting delivery so concurrent
+  // cron invocations can't both pass the check and double-send.
   const today = new Date().toISOString().split('T')[0]
   const sentKey = `push:sent:${type}:${today}`
   if (await kv.get(sentKey)) return { skipped: 'already sent' }
+  await kv.set(sentKey, 1, { ex: 90000 })
 
   const vapidPublic = process.env.VAPID_PUBLIC_KEY
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY
   const vapidSubject = process.env.VAPID_SUBJECT
   if (!vapidPublic || !vapidPrivate || !vapidSubject) {
     console.error('Push not configured: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT must be set')
+    await kv.del(sentKey)
     return { error: 'Push not configured' }
   }
   webPush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
@@ -95,10 +98,9 @@ export async function sendScheduledPush(type) {
     await webPush.sendNotification(subscription, JSON.stringify(payload))
   } catch (err) {
     console.error('Push delivery failed:', err.message)
+    await kv.del(sentKey)
     return { error: err.message }
   }
 
-  // Mark sent only after confirmed delivery, expire after ~25 hours
-  await kv.set(sentKey, 1, { ex: 90000 })
   return { sent: true }
 }

@@ -86,8 +86,10 @@ export default function DailyReport({ data, type }) {
     trainingLoad = null, recoveryVelocity = 0,
   } = data
 
-  const avgHRV14 = hrvHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.slice(-14).filter(Boolean).length || 1)
-  const avgRHR14 = rhrHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.slice(-14).filter(Boolean).length || 1)
+  const hrv14 = hrvHistory.slice(-14).filter(Boolean)
+  const rhr14 = rhrHistory.slice(-14).filter(Boolean)
+  const avgHRV14 = hrv14.reduce((a, b) => a + b, 0) / (hrv14.length || 1)
+  const avgRHR14 = rhr14.reduce((a, b) => a + b, 0) / (rhr14.length || 1)
   const hrvDiff = Math.round(todayHRV - avgHRV14)
   const rhrDiff = Math.round(todayRHR - avgRHR14)
 

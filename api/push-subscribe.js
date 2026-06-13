@@ -7,6 +7,7 @@ async function verifyFitbitToken(authHeader) {
   try {
     const res = await fetch('https://api.fitbit.com/1/user/-/profile.json', {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
     })
     return res.ok
   } catch {

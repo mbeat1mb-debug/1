@@ -7,7 +7,7 @@ function CustomTooltip({ active, payload, label, unit = '' }) {
       <p className="text-gray-400 text-xs mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="font-semibold">
-          {Math.round(p.value)}{unit}
+          {Math.round(p.value ?? 0)}{unit}
         </p>
       ))}
     </div>

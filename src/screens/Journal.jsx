@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation } from '../lib/storage'
 import { getBPReadings, saveBPReading } from '../lib/calculations'
 
@@ -43,6 +43,7 @@ export default function Journal({ data, onNav }) {
   const [showAdd, setShowAdd] = useState(false)
   const [newTagLabel, setNewTagLabel] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
+  const savedTimerRef = useRef(null)
   const tags = getAllTags()
 
   const categories = ['all', 'intake', 'sleep', 'mental', 'activity', 'health', 'recovery', 'custom']
@@ -52,10 +53,11 @@ export default function Journal({ data, onNav }) {
     setSelectedTags(entry.tagIds || [])
     setNotes(entry.notes || '')
     setEnergy(entry.energy ?? null)
-    // Pre-fill BP if logged today already
     const existing = getBPReadings().find(r => r.date === today())
     if (existing) { setBpSys(String(existing.sys)); setBpDia(String(existing.dia)) }
   }, [])
+
+  useEffect(() => () => clearTimeout(savedTimerRef.current), [])
 
   const toggle = (id) => {
     setSelectedTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
@@ -67,7 +69,8 @@ export default function Journal({ data, onNav }) {
     const sys = parseInt(bpSys, 10), dia = parseInt(bpDia, 10)
     if (sys >= 50 && sys <= 300 && dia >= 30 && dia <= 200) saveBPReading(today(), sys, dia)
     setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000)
   }
 
   const addTag = () => {
