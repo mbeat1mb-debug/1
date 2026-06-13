@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
@@ -109,7 +109,8 @@ export default function Healthspan({ data, onNav }) {
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
     smoking, alcoholWeek, bp.sys, bp.dia, labAdj])
 
-  // Persist today's physiological age snapshot
+  // Persist today's physiological age snapshot and compute trend from the freshly-written history
+  const [ageTrend, setAgeTrend] = useState(null)
   useEffect(() => {
     if (!ageIsSet || physAge <= 0) return
     const today = new Date().toISOString().split('T')[0]
@@ -120,32 +121,23 @@ export default function Healthspan({ data, onNav }) {
       else history.push({ date: today, physAge })
       history.sort((a, b) => a.date.localeCompare(b.date))
       localStorage.setItem('physio_age_history', JSON.stringify(history.slice(-365)))
-    } catch {}
-  }, [physAge, ageIsSet])
 
-  const ageTrend = useMemo(() => {
-    if (!ageIsSet) return null
-    try {
-      const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
-      if (history.length < 2) return null
-
+      if (history.length < 2) { setAgeTrend(null); return }
       const cutoff90 = new Date()
       cutoff90.setDate(cutoff90.getDate() - 90)
       const cutoffStr = cutoff90.toISOString().split('T')[0]
-
       const old = history.filter(e => e.date <= cutoffStr)
       if (!old.length) {
-        // Not enough history yet — show since first reading
         const first = history[0]
         const diff = Math.round((physAge - first.physAge) * 10) / 10
         const days = Math.round((Date.now() - new Date(first.date).getTime()) / 86400000)
-        return { diff, days, label: days < 30 ? `${days}d` : `${Math.round(days / 30)}mo` }
+        setAgeTrend({ diff, days, label: days < 30 ? `${days}d` : `${Math.round(days / 30)}mo` })
+      } else {
+        const baseline = old[old.length - 1]
+        const diff = Math.round((physAge - baseline.physAge) * 10) / 10
+        setAgeTrend({ diff, days: 90, label: '90d' })
       }
-
-      const baseline = old[old.length - 1]
-      const diff = Math.round((physAge - baseline.physAge) * 10) / 10
-      return { diff, days: 90, label: '90d' }
-    } catch { return null }
+    } catch { setAgeTrend(null) }
   }, [physAge, ageIsSet])
 
   const diff = physAge - userAge

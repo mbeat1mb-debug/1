@@ -24,13 +24,15 @@ export default function Recovery({ data, onNav }) {
   const [brHistory, setBrHistory] = useState([])
 
   useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const daysAgo = date => Math.round((new Date(todayStr) - new Date(date)) / 86400000)
     getHistory(14).then(rows => {
-      setSpo2History(rows.filter(r => r.spo2 > 0).map((r, i, arr) => ({
-        label: i === arr.length - 1 ? 'Today' : `-${arr.length - 1 - i}d`,
+      setSpo2History(rows.filter(r => r.spo2 > 0).map(r => ({
+        label: r.date === todayStr ? 'Today' : `-${daysAgo(r.date)}d`,
         spo2: r.spo2,
       })))
-      setBrHistory(rows.filter(r => r.br > 0).map((r, i, arr) => ({
-        label: i === arr.length - 1 ? 'Today' : `-${arr.length - 1 - i}d`,
+      setBrHistory(rows.filter(r => r.br > 0).map(r => ({
+        label: r.date === todayStr ? 'Today' : `-${daysAgo(r.date)}d`,
         br: r.br,
       })))
     })

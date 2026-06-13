@@ -309,6 +309,7 @@ export default function App() {
   const handleNav = (id) => {
     if (id === 'demo') { setDemo(true); setTab('home'); return }
     if (id === 'weeklypattern') { setTab('records'); return }
+    if (id === 'insights') return
     setTab(id)
   }
 
@@ -335,17 +336,15 @@ export default function App() {
         />
       )}
       <Suspense fallback={<Spinner />}>
-        <div key={tab} className={tab !== 'home' ? 'screen-enter' : ''}>
-          {tab === 'recovery' && <Recovery data={data} onNav={handleNav} />}
-          {tab === 'strain' && <Strain data={data} onNav={handleNav} />}
-          {tab === 'sleep' && <Sleep data={data} onNav={handleNav} />}
-          {tab === 'stress' && <Stress data={data} onNav={handleNav} />}
-          {tab === 'journal' && <Journal data={data} onNav={handleNav} />}
-          {tab === 'coach' && <Coach data={data} onNav={handleNav} />}
-          {tab === 'healthspan' && <Healthspan data={data} onNav={handleNav} />}
-          {tab === 'records' && <Records data={data} onNav={handleNav} />}
-          {tab === 'settings' && <Settings onBack={() => setTab('home')} />}
-        </div>
+        {tab === 'recovery' && <div className="screen-enter"><Recovery data={data} onNav={handleNav} /></div>}
+        {tab === 'strain' && <div className="screen-enter"><Strain data={data} onNav={handleNav} /></div>}
+        {tab === 'sleep' && <div className="screen-enter"><Sleep data={data} onNav={handleNav} /></div>}
+        {tab === 'stress' && <div className="screen-enter"><Stress data={data} onNav={handleNav} /></div>}
+        {tab === 'journal' && <div className="screen-enter"><Journal data={data} onNav={handleNav} /></div>}
+        {tab === 'coach' && <div className="screen-enter"><Coach data={data} onNav={handleNav} /></div>}
+        {tab === 'healthspan' && <div className="screen-enter"><Healthspan data={data} onNav={handleNav} /></div>}
+        {tab === 'records' && <div className="screen-enter"><Records data={data} onNav={handleNav} /></div>}
+        {tab === 'settings' && <div className="screen-enter"><Settings onBack={() => setTab('home')} /></div>}
       </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (

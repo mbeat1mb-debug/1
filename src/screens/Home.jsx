@@ -253,7 +253,7 @@ function InsightsContent() {
   const [correlations, setCorrelations] = useState(null)
 
   useEffect(() => {
-    getTopCorrelations().then(setCorrelations)
+    getTopCorrelations().then(setCorrelations).catch(() => setCorrelations([]))
   }, [])
 
   if (correlations === null) {
@@ -419,29 +419,31 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const daysOfData = data.hrvHistory?.filter(Boolean).length || 0
 
   const [pullY, setPullY] = useState(0)
-  const [isPulling, setIsPulling] = useState(false)
+  const isPullingRef = useRef(false)
   const touchStartY = useRef(0)
   const PULL_THRESHOLD = 70
 
   const handleTouchStart = useCallback((e) => {
     if (window.scrollY > 0) return
     touchStartY.current = e.touches[0].clientY
-    setIsPulling(true)
+    isPullingRef.current = true
   }, [])
 
   const handleTouchMove = useCallback((e) => {
-    if (!isPulling) return
+    if (!isPullingRef.current) return
     const delta = e.touches[0].clientY - touchStartY.current
     if (delta > 0) setPullY(Math.min(delta * 0.4, PULL_THRESHOLD))
-  }, [isPulling])
+  }, [])
 
   const handleTouchEnd = useCallback(() => {
-    if (pullY >= PULL_THRESHOLD && onRefresh && !isSyncing) {
-      onRefresh()
+    if (isPullingRef.current) {
+      setPullY(prev => {
+        if (prev >= PULL_THRESHOLD && onRefresh && !isSyncing) onRefresh()
+        return 0
+      })
     }
-    setPullY(0)
-    setIsPulling(false)
-  }, [pullY, onRefresh, isSyncing])
+    isPullingRef.current = false
+  }, [onRefresh, isSyncing])
 
   const sensors = useSensors(
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
