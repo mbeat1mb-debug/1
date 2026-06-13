@@ -157,6 +157,7 @@ export default function App() {
       hrv: parsed.todayHRV, rhr: parsed.todayRHR, sleep: parsed.todaySleep,
       spo2: parsed.todaySpO2, br: parsed.todayBR, skinTempDev: parsed.skinTempDev,
       hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
+      sleepHistory: parsed.sleepHistory,
     })
     const strainScore = calculateStrain(parsed.hrIntradayData)
     const zoneMinutes = calculateZoneMinutes(parsed.hrIntradayData)
@@ -184,6 +185,7 @@ export default function App() {
         sleep: sleepEntry ? { minutesAsleep: sleepEntry.minutes, efficiency: sleepEntry.efficiency } : null,
         spo2: 97, br: 14,  // per-day historical data not available from Fitbit API; use neutral defaults
         hrvHistory: parsed.hrvHistory.slice(0, i), rhrHistory: parsed.rhrHistory.slice(0, i),
+        sleepHistory: parsed.sleepHistory,
       })
       recoveryHistory.push(recovery)
       if (date) recoveryByDate[date] = recovery

@@ -304,6 +304,53 @@ function InsightsContent() {
   )
 }
 
+function WeeklySummary({ data }) {
+  const { calendarDays = [] } = data
+  const today = new Date()
+  const dow = today.getDay() // 0=Sun
+  const weekStart = new Date(today)
+  weekStart.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1)) // Monday
+  weekStart.setHours(0, 0, 0, 0)
+
+  const thisWeek = calendarDays.filter(d => {
+    const dt = new Date(d.date + 'T12:00:00')
+    return dt >= weekStart && dt <= today && d.recovery != null
+  })
+  if (thisWeek.length < 3) return null
+
+  const avgRecovery = Math.round(thisWeek.reduce((a, d) => a + d.recovery, 0) / thisWeek.length)
+  const best = thisWeek.reduce((a, b) => a.recovery > b.recovery ? a : b)
+  const bestDay = new Date(best.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })
+  const avgSleepH = Math.round(
+    thisWeek.filter(d => d.sleep > 0).reduce((a, d) => a + d.sleep, 0) /
+    (thisWeek.filter(d => d.sleep > 0).length || 1) / 60 * 10
+  ) / 10
+  const color = getRecoveryColor(avgRecovery)
+
+  return (
+    <div className="mx-4 mb-1 rounded-2xl p-4" style={{ background: color + '08', border: `1px solid ${color}25` }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-bold tracking-widest uppercase" style={{ color }}>This Week</span>
+        <span className="text-xs text-gray-600">{thisWeek.length} days</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Recovery</span>
+          <span className="text-xl font-bold" style={{ color }}>{avgRecovery}%</span>
+        </div>
+        <div>
+          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Best Day</span>
+          <span className="text-xl font-bold text-white">{bestDay}</span>
+        </div>
+        <div>
+          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Sleep</span>
+          <span className="text-xl font-bold text-white">{avgSleepH > 0 ? `${avgSleepH}h` : '--'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CalibrationBanner({ daysOfData }) {
   if (daysOfData >= 14) return null
   const pct = Math.round((daysOfData / 14) * 100)
@@ -561,6 +608,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           <DailyReport data={data} type={timeOfDay === 'morning' ? 'morning' : 'evening'} />
         </div>
       )}
+      {!editing && <WeeklySummary data={data} />}
 
       {/* Sortable sections */}
       <DndContext

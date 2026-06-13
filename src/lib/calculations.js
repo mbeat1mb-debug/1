@@ -80,7 +80,7 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v))
 }
 
-export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvHistory, rhrHistory }) {
+export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvHistory, rhrHistory, sleepHistory = [] }) {
   const avgHRV = average(hrvHistory.filter(Boolean))
   const avgRHR = average(rhrHistory.filter(Boolean))
 
@@ -100,7 +100,14 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvH
   if (sleep) {
     const hours = sleep.minutesAsleep / 60
     const efficiency = sleep.efficiency || 85
-    sleepScore = clamp((hours / 8) * 70, 0, 70) + clamp((efficiency / 100) * 30, 0, 30)
+    let optimalHours = 8
+    if (sleepHistory.length >= 7) {
+      const sorted = [...sleepHistory].sort((a, b) => (b.minutes || b.minutesAsleep || 0) - (a.minutes || a.minutesAsleep || 0))
+      const topQ = sorted.slice(0, Math.max(1, Math.floor(sorted.length * 0.25)))
+      const personalMins = topQ.reduce((a, s) => a + (s.minutes || s.minutesAsleep || 0), 0) / topQ.length
+      optimalHours = Math.min(9.5, Math.max(6.5, personalMins / 60))
+    }
+    sleepScore = clamp((hours / optimalHours) * 70, 0, 70) + clamp((efficiency / 100) * 30, 0, 30)
   }
 
   // SpO2: gradient penalties; each 2% drop below 97 is clinically significant

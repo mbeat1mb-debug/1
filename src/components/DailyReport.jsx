@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getRecoveryColor, getRecoveryLabel } from '../lib/calculations'
+import { getTopCorrelations } from '../lib/correlations'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 
@@ -53,6 +54,10 @@ export default function DailyReport({ data, type }) {
 
   const [brief, setBrief] = useState(() => localStorage.getItem(cacheKey) || '')
   const [loading, setLoading] = useState(false)
+  const [topCorr, setTopCorr] = useState(null)
+  useEffect(() => {
+    getTopCorrelations(1).then(r => setTopCorr(r[0] ?? null)).catch(() => {})
+  }, [])
 
   // Reset brief when type or date changes so the new type's cache is loaded
   useEffect(() => {
@@ -63,6 +68,7 @@ export default function DailyReport({ data, type }) {
     recoveryScore = 0, strainScore = 0, stressScore = 0,
     todayHRV = 0, todayRHR = 0, todaySleep, steps = 0, calories = 0,
     hrvHistory = [], rhrHistory = [], sleepDebt = 0, optimalSleepWindow,
+    trainingLoad = null,
   } = data
 
   const avgHRV14 = hrvHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.slice(-14).filter(Boolean).length || 1)
@@ -74,12 +80,20 @@ export default function DailyReport({ data, type }) {
   const recoveryLabel = getRecoveryLabel(recoveryScore)
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
 
-  const optimalStrain = recoveryScore >= 67 ? '12–16' : recoveryScore >= 34 ? '8–12' : '5–8'
+  const optimalStrain = (() => {
+    const [lo, hi] = recoveryScore >= 67 ? [12, 16] : recoveryScore >= 34 ? [8, 12] : [5, 8]
+    const tsb = trainingLoad?.tsb ?? 0
+    const adj = tsb < -20 ? -2 : tsb < -10 ? -1 : tsb > 15 ? 1 : 0
+    return `${lo + adj}–${hi + adj}`
+  })()
 
   useEffect(() => {
     if (!apiKey || brief) return
+    const corrLine = topCorr
+      ? ` Pattern insight: ${topCorr.emoji} ${topCorr.label} days avg ${topCorr.diff > 0 ? '+' : ''}${topCorr.diff}% recovery vs days without.`
+      : ''
     const prompt = type === 'morning'
-      ? `Recovery: ${recoveryScore}%, HRV: ${todayHRV}ms (${hrvDiff >= 0 ? '+' : ''}${hrvDiff}ms vs avg), RHR: ${todayRHR}bpm (${rhrDiff >= 0 ? '+' : ''}${rhrDiff} vs avg), Sleep: ${sleepHours}. What should I focus on today and why?`
+      ? `Recovery: ${recoveryScore}%, HRV: ${todayHRV}ms (${hrvDiff >= 0 ? '+' : ''}${hrvDiff}ms vs avg), RHR: ${todayRHR}bpm (${rhrDiff >= 0 ? '+' : ''}${rhrDiff} vs avg), Sleep: ${sleepHours}.${corrLine} What should I focus on today and why?`
       : `Strain: ${strainScore}/21, Steps: ${steps}, Calories: ${calories}, Stress: ${stressScore}/100, Sleep debt: ${sleepDebt}h. Give me one specific tip for better sleep tonight based on today's data.`
 
     setLoading(true)
@@ -164,9 +178,20 @@ export default function DailyReport({ data, type }) {
           </p>
         )}
         {!brief && !loading && !apiKey && (
-          <p className="text-xs text-gray-600 border-t pt-2" style={{ borderColor: '#222' }}>
-            Add a Claude API key in Coach → Settings to get AI insights here.
-          </p>
+          <div className="border-t pt-2" style={{ borderColor: '#222' }}>
+            {topCorr ? (
+              <p className="text-xs text-gray-400">
+                {topCorr.emoji} <span className="text-white">{topCorr.label}</span>
+                {' → '}
+                <span style={{ color: topCorr.diff > 0 ? '#00c9a7' : '#ef4444' }}>
+                  {topCorr.diff > 0 ? '+' : ''}{topCorr.diff}% recovery
+                </span>
+                <span className="text-gray-600"> vs days without</span>
+              </p>
+            ) : (
+              <p className="text-xs text-gray-600">Add a Claude API key in Settings to get AI insights.</p>
+            )}
+          </div>
         )}
       </div>
     </div>
