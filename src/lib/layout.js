@@ -9,7 +9,7 @@ export const SECTION_META = {
   healthspan:    { label: 'Healthspan',        emoji: '⏳' },
   weeklypattern: { label: 'Weekly Pattern',    emoji: '📊' },
   journal:       { label: 'Journal',           emoji: '📓' },
-  insights:      { label: 'Insights',          emoji: '🔬' },
+  insights:      { label: 'Insights',          emoji: '🔬', noNav: true },
 }
 
 export const DEFAULT_ORDER = ['recovery', 'strain', 'sleep', 'stress', 'records', 'healthspan', 'weeklypattern', 'journal', 'insights']

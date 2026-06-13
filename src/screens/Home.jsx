@@ -371,9 +371,9 @@ function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }
             </div>
           )}
           <button
-            onClick={() => !editing && onNav(id)}
-            className="flex-1 p-4 text-left transition-opacity active:opacity-70 min-w-0"
-            style={{ cursor: editing ? 'default' : 'pointer' }}
+            onClick={() => !editing && !meta?.noNav && onNav(id)}
+            className={`flex-1 p-4 text-left min-w-0 ${!editing && !meta?.noNav ? 'transition-opacity active:opacity-70' : ''}`}
+            style={{ cursor: editing || meta?.noNav ? 'default' : 'pointer' }}
           >
             {minimized ? (
               <div className="flex items-center gap-2 py-0.5">
@@ -437,13 +437,11 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
   const handleTouchEnd = useCallback(() => {
     if (isPullingRef.current) {
-      setPullY(prev => {
-        if (prev >= PULL_THRESHOLD && onRefresh && !isSyncing) onRefresh()
-        return 0
-      })
+      if (pullY >= PULL_THRESHOLD && onRefresh && !isSyncing) onRefresh()
+      setPullY(0)
     }
     isPullingRef.current = false
-  }, [onRefresh, isSyncing])
+  }, [pullY, onRefresh, isSyncing])
 
   const sensors = useSensors(
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
