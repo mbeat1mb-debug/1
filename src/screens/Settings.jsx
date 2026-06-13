@@ -9,6 +9,7 @@ import { getHistory } from '../lib/db'
 import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading } from '../lib/calculations'
 import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
+import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
 import LabResultsSection from '../components/LabResultsSection'
 
 // ── Time options ──────────────────────────────────────────────────────────────
@@ -566,6 +567,9 @@ export default function Settings({ onBack }) {
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
+  const [backupMsg, setBackupMsg] = useState('')
+  const [backupBusy, setBackupBusy] = useState(false)
+  const [lastBackup, setLastBackup] = useState(getLastBackupAt)
   const csvInputRef = useRef(null)
 
   // Height/weight stored in metric; displayed per unit preference
@@ -637,6 +641,37 @@ export default function Settings({ onBack }) {
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleBackup = async () => {
+    setBackupBusy(true)
+    setBackupMsg('')
+    try {
+      const savedAt = await createBackup()
+      const when = new Date(savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      setLastBackup(savedAt)
+      setBackupMsg(`Backed up at ${when}`)
+    } catch (e) {
+      setBackupMsg(`Error: ${e.message}`)
+    } finally {
+      setBackupBusy(false)
+      setTimeout(() => setBackupMsg(''), 6000)
+    }
+  }
+
+  const handleRestore = async () => {
+    if (!window.confirm('Restore from cloud backup? This will overwrite any data entered since the last backup.')) return
+    setBackupBusy(true)
+    setBackupMsg('')
+    try {
+      const { savedAt, days } = await restoreBackup()
+      const when = new Date(savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      setBackupMsg(`Restored ${days} days of history from ${when}`)
+    } catch (e) {
+      setBackupMsg(`Error: ${e.message}`)
+    } finally {
+      setBackupBusy(false)
+    }
   }
 
   const handleDisconnect = () => {
@@ -960,6 +995,42 @@ Labs: marker,value,date`}</pre>
         >
           {exporting ? 'Preparing…' : '⬇ Export Health History (CSV)'}
         </button>
+
+        {/* Cloud Backup */}
+        <div className="pt-2" style={{ borderTop: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Cloud Backup</p>
+          <p className="text-xs text-gray-600 mb-3">
+            Save all settings and health history to the cloud so a browser wipe won't lose your data.
+            {lastBackup && (
+              <span className="block mt-1 text-gray-500">
+                Last backed up: {new Date(lastBackup).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </span>
+            )}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleBackup}
+              disabled={backupBusy}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+              style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a7' }}
+            >
+              {backupBusy ? '…' : '☁ Backup Now'}
+            </button>
+            <button
+              onClick={handleRestore}
+              disabled={backupBusy}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+              style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+            >
+              {backupBusy ? '…' : '⬇ Restore'}
+            </button>
+          </div>
+          {backupMsg && (
+            <p className="text-xs text-center mt-2" style={{ color: backupMsg.startsWith('Error') ? '#ef4444' : '#00c9a7' }}>
+              {backupMsg}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Note on API migration */}
