@@ -135,7 +135,7 @@ export default function Strain({ data, onNav }) {
               { label: 'Aerobic', value: trainingEffect.aerobic, desc: trainingEffect.aerobicLabel, color: '#00c9a7' },
               { label: 'Anaerobic', value: trainingEffect.anaerobic, desc: trainingEffect.anaerobicLabel, color: '#f97316' },
             ].map(({ label, value, desc, color }) => (
-              <div key={label} className="rounded-xl p-3" style={{ background: color + '12', border: `1px solid ${color}30` }}>
+              <div key={label} className="rounded-xl p-3" style={{ background: color + '15', border: `1px solid ${color}33` }}>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
                 <p className="text-3xl font-bold" style={{ color }}>{value.toFixed(1)}</p>
                 <p className="text-[11px] font-semibold mt-1" style={{ color }}>{desc}</p>

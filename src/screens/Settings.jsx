@@ -6,7 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading } from '../lib/calculations'
 import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
@@ -632,7 +632,8 @@ export default function Settings({ onBack }) {
       }
 
       const fatPct = parseFloat(bodyFatPct)
-      if (!isNaN(fatPct) && fatPct > 0 && fatPct < 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
+      if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
+      else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
       localStorage.setItem('user_smoking', smoking)
       const alcohol = parseInt(alcoholWeek, 10)
@@ -878,14 +879,8 @@ export default function Settings({ onBack }) {
             />
             <span className="text-xs text-gray-600">%</span>
             {bodyFatPct && !isNaN(parseFloat(bodyFatPct)) && (
-              <span className="text-xs font-semibold" style={{
-                color: parseFloat(bodyFatPct) < 6 ? '#3b82f6'
-                  : parseFloat(bodyFatPct) < 14 ? '#00c9a7'
-                  : parseFloat(bodyFatPct) < 18 ? '#f59e0b'
-                  : parseFloat(bodyFatPct) < 25 ? '#f97316'
-                  : '#ef4444'
-              }}>
-                {parseFloat(bodyFatPct) < 6 ? 'Essential' : parseFloat(bodyFatPct) < 14 ? 'Athletic' : parseFloat(bodyFatPct) < 18 ? 'Fitness' : parseFloat(bodyFatPct) < 25 ? 'Acceptable' : 'High'}
+              <span className="text-xs font-semibold" style={{ color: getBodyFatColor(parseFloat(bodyFatPct)) }}>
+                {getBodyFatLabel(parseFloat(bodyFatPct))}
               </span>
             )}
           </div>

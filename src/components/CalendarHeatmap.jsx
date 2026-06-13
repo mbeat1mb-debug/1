@@ -88,9 +88,9 @@ export default function CalendarHeatmap({ days = [] }) {
           <p className="text-white font-semibold">
             {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </p>
-          {selected.data ? (
+          {selected.data && (selected.data.recovery != null || selected.data.strain || selected.data.sleep) ? (
             <div className="flex gap-4 mt-1">
-              <span className="text-gray-400">Recovery: <span className="font-bold" style={{ color: getRecoveryColor(selected.data.recovery) }}>{selected.data.recovery}%</span></span>
+              {selected.data.recovery != null && <span className="text-gray-400">Recovery: <span className="font-bold" style={{ color: getRecoveryColor(selected.data.recovery) }}>{selected.data.recovery}%</span></span>}
               {selected.data.strain && <span className="text-gray-400">Strain: <span className="text-blue-400 font-bold">{selected.data.strain}</span></span>}
               {selected.data.sleep && <span className="text-gray-400">Sleep: <span className="text-white font-bold">{Math.round(selected.data.sleep / 60 * 10) / 10}h</span></span>}
             </div>

@@ -86,6 +86,8 @@ const DEMO = {
   unlockedAchievements: ['first_green', 'step_king'],
   alerts: [],
   trainingLoad: { atl: 9.2, ctl: 10.5, tsb: 1.3, form: 'Neutral' },
+  trainingEffect: { aerobic: 2.9, anaerobic: 2.3, aerobicLabel: 'Maintaining', anaerobicLabel: 'Maintaining' },
+  daytimeStress: { score: 32, avgHR: 72, delta: 4.2 },
   weeklyPattern: DEMO_WEEKLY,
   recoveryVelocity: 5,
   stressVelocity: -3,

@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass } from '../lib/calculations'
+import { calculatePhysiologicalAge, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -279,7 +279,7 @@ export default function Healthspan({ data, onNav }) {
             {weightKg > 0 && (
               <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Weight</p>
-                <p className="text-base font-bold text-white">
+                <p className="text-xl font-bold text-white">
                   {units === 'imperial' ? Math.round(weightKg * 2.2046) : Math.round(weightKg * 10) / 10}
                 </p>
                 <p className="text-[10px] text-gray-600">{units === 'imperial' ? 'lbs' : 'kg'}</p>
@@ -288,18 +288,18 @@ export default function Healthspan({ data, onNav }) {
             {bodyFatPct !== null && (
               <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Body Fat</p>
-                <p className="text-base font-bold" style={{ color: bodyFatPct < 14 ? '#00c9a7' : bodyFatPct < 25 ? '#f59e0b' : '#ef4444' }}>
+                <p className="text-xl font-bold" style={{ color: getBodyFatColor(bodyFatPct) }}>
                   {bodyFatPct}%
                 </p>
-                <p className="text-[10px]" style={{ color: bodyFatPct < 6 ? '#3b82f6' : bodyFatPct < 14 ? '#00c9a7' : bodyFatPct < 18 ? '#f59e0b' : bodyFatPct < 25 ? '#f97316' : '#ef4444' }}>
-                  {bodyFatPct < 6 ? 'Essential' : bodyFatPct < 14 ? 'Athletic' : bodyFatPct < 18 ? 'Fitness' : bodyFatPct < 25 ? 'Acceptable' : 'High'}
+                <p className="text-[10px]" style={{ color: getBodyFatColor(bodyFatPct) }}>
+                  {getBodyFatLabel(bodyFatPct)}
                 </p>
               </div>
             )}
             {bmi !== null && (
               <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">BMI</p>
-                <p className="text-base font-bold" style={{ color: getBMIColor(bmi) }}>{bmi}</p>
+                <p className="text-xl font-bold" style={{ color: getBMIColor(bmi) }}>{bmi}</p>
                 <p className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</p>
               </div>
             )}
@@ -308,16 +308,16 @@ export default function Healthspan({ data, onNav }) {
           {/* Lean / fat mass */}
           {leanMass !== null && (
             <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="rounded-xl p-3" style={{ background: '#00c9a710', border: '1px solid #00c9a720' }}>
+              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Lean Mass</p>
-                <p className="text-sm font-bold text-white">
+                <p className="text-base font-bold text-white">
                   {units === 'imperial' ? Math.round(leanMass * 2.2046) : leanMass}
                   <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
                 </p>
               </div>
-              <div className="rounded-xl p-3" style={{ background: '#f59e0b10', border: '1px solid #f59e0b20' }}>
+              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Fat Mass</p>
-                <p className="text-sm font-bold text-white">
+                <p className="text-base font-bold text-white">
                   {units === 'imperial' ? Math.round(fatMass * 2.2046) : fatMass}
                   <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
                 </p>

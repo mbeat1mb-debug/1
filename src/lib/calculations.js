@@ -337,8 +337,11 @@ export function parseFitbitData(raw) {
     ? new Date(todaySleep.endTime).getHours()
     : null
 
-  // Sync Fitbit-logged body weight/fat into local history if available
-  const weightLogs = bodyWeight?.weight ?? []
+  // Sync Fitbit-logged body weight/fat into local history if available.
+  // Sort ascending so the most recent entry is written last and wins as the
+  // quick-access user_weight_kg value, regardless of API return order.
+  // Fitbit returns metric (kg / %) when no Accept-Language header is sent.
+  const weightLogs = [...(bodyWeight?.weight ?? [])].sort((a, b) => String(a.date).localeCompare(String(b.date)))
   const fatLogs = bodyFat?.fat ?? []
   const fatByDate = {}
   for (const f of fatLogs) fatByDate[f.date] = f.fat
@@ -621,11 +624,17 @@ export function calculateWeeklyPattern(calendarDays) {
 
 const TE_LABELS = ['None', 'Minor Effect', 'Maintaining', 'Improving', 'Highly Improving', 'Overreaching']
 
+// thresholds[i] = minutes required to reach integer score (i + 1).
+// Below thresholds[0], the effect ramps linearly from 0 → ~0.9 (label "None").
 function teScore(mins, thresholds) {
+  if (mins <= 0) return 0
+  if (mins < thresholds[0]) {
+    return Math.round(Math.min(0.9, mins / thresholds[0]) * 10) / 10
+  }
   for (let i = thresholds.length - 1; i >= 0; i--) {
     if (mins >= thresholds[i]) {
       const base = i + 1
-      const next = thresholds[i + 1] ?? thresholds[i] * 2
+      const next = thresholds[i + 1] ?? thresholds[i] * 1.5
       const frac = (mins - thresholds[i]) / (next - thresholds[i])
       return Math.round(Math.min(5, base + Math.min(0.9, frac)) * 10) / 10
     }
@@ -634,19 +643,37 @@ function teScore(mins, thresholds) {
 }
 
 export function calculateTrainingEffect(zoneMinutes) {
-  const [z1, z2, z3, z4, z5] = zoneMinutes ?? [0, 0, 0, 0, 0]
+  const [, z2, z3, z4, z5] = zoneMinutes ?? [0, 0, 0, 0, 0]
   const aerobicMins = (z2 || 0) + (z3 || 0)
   const anaerobicMins = (z4 || 0) + (z5 || 0)
   // Aerobic: meaningful base-building starts at 10 min in Z2/Z3
-  const aerobic = teScore(aerobicMins, [0, 10, 30, 60, 90])
+  const aerobic = teScore(aerobicMins, [10, 30, 60, 90, 120])
   // Anaerobic: intensity work; fewer minutes needed for effect
-  const anaerobic = teScore(anaerobicMins, [0, 3, 8, 15, 25])
+  const anaerobic = teScore(anaerobicMins, [3, 8, 15, 25, 40])
   return {
     aerobic,
     anaerobic,
     aerobicLabel: TE_LABELS[Math.min(5, Math.floor(aerobic))],
     anaerobicLabel: TE_LABELS[Math.min(5, Math.floor(anaerobic))],
   }
+}
+
+// ── Body Fat % classification (shared across Settings + Healthspan) ───────────
+// Male-oriented ACE ranges. Colors follow the app's 3-tier semantic palette
+// (teal = optimal, amber = caution, red = high) — no one-off colors.
+export function getBodyFatLabel(pct) {
+  if (pct < 6) return 'Essential'
+  if (pct < 14) return 'Athletic'
+  if (pct < 18) return 'Fitness'
+  if (pct < 25) return 'Acceptable'
+  return 'High'
+}
+
+export function getBodyFatColor(pct) {
+  if (pct < 6) return '#f59e0b'   // very lean — below healthy floor
+  if (pct < 18) return '#00c9a7'  // athletic / fitness — optimal
+  if (pct < 25) return '#f59e0b'  // acceptable
+  return '#ef4444'                // high
 }
 
 // ── Daytime Stress ──────────────────────────────────────────────────────────
