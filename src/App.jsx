@@ -11,7 +11,7 @@ import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
 } from './lib/achievements'
 import { fireDataNotifications } from './lib/notifications'
-import { saveDay, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
+import { saveDay, saveDaysBatch, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
 
 import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
@@ -241,6 +241,23 @@ export default function App() {
 
       // Persist today and extend calendar with IndexedDB history
       await saveDay(result)
+      if (result.calendarDays?.length) {
+        await saveDaysBatch(result.calendarDays.map(d => ({
+          date: d.date,
+          recovery: d.recovery ?? null,
+          strain: d.strain ?? null,
+          sleep: d.sleep ?? 0,
+          sleepEfficiency: d.sleepEfficiency ?? 0,
+          stressScore: d.stressScore ?? null,
+          hrv: d.hrv ?? null,
+          rhr: d.rhr ?? null,
+          steps: d.steps ?? 0,
+          calories: d.calories ?? 0,
+          spo2: d.spo2 ?? null,
+          br: d.br ?? null,
+          skinTempDev: d.skinTempDev ?? null,
+        })))
+      }
       const dbHistory = await getHistory(90)
       const fitbitDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory

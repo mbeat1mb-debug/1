@@ -64,6 +64,16 @@ export async function saveDay(result) {
   }
 }
 
+export async function saveDaysBatch(rows) {
+  if (!rows?.length) return
+  try {
+    const db = await openDB()
+    for (const row of rows) {
+      await dbPut(db, 'health_days', row)
+    }
+  } catch (e) { console.warn('db saveDaysBatch:', e) }
+}
+
 export async function getHistory(days = 90) {
   try {
     const db = await openDB()

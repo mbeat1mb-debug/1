@@ -473,6 +473,7 @@ async function parseAndImportCSV(file) {
     reader.onload = e => {
       try {
         const lines = e.target.result.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+        if (lines.length) lines[0] = lines[0].replace(/^﻿/, '')
         if (lines.length < 2) { reject(new Error('File appears empty')); return }
 
         const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
@@ -509,7 +510,10 @@ async function parseAndImportCSV(file) {
             const marker = cols[markerIdx]?.toLowerCase().replace(/\s+/g, '_')
             const value = parseFloat(cols[valueIdx])
             const date = dateIdx >= 0 && cols[dateIdx] ? cols[dateIdx] : today
-            if (marker && !isNaN(value)) { existing[marker] = { value, date }; count++ }
+            if (marker && !isNaN(value)) {
+              if (value <= 0 || value > 9999) return
+              existing[marker] = { value, date }; count++
+            }
           })
           saveLabResults(existing)
           resolve({ type: 'Lab Results', count })
@@ -589,34 +593,46 @@ export default function Settings({ onBack }) {
 
   const saveAndConnect = () => {
     if (!clientId.trim()) return
-    localStorage.setItem('fitbit_client_id', clientId.trim())
-    if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
-    const age = parseInt(userAge, 10)
-    if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
+    try {
+      localStorage.setItem('fitbit_client_id', clientId.trim())
+      if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
+      const age = parseInt(userAge, 10)
+      if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
+    } catch {
+      setImportMsg('Error: Settings could not be saved (storage full or restricted)')
+      setTimeout(() => setImportMsg(''), 5000)
+      return
+    }
     startOAuth(clientId.trim())
   }
 
   const saveSettings = () => {
-    if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
-    const age = parseInt(userAge, 10)
-    if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
+    try {
+      if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
+      const age = parseInt(userAge, 10)
+      if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
 
-    localStorage.setItem('user_units', units)
-    if (units === 'imperial') {
-      const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
-      if (!isNaN(ft) && ft > 0) localStorage.setItem('user_height_cm', String(Math.round((ft * 12 + inch) * 2.54)))
-      const lbs = parseFloat(weightLbs)
-      if (!isNaN(lbs) && lbs > 0) localStorage.setItem('user_weight_kg', String(Math.round(lbs / 2.2046 * 10) / 10))
-    } else {
-      const cm = parseFloat(heightCm)
-      if (!isNaN(cm) && cm > 0) localStorage.setItem('user_height_cm', String(cm))
-      const kg = parseFloat(weightKg)
-      if (!isNaN(kg) && kg > 0) localStorage.setItem('user_weight_kg', String(kg))
+      localStorage.setItem('user_units', units)
+      if (units === 'imperial') {
+        const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
+        if (!isNaN(ft) && ft > 0) localStorage.setItem('user_height_cm', String(Math.round((ft * 12 + inch) * 2.54)))
+        const lbs = parseFloat(weightLbs)
+        if (!isNaN(lbs) && lbs > 0) localStorage.setItem('user_weight_kg', String(Math.round(lbs / 2.2046 * 10) / 10))
+      } else {
+        const cm = parseFloat(heightCm)
+        if (!isNaN(cm) && cm > 0) localStorage.setItem('user_height_cm', String(cm))
+        const kg = parseFloat(weightKg)
+        if (!isNaN(kg) && kg > 0) localStorage.setItem('user_weight_kg', String(kg))
+      }
+
+      localStorage.setItem('user_smoking', smoking)
+      const alcohol = parseInt(alcoholWeek, 10)
+      if (!isNaN(alcohol) && alcohol >= 0) localStorage.setItem('user_alcohol_week', String(alcohol))
+    } catch {
+      setImportMsg('Error: Settings could not be saved (storage full or restricted)')
+      setTimeout(() => setImportMsg(''), 5000)
+      return
     }
-
-    localStorage.setItem('user_smoking', smoking)
-    const alcohol = parseInt(alcoholWeek, 10)
-    if (!isNaN(alcohol) && alcohol >= 0) localStorage.setItem('user_alcohol_week', String(alcohol))
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)

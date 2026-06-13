@@ -18,7 +18,7 @@ export async function setPin(pin) {
 
 export async function verifyPin(pin) {
   const stored = localStorage.getItem(KEY)
-  if (!stored) return true
+  if (!stored) return false
   const hash = await hashPin(pin)
   return hash === stored
 }

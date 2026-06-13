@@ -46,10 +46,8 @@ function pruneNotifFlags() {
   const cutoffStr = cutoff.toISOString().split('T')[0]
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i)
-    if (key?.startsWith('notif_')) {
-      const date = key.slice(-10)
-      if (date < cutoffStr) localStorage.removeItem(key)
-    }
+    const m = key?.match(/^notif_.+_(\d{4}-\d{2}-\d{2})$/)
+    if (m && m[1] < cutoffStr) localStorage.removeItem(key)
   }
 }
 
@@ -71,7 +69,7 @@ export function fireDataNotifications(data, newUnlocks = []) {
   for (const id of newUnlocks) {
     showNotification('Achievement Unlocked 🏆', ACHIEVEMENT_LABELS[id] || id)
   }
-  if (recoveryScore < 34 && !sentToday('red_zone')) {
+  if (recoveryScore > 0 && recoveryScore < 34 && !sentToday('red_zone')) {
     markSent('red_zone')
     showNotification('Recovery: Red Zone 🔴', `Score ${recoveryScore}% — rest day recommended.`)
   }

@@ -56,7 +56,7 @@ export function calculateStreaks(recoveryHistory, sleepHistory, stressHistory = 
 
   return {
     recovery: streak(recovery, v => v >= 67),
-    sleep: streak(sleep.map(s => s?.minutes ?? 0), v => v >= 450),
+    sleep: streak(sleep.map(s => s?.minutesAsleep ?? s?.minutes ?? 0), v => v >= 450),
     lowStress: streak(stress, v => v <= 25),
   }
 }

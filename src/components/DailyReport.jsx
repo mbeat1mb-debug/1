@@ -87,7 +87,7 @@ export default function DailyReport({ data, type }) {
       .then(text => { setBrief(text); localStorage.setItem(cacheKey, text) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [type, recoveryScore, todayHRV, todayRHR, strainScore, steps, calories, stressScore, sleepDebt])
+  }, [type, recoveryScore, todayHRV, todayRHR, strainScore, steps, calories, stressScore, sleepDebt, brief, cacheKey])
 
   const isMorning = type === 'morning'
   const accentColor = isMorning ? recoveryColor : '#3b82f6'
