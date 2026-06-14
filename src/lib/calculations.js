@@ -50,10 +50,13 @@ export function calculateStrain(hrIntradayData) {
     if (p.value > sessionMax) sessionMax = p.value
     raw += ZONE_WEIGHTS[hrZone(p.value, maxHR)]
   }
-  // Persist observed peak HR to improve zone accuracy on future syncs
+  // Persist observed peak HR only if within 20 bpm of formula max (guards artifacts)
   try {
+    const formulaMax = Math.round(192 - 0.007 * getUserAge() * getUserAge())
     const stored = parseInt(localStorage.getItem('observed_max_hr') || '0', 10)
-    if (sessionMax > stored) localStorage.setItem('observed_max_hr', String(sessionMax))
+    if (sessionMax > stored && sessionMax <= formulaMax + 20) {
+      localStorage.setItem('observed_max_hr', String(sessionMax))
+    }
   } catch {}
 
   const strain = Math.min(21, 5 + (raw / 900) * 16)
@@ -538,9 +541,15 @@ export function parseFitbitData(raw) {
   const calories = summary?.summary?.caloriesOut ?? 0
   const activeMinutes = (summary?.summary?.fairlyActiveMinutes ?? 0) + (summary?.summary?.veryActiveMinutes ?? 0)
 
-  // VO2 Max from Fitbit Cardio Fitness Score (value is string like "47-51" — take lower bound)
+  // VO2 Max from Fitbit Cardio Fitness Score (value is string like "47-51" — use midpoint)
   const vo2MaxRaw = cardioFitness?.cardioScore?.[0]?.value?.vo2Max ?? null
-  const vo2Max = vo2MaxRaw ? parseInt(String(vo2MaxRaw).split('-')[0], 10) || 0 : 0
+  const vo2Max = (() => {
+    if (!vo2MaxRaw) return 0
+    const parts = String(vo2MaxRaw).split('-')
+    const lo = parseInt(parts[0], 10) || 0
+    const hi = parts.length > 1 ? (parseInt(parts[1], 10) || lo) : lo
+    return Math.round((lo + hi) / 2) || 0
+  })()
   const vo2MaxRange = vo2MaxRaw ? String(vo2MaxRaw) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
@@ -1000,11 +1009,22 @@ export function calculateSleepApneaRisk({ spo2Intraday, br, todaySleep }) {
   const vals = sleepReads.map(r => r.value)
   const minSpo2 = Math.min(...vals)
   const avgSpo2 = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
-  const below94 = vals.filter(v => v < 94).length
   const below90 = vals.filter(v => v < 90).length
   const sleepHours = todaySleep ? (todaySleep.minutesAsleep || 420) / 60 : 7
-  // Each 5-min interval below 94% treated as a proxy desaturation event
-  const odi = Math.round((below94 / sleepHours) * 10) / 10
+
+  // ODI: count discrete desaturation events (≥3% drop from baseline, then recovery).
+  // Baseline = 90th-percentile SpO2 (resistant to being dragged down by sustained desaturations),
+  // capped at 97 since overnight SpO2 rarely exceeds that even in healthy sleepers.
+  const sorted = [...vals].sort((a, b) => a - b)
+  const baseline = Math.min(97, sorted[Math.floor(vals.length * 0.9)] ?? 97)
+  const dropThreshold = baseline - 3
+  let eventCount = 0
+  let inEvent = false
+  for (const v of vals) {
+    if (!inEvent && v <= dropThreshold) { inEvent = true; eventCount++ }
+    else if (inEvent && v > dropThreshold) { inEvent = false }
+  }
+  const odi = Math.round((eventCount / sleepHours) * 10) / 10
   const brElevated = br != null && br > 18
 
   let risk = 'Low', riskLevel = 0
