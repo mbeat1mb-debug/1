@@ -6,7 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry } from '../lib/calculations'
 import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
@@ -465,6 +465,67 @@ function PinSection() {
   )
 }
 
+// ── Apple Health XML Import ───────────────────────────────────────────────────
+// Parses the export.xml from Apple Health's "Export All Health Data" zip.
+// Targets body mass, body fat %, and lean body mass records from any source.
+// Uses a fast string-scan approach rather than DOMParser to handle large files.
+function parseAppleHealthBodyData(xmlText) {
+  const BODY_MASS = 'HKQuantityTypeIdentifierBodyMass'
+  const BODY_FAT  = 'HKQuantityTypeIdentifierBodyFatPercentage'
+  const LEAN_MASS = 'HKQuantityTypeIdentifierLeanBodyMass'
+  const TARGET_TYPES = [BODY_MASS, BODY_FAT, LEAN_MASS]
+
+  const byDate = {} // date → { kg?, fatPct? }
+  let pos = 0
+
+  while (pos < xmlText.length) {
+    const start = xmlText.indexOf('<Record', pos)
+    if (start === -1) break
+    const end = xmlText.indexOf('>', start)
+    if (end === -1) { pos = start + 7; continue }
+
+    const tag = xmlText.substring(start, end + 1)
+    pos = end + 1
+
+    // Quick pre-check before allocating regex objects
+    if (!TARGET_TYPES.some(t => tag.includes(t))) continue
+
+    const type  = /\btype="([^"]+)"/.exec(tag)?.[1]
+    const value = parseFloat(/\bvalue="([^"]+)"/.exec(tag)?.[1])
+    const date  = /\bstartDate="(\d{4}-\d{2}-\d{2})/.exec(tag)?.[1]
+    const unit  = /\bunit="([^"]+)"/.exec(tag)?.[1] ?? 'kg'
+
+    if (!type || isNaN(value) || !date) continue
+
+    if (!byDate[date]) byDate[date] = {}
+
+    if (type === BODY_MASS) {
+      // Weight: handle kg and lb
+      const kg = unit.toLowerCase().startsWith('lb') ? value / 2.2046 : value
+      if (kg > 20 && kg < 300) byDate[date].kg = Math.round(kg * 10) / 10
+    } else if (type === BODY_FAT) {
+      // Apple Health stores fat% as decimal 0-1; some apps write as 0-100
+      const pct = value <= 1 ? Math.round(value * 1000) / 10 : Math.round(value * 10) / 10
+      if (pct > 2 && pct < 65) byDate[date].fatPct = pct
+    } else if (type === LEAN_MASS && !byDate[date].fatPct) {
+      // Back-calculate fat% from lean mass + weight if fat% not directly available
+      // We'll resolve this after collecting all records for the date
+      const kg = unit.toLowerCase().startsWith('lb') ? value / 2.2046 : value
+      if (kg > 10 && kg < 200) byDate[date].leanKg = Math.round(kg * 10) / 10
+    }
+  }
+
+  // Second pass: derive fat% from lean mass when direct fat% is absent
+  for (const [date, entry] of Object.entries(byDate)) {
+    if (!entry.fatPct && entry.kg && entry.leanKg) {
+      const derived = ((entry.kg - entry.leanKg) / entry.kg) * 100
+      if (derived > 2 && derived < 65) entry.fatPct = Math.round(derived * 10) / 10
+    }
+  }
+
+  return byDate
+}
+
 // ── CSV Import ────────────────────────────────────────────────────────────────
 
 async function parseAndImportCSV(file) {
@@ -570,7 +631,10 @@ export default function Settings({ onBack }) {
   const [backupMsg, setBackupMsg] = useState('')
   const [backupBusy, setBackupBusy] = useState(false)
   const [lastBackup, setLastBackup] = useState(getLastBackupAt)
+  const [ahImporting, setAhImporting] = useState(false)
+  const [ahMsg, setAhMsg] = useState('')
   const csvInputRef = useRef(null)
+  const ahInputRef = useRef(null)
 
   // Height/weight stored in metric; displayed per unit preference
   const storedHCm = parseFloat(localStorage.getItem('user_height_cm') || '0') || 0
@@ -683,6 +747,46 @@ export default function Settings({ onBack }) {
     disconnect()
     localStorage.removeItem('fitbit_client_id')
     setConnected(false)
+  }
+
+  const handleAppleHealthImport = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setAhImporting(true)
+    setAhMsg('')
+    const reader = new FileReader()
+    reader.onerror = () => { setAhImporting(false); setAhMsg('Error: could not read file') }
+    reader.onload = (ev) => {
+      try {
+        const xml = ev.target.result
+        const byDate = parseAppleHealthBodyData(xml)
+        const dates = Object.keys(byDate).sort()
+        if (!dates.length) { setAhMsg('No body composition records found'); setAhImporting(false); return }
+        let weightCount = 0, fatCount = 0
+        for (const date of dates) {
+          const { kg, fatPct } = byDate[date]
+          if (kg || fatPct) {
+            saveBodyWeightEntry(date, kg ?? null, fatPct ?? null)
+            if (kg) weightCount++
+            if (fatPct) fatCount++
+          }
+        }
+        // Set latest body fat % as the live setting
+        const latestDate = dates[dates.length - 1]
+        if (byDate[latestDate]?.fatPct) {
+          localStorage.setItem('user_body_fat_pct', String(byDate[latestDate].fatPct))
+          setBodyFatPct(String(byDate[latestDate].fatPct))
+        }
+        setAhMsg(`Imported ${weightCount} weight + ${fatCount} body fat readings (${dates[0]} → ${latestDate})`)
+      } catch (err) {
+        setAhMsg(`Error: ${err.message}`)
+      } finally {
+        setAhImporting(false)
+        setTimeout(() => setAhMsg(''), 8000)
+      }
+    }
+    reader.readAsText(file)
   }
 
   const handleExport = async () => {
@@ -980,6 +1084,56 @@ export default function Settings({ onBack }) {
       {/* Push Notifications */}
       <PushNotificationsSection />
 
+      {/* Apple Health Import */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">Apple Health — Body Composition</p>
+          <p className="text-xs text-gray-500">Import weight and body fat % history from your Hume scale (or any Apple Health source) directly into Soma.</p>
+        </div>
+
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">How to export</p>
+          {[
+            'Open the Health app on iPhone',
+            'Tap your profile photo → Export All Health Data',
+            'Save the zip to Files',
+            'Open Files → tap the zip → navigate to export.xml',
+            'Tap the share icon → choose this app or pick the file below',
+          ].map((s, i) => (
+            <p key={i} className="text-[11px] text-gray-600">
+              <span className="text-gray-500 font-semibold">{i + 1}.</span> {s}
+            </p>
+          ))}
+        </div>
+
+        <input
+          ref={ahInputRef}
+          type="file"
+          accept=".xml,text/xml,application/xml"
+          className="hidden"
+          onChange={handleAppleHealthImport}
+        />
+        <button
+          onClick={() => ahInputRef.current?.click()}
+          disabled={ahImporting}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+        >
+          {ahImporting ? 'Parsing…  (large files may take a moment)' : '↑ Select Apple Health export.xml'}
+        </button>
+        {ahMsg && (
+          <p className="text-xs text-center" style={{ color: ahMsg.startsWith('Error') || ahMsg.startsWith('No') ? '#f59e0b' : '#00c9a7' }}>
+            {ahMsg}
+          </p>
+        )}
+
+        <div className="rounded-xl p-3" style={{ background: '#0d1a0d', border: '1px solid #1a2e1a' }}>
+          <p className="text-[11px] text-gray-500">
+            <span className="text-green-500 font-semibold">Ongoing sync:</span> In the Fitbit app, enable Settings → Health Metrics → Apple Health to let Fitbit read Hume's data automatically on each daily sync.
+          </p>
+        </div>
+      </div>
+
       {/* Data import / export */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
         <div>
@@ -1071,7 +1225,7 @@ Labs: marker,value,date`}</pre>
         <p className="text-xs text-gray-500">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
         {[
           { icon: '🏠', label: 'Home Screen Widget', desc: 'Recovery ring on your home screen without opening the app' },
-          { icon: '🍎', label: 'Apple Health Sync', desc: 'Write your scores into the native Apple Health app' },
+          { icon: '🍎', label: 'Apple Health Write-Back', desc: 'Push your Soma recovery/strain scores into the Apple Health app' },
           { icon: '🔄', label: 'Background Sync', desc: 'Data refreshes at 6am — numbers waiting before you open it' },
         ].map(f => (
           <div key={f.label} className="flex items-start gap-3 py-2" style={{ borderTop: '1px solid #1a1a1a' }}>
