@@ -6,7 +6,7 @@ import {
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR,
-  calculateSleepApneaRisk, calculateSocialJetLag,
+  calculateSleepApneaRisk, calculateSocialJetLag, getHRVNorm, getUserAge,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -203,14 +203,18 @@ export default function App() {
     const recoveryHistory = []
     const stressHistory = []
     const recoveryByDate = {}
+    // Use age-norm HRV as bootstrap prior so day-1 scores reflect actual HRV quality,
+    // not a neutral 50% that comes from a zero baseline.
+    const hrvBootstrapPrior = getHRVNorm(getUserAge())
     let hrvRunSum = 0, hrvRunCount = 0, rhrRunSum = 0, rhrRunCount = 0
     parsed.hrvHistory.forEach((hrv, i) => {
       if (!hrv) return
       const date = parsed.historyDates[i]
       const sleepEntry = sleepByDate[date]
       const rhr = parsed.rhrHistory[i]
-      // Use running average of all PRIOR entries (not the current one) as baseline
-      const preAvgHRV = hrvRunCount > 0 ? hrvRunSum / hrvRunCount : 0
+      // Use running average of all PRIOR entries (not the current one) as baseline.
+      // Fall back to age-norm prior on first day so initial score is meaningful.
+      const preAvgHRV = hrvRunCount > 0 ? hrvRunSum / hrvRunCount : hrvBootstrapPrior
       const preAvgRHR = rhrRunCount > 0 ? rhrRunSum / rhrRunCount : 0
       const recovery = calculateRecovery({
         hrv, rhr,
@@ -221,7 +225,7 @@ export default function App() {
           remMinutes: sleepEntry.remMinutes,
         } : null,
         spo2: 97, br: 14,
-        preAvgHRV: preAvgHRV || undefined,
+        preAvgHRV,
         preAvgRHR: preAvgRHR || undefined,
         preOptimalSleepHours: optimalSleepHours,
       })

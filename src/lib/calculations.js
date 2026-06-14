@@ -408,7 +408,7 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else if (homaIR < 2.0) metabolic += 0
     else if (homaIR < 3.0) metabolic += 2
     else if (homaIR < 5.0) metabolic += 4
-    else                   metabolic += 6
+    else                   metabolic += 5
   }
 
   // TyG Index fallback: validated IR surrogate when HOMA-IR unavailable (no fasting insulin)
@@ -506,7 +506,7 @@ export function calculatePaceOfAging() {
     const first = history[0]
     const last = history[history.length - 1]
     const calDays = Math.round((new Date(last.date) - new Date(first.date)) / 86400000)
-    if (calDays < 14) return null
+    if (calDays < 30) return null
     const bioAgeDelta = last.physAge - first.physAge
     const calYears = calDays / 365.25
     const rate = Math.round((bioAgeDelta / calYears) * 100) / 100
@@ -581,7 +581,7 @@ export function parseFitbitData(raw) {
   const fatByDate = {}
   for (const f of fatLogs) fatByDate[f.date] = f.fat
   for (const w of weightLogs) {
-    if (w.date && w.weight) saveBodyWeightEntry(w.date, w.weight, fatByDate[w.date] ?? null)
+    if (w.date && w.weight) saveBodyWeightEntry(w.date, w.weight, fatByDate[w.date] ?? null, 'fitbit')
   }
 
   return {
@@ -726,12 +726,14 @@ export function getBodyWeightHistory() {
   try { return JSON.parse(localStorage.getItem('weight_history') || '[]') } catch { return [] }
 }
 
-export function saveBodyWeightEntry(date, kg, fatPct) {
+export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual') {
   if (!kg || kg < 20 || kg > 300) return
   try {
     const history = getBodyWeightHistory()
     const idx = history.findIndex(e => e.date === date)
-    const entry = { date, kg: Math.round(kg * 10) / 10, fatPct: fatPct || null }
+    // Manual entries win over Fitbit — don't let a sync overwrite what the user typed
+    if (source === 'fitbit' && idx >= 0 && history[idx].source === 'manual') return
+    const entry = { date, kg: Math.round(kg * 10) / 10, fatPct: fatPct || null, source }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)
     history.sort((a, b) => a.date.localeCompare(b.date))
@@ -928,7 +930,8 @@ export function calculateSRI(sleepHistory) {
   let matchMins = 0, totalMins = 0
   for (let i = 0; i < valid.length - 1; i++) {
     const n1 = valid[i], n2 = valid[i + 1]
-    if (Math.round((new Date(n2.date) - new Date(n1.date)) / 86400000) !== 1) continue
+    const expectedNext = (() => { const d = new Date(n1.date + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] })()
+    if (n2.date !== expectedNext) continue
     const m1 = new Date(n1.date + 'T00:00:00')
     const m2 = new Date(n2.date + 'T00:00:00')
     const s1s = Math.round((new Date(n1.startTime) - m1) / 60000)

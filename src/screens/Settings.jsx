@@ -718,6 +718,7 @@ export default function Settings({ onBack }) {
       if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
 
       localStorage.setItem('user_units', units)
+      const today = new Date().toISOString().split('T')[0]
       if (units === 'imperial') {
         const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
         if (!isNaN(ft) && ft > 0) localStorage.setItem('user_height_cm', String(Math.round((ft * 12 + inch) * 2.54)))
@@ -734,7 +735,10 @@ export default function Settings({ onBack }) {
       if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
       else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
-      const today = new Date().toISOString().split('T')[0]
+      // Write a manual-source history entry so Fitbit sync can't overwrite this weight
+      const savedKg = parseFloat(localStorage.getItem('user_weight_kg') || '0')
+      const savedFat = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
+      if (savedKg > 0) saveBodyWeightEntry(today, savedKg, savedFat > 0 ? savedFat : null, 'manual')
       if (units === 'imperial') {
         const wIn = parseFloat(waistIn)
         if (!isNaN(wIn) && wIn > 0) saveWaistEntry(today, Math.round(wIn * 2.54 * 10) / 10)
