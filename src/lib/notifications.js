@@ -72,7 +72,7 @@ export function getDataNudges() {
   const lastBP = bpReadings.length ? bpReadings[bpReadings.length - 1].date : null
   const daysSinceBP = lastBP ? Math.floor((today - new Date(lastBP)) / 86400000) : 999
   if ([1, 3, 5].includes(dayOfWeek) && daysSinceBP > 2) {
-    nudges.push({ id: 'data_bp', title: 'Log Blood Pressure', body: 'Take a quick reading — it only takes 60 seconds and sharpens your biological age.' })
+    nudges.push({ id: 'data_bp', title: 'Log Blood Pressure', body: 'Open the Journal tab to log a quick reading — it only takes 60 seconds.' })
   }
 
   // Body metrics: monthly — on the 1st or if >55 days overdue

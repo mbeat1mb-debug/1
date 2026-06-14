@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import DailyReport from '../components/DailyReport'
-import { getUserAge } from '../lib/calculations'
+import {
+  getUserAge, getUserBodyFatPct, getUserHeightCm, getUserWeightKg,
+  calculateLeanMass, getUserWaistCm, getUserGripStrengthKg,
+  getHOMAIR, getAverageBP, calculatePhysiologicalAge,
+} from '../lib/calculations'
+import { getPhenoAgeResult, getLabResults } from '../lib/labs'
 import { getJournalEntries, getAllTags } from '../lib/storage'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
@@ -66,6 +71,7 @@ function buildWeeklyPrompt(data) {
 
   const age = getUserAge()
   const journalContext = getRecentJournalContext()
+  const longevityCtx = buildLongevityContext(data)
   return `Generate a concise but insightful weekly health report for this person. Age ${age}.
 
 THIS WEEK:
@@ -73,8 +79,60 @@ THIS WEEK:
 - Avg RHR: ${avgRHR7} bpm
 - Avg Sleep: ${avgSleep7}h/night
 - Today's Recovery: ${recoveryScore}%, Strain: ${strainScore}, Sleep Score: ${sleepScore}%, Stress: ${stressScore}
+${longevityCtx}
 ${journalContext ? '\n' + journalContext : ''}
-FORMAT: Write 3-4 short paragraphs: (1) This week's overall picture in 1-2 sentences, (2) What went well, (3) Main opportunity to improve, (4) One specific action for next week. Be direct and personal — use "you" and specific numbers. No bullet points, just prose. Max 250 words.`
+FORMAT: Write 3-4 short paragraphs: (1) This week's overall picture including biological age trend if relevant, (2) What went well, (3) Main opportunity to improve, (4) One specific action for next week. Be direct and personal — use "you" and specific numbers. No bullet points, just prose. Max 280 words.`
+}
+
+function buildLongevityContext(data) {
+  const userAge = getUserAge()
+  const bodyFatPct = getUserBodyFatPct()
+  const heightCm = getUserHeightCm()
+  const weightKg = getUserWeightKg()
+  const leanMass = calculateLeanMass(weightKg, bodyFatPct)
+  const ffmi = leanMass && heightCm ? Math.round(leanMass / Math.pow(heightCm / 100, 2) * 10) / 10 : null
+  const waistCm = getUserWaistCm()
+  const gripKg = getUserGripStrengthKg()
+  const homaIR = getHOMAIR()
+  const bp = getAverageBP()
+  const phenoAge = getPhenoAgeResult()
+
+  const avgHRV = (data.hrvHistory || []).filter(Boolean).slice(-14)
+  const avgHRVVal = avgHRV.length ? avgHRV.reduce((a, b) => a + b, 0) / avgHRV.length : 0
+  const avgRHR = (data.rhrHistory || []).filter(Boolean).slice(-14)
+  const avgRHRVal = avgRHR.length ? avgRHR.reduce((a, b) => a + b, 0) / avgRHR.length : 0
+  const avgSleep = data.sleepHistory?.length
+    ? data.sleepHistory.reduce((a, s) => a + s.minutes, 0) / data.sleepHistory.length / 60 : 0
+
+  const physAge = calculatePhysiologicalAge({
+    avgHRV: avgHRVVal, avgRHR: avgRHRVal, avgSleep,
+    sleepConsistency: 0.7,
+    avgSteps: data.steps || 0,
+    weeklyAZM: data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0),
+    vo2Max: data.vo2Max || 0,
+  })
+
+  const labs = getLabResults()
+  const labLines = []
+  const KEY_LABS = ['ldl', 'hdl', 'total_chol', 'trig', 'apob', 'lpa', 'glucose', 'hba1c', 'insulin', 'hscrp', 'homocysteine', 'vit_d']
+  for (const key of KEY_LABS) {
+    if (labs[key]?.value) labLines.push(`  ${key.toUpperCase()}: ${labs[key].value}`)
+  }
+
+  const lines = [
+    `\nLONGEVITY PROFILE:`,
+    `- Biological Age (wearable model): ${physAge}y (calendar: ${userAge}y, diff: ${physAge - userAge > 0 ? '+' : ''}${physAge - userAge}y)`,
+    phenoAge !== null ? `- PhenoAge (Levine bloodwork formula): ${Math.round(phenoAge)}y` : null,
+    data.vo2Max > 0 ? `- VO2 Max: ${data.vo2Max} mL/kg/min` : null,
+    bodyFatPct !== null ? `- Body Fat: ${bodyFatPct}%${ffmi !== null ? ` · FFMI: ${ffmi} kg/m²` : ''}` : null,
+    waistCm > 0 ? `- Waist: ${waistCm}cm` : null,
+    gripKg > 0 ? `- Grip strength: ${gripKg}kg` : null,
+    homaIR > 0 ? `- HOMA-IR (insulin resistance index): ${homaIR}` : null,
+    bp.sys > 0 ? `- Blood pressure: ${bp.sys}/${bp.dia} mmHg` : null,
+    labLines.length ? `- Key labs:\n${labLines.join('\n')}` : null,
+  ].filter(Boolean)
+
+  return lines.join('\n')
 }
 
 function buildSystemPrompt(data) {
@@ -88,7 +146,7 @@ function buildSystemPrompt(data) {
 
   return `You are a world-class personal health coach with access to the user's complete Fitbit Air biometric data.
 You give specific, actionable, evidence-based advice tailored to their exact numbers — never generic.
-You are direct, encouraging, and concise. You understand HRV, strain, recovery science deeply.
+You are direct, encouraging, and concise. You understand HRV, strain, recovery, and longevity science deeply.
 
 USER PROFILE: Age ${getUserAge()}. Uses Fitbit Air tracker.
 
@@ -104,8 +162,9 @@ TODAY'S DATA:
 - Respiratory Rate: ${todayBR} br/min
 - Steps: ${steps?.toLocaleString() ?? 'unknown'}
 - Calories: ${calories?.toLocaleString() ?? 'unknown'} kcal
+${buildLongevityContext(data)}
 
-GUIDANCE: Answer health and performance questions using this data. When asked "should I work out," give a specific recommendation with reasoning. When asked about trends, reference the numbers. Keep replies concise (2-4 sentences usually). Never say "consult a doctor" for general fitness questions.${getRecentJournalContext()}`
+GUIDANCE: Answer health, performance, and longevity questions using this data. When asked "should I work out," give a specific recommendation. When asked about biological age or longevity metrics, explain what's driving them and what to improve. Keep replies concise (2-4 sentences usually). Never say "consult a doctor" for general fitness questions.${getRecentJournalContext()}`
 }
 
 const STARTERS = [
@@ -113,8 +172,10 @@ const STARTERS = [
   'Why is my recovery low?',
   'How can I improve my HRV?',
   'Am I getting enough sleep?',
+  'What\'s driving my biological age?',
+  'How can I lower my biological age?',
   'What does my stress score mean?',
-  'How\'s my fitness trending?',
+  'How\'s my VO2 Max trending?',
 ]
 
 function WeeklyReport({ data, apiKey }) {

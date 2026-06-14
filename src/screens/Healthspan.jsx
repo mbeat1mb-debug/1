@@ -115,7 +115,7 @@ export default function Healthspan({ data, onNav }) {
     ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
     : 0
 
-  const weeklyAZM = data.activeMinutes ? data.activeMinutes * 7 : 0
+  const weeklyAZM = data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0)
   const smoking = getUserSmoking()
   const alcoholWeek = getUserAlcohol()
   const bp = getAverageBP()

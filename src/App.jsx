@@ -55,7 +55,7 @@ const DEMO_WEEKLY = (() => {
 const DEMO = {
   recoveryScore: 74, strainScore: 11.2, sleepScore: 78, stressScore: 28,
   todayHRV: 58, todayRHR: 54, todaySpO2: 97, todayBR: 14,
-  steps: 8340, calories: 2180, activeMinutes: 42,
+  steps: 8340, calories: 2180, activeMinutes: 42, weeklyAZM: 310,
   zoneMinutes: [18, 32, 25, 8, 2],
   vo2Max: 47,
   skinTempDev: 0.10,
@@ -322,7 +322,11 @@ export default function App() {
       // Weekly pattern from merged 90-day calendar
       const weeklyPattern = calculateWeeklyPattern(mergedCalendar)
 
-      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity }
+      // True 7-day Active Zone Minutes: today + last 6 days from DB history
+      const last6AZM = dbHistory.slice(-6).map(d => d.activeMinutes || 0)
+      const weeklyAZM = (result.activeMinutes || 0) + last6AZM.reduce((a, b) => a + b, 0)
+
+      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM }
       await saveSnapshot(finalResult)
       setAppData(finalResult)
       setDemo(false)
