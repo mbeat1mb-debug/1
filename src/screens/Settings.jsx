@@ -737,7 +737,7 @@ export default function Settings({ onBack }) {
       const today = new Date().toISOString().split('T')[0]
       if (units === 'imperial') {
         const wIn = parseFloat(waistIn)
-        if (!isNaN(wIn) && wIn > 0) saveWaistEntry(today, Math.round(wIn * 2.54))
+        if (!isNaN(wIn) && wIn > 0) saveWaistEntry(today, Math.round(wIn * 2.54 * 10) / 10)
         const gLbs = parseFloat(gripLbs)
         if (!isNaN(gLbs) && gLbs > 0) saveGripEntry(today, Math.round(gLbs / 2.2046 * 10) / 10)
       } else {

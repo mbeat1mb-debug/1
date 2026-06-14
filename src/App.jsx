@@ -337,7 +337,11 @@ export default function App() {
       const weeklyZone2 = (result.zoneMinutes?.[1] || 0) + last6Zone2.reduce((a, b) => a + b, 0)
 
       // VO2 Max longitudinal history from IndexedDB (Fitbit updates infrequently)
+      // dbHistory is fetched before saveDay, so today's entry may not be present yet — append it
       const vo2MaxHistory = dbHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
+      if (result.vo2Max > 0 && (vo2MaxHistory.length === 0 || vo2MaxHistory[vo2MaxHistory.length - 1].date !== result.date)) {
+        vo2MaxHistory.push({ date: result.date, vo2Max: result.vo2Max })
+      }
 
       const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory }
       await saveSnapshot(finalResult)

@@ -177,7 +177,7 @@ export default function Healthspan({ data, onNav }) {
     vo2Max, avgDeepPct, avgRemPct, hrvHistory,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct, hrvHistory])
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct, data.hrvHistory?.length])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
@@ -479,7 +479,7 @@ export default function Healthspan({ data, onNav }) {
             <span className="text-[10px] text-gray-600 whitespace-nowrap">300 goal</span>
           </div>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">60–70% max HR (Fitbit Zone 2). 150 min/week = good, 300 min/week = excellent for longevity.</p>
+        <p className="text-[10px] text-gray-600 mt-2">60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
       </div>
 
       {/* What's moving the needle */}
