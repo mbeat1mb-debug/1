@@ -6,6 +6,7 @@ import {
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR,
+  calculateSleepApneaRisk, calculateSocialJetLag,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -249,11 +250,17 @@ export default function App() {
     }))
 
     const hrr = calculateHRR(parsed.hrIntradayData)
+    const sleepApneaRisk = calculateSleepApneaRisk({
+      spo2Intraday: raw.spo2Intraday,
+      br: parsed.todayBR,
+      todaySleep: parsed.todaySleep,
+    })
+    const socialJetLag = calculateSocialJetLag(parsed.sleepHistory)
 
     const base = {
       ...parsed, recoveryScore, strainScore, zoneMinutes, trainingEffect, daytimeStress,
       stressScore, sleepScore, sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays,
-      stressHistory, recoveryVelocity, stressVelocity, hrr,
+      stressHistory, recoveryVelocity, stressVelocity, hrr, sleepApneaRisk, socialJetLag,
     }
 
     const pr = updatePersonalRecords({

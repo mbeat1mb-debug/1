@@ -67,6 +67,10 @@ export async function getSpO2(date = today()) {
   return fitbitFetch(`/1/user/-/spo2/date/${date}.json`)
 }
 
+export async function getSpO2Intraday(date = today()) {
+  return fitbitFetch(`/1/user/-/spo2/date/${date}/all.json`)
+}
+
 export async function getRespiratoryRate(date = today()) {
   return fitbitFetch(`/1/user/-/br/date/${date}.json`)
 }
@@ -103,6 +107,7 @@ export async function loadDashboardData() {
     skinTemp,
     bodyWeight,
     bodyFat,
+    spo2Intraday,
   ] = await Promise.all([
     getDailySummary(date),
     getHeartRateIntraday(date),
@@ -117,7 +122,8 @@ export async function loadDashboardData() {
     getSkinTemp(date),
     getBodyWeight(),
     getBodyFat(),
+    getSpO2Intraday(date),
   ])
 
-  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, date }
+  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, date }
 }

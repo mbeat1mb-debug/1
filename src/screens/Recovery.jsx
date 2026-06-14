@@ -18,7 +18,7 @@ function BackButton({ onNav }) {
 export default function Recovery({ data, onNav }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
     todaySleep, hrvHistory = [], rhrHistory = [], sleepHistory = [],
-    historyDates = [], vo2Max = 0, skinTempDev } = data
+    historyDates = [], vo2Max = 0, skinTempDev, recoveryHistory = [] } = data
 
   const [spo2History, setSpo2History] = useState([])
   const [brHistory, setBrHistory] = useState([])
@@ -40,6 +40,14 @@ export default function Recovery({ data, onNav }) {
 
   const color = getRecoveryColor(recoveryScore)
   const label = getRecoveryLabel(recoveryScore)
+
+  const rec30 = recoveryHistory.filter(Boolean).slice(-30)
+  const avgRecovery30 = rec30.length >= 3
+    ? Math.round(rec30.reduce((a, b) => a + b, 0) / rec30.length)
+    : null
+  const volatility30 = rec30.length >= 3
+    ? Math.round(Math.sqrt(rec30.reduce((sq, v) => sq + Math.pow(v - avgRecovery30, 2), 0) / rec30.length) * 10) / 10
+    : null
   const avgBP = getAverageBP()
   const bpReadings = getBPReadings()
   const hasBP = avgBP.sys > 0
@@ -109,6 +117,28 @@ export default function Recovery({ data, onNav }) {
           )}
         </div>
       </div>
+
+      {/* Recovery Stability */}
+      {avgRecovery30 !== null && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Recovery Stability — 30 Days</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">30-Day Avg</p>
+              <p className="text-2xl font-bold" style={{ color: getRecoveryColor(avgRecovery30) }}>{avgRecovery30}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: getRecoveryColor(avgRecovery30) }}>{getRecoveryLabel(avgRecovery30)}</p>
+            </div>
+            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Volatility (σ)</p>
+              <p className="text-2xl font-bold" style={{ color: volatility30 <= 8 ? '#00c9a7' : volatility30 <= 15 ? '#f59e0b' : '#ef4444' }}>{volatility30}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: volatility30 <= 8 ? '#00c9a7' : volatility30 <= 15 ? '#f59e0b' : '#ef4444' }}>
+                {volatility30 <= 8 ? 'Stable' : volatility30 <= 15 ? 'Moderate swings' : 'High variability'}
+              </p>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-600 mt-2">Low σ = consistent recovery. High σ = frequent hard efforts or lifestyle swings.</p>
+        </div>
+      )}
 
       {/* Key metrics */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>

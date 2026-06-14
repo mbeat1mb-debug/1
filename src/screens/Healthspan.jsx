@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -170,6 +170,8 @@ export default function Healthspan({ data, onNav }) {
   const homaIR = getHOMAIR()
   const tygIndex = getTyGIndex()
   const sri = calculateSRI(sleepHistory)
+  const sleepApneaRisk = data.sleepApneaRisk ?? null
+  const socialJetLag = data.socialJetLag ?? null
   const ffmi = leanMass !== null && heightCm > 0 ? Math.round((leanMass / Math.pow(heightCm / 100, 2)) * 10) / 10 : null
   const labContributions = getLabContributions()
   const labAdj = getLabAgeAdjustment()
@@ -346,7 +348,14 @@ export default function Healthspan({ data, onNav }) {
     }] : []),
   ]
 
-  const allOpportunities = [...contributions, ...labContributions].filter(c => c.contribution > 0).sort((a, b) => b.contribution - a.contribution)
+  const allContributions = [...contributions, ...labContributions]
+  const allOpportunities = allContributions.filter(c => c.contribution > 0).sort((a, b) => b.contribution - a.contribution)
+  const allAssets = allContributions.filter(c => c.contribution < 0).sort((a, b) => a.contribution - b.contribution)
+
+  const healthspanDeltas = getHealthspanDeltas({
+    vo2Max, steps, weeklyAZM, avgHRV, avgSleepHours,
+    bodyFatPct, waistCm, gripKg, bp,
+  })
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
@@ -648,21 +657,109 @@ export default function Healthspan({ data, onNav }) {
         </div>
       )}
 
-      {/* Biggest Opportunities */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Biggest Opportunities</p>
-        {allOpportunities.slice(0, 4).map(c => (
-          <div key={c.label} className="flex gap-3 items-start">
-            <span className="text-yellow-500 mt-0.5">→</span>
-            <p className="text-sm text-gray-300">
-              Improve <span className="text-white font-medium">{c.label}</span> — currently adding ~{c.contribution} year{c.contribution !== 1 ? 's' : ''} to your biological age.
-            </p>
+      {/* Mortality Driver Dashboard */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Longevity Profile</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Top Assets</p>
+            {allAssets.slice(0, 3).map(c => (
+              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
+                <p className="text-xs text-gray-300 truncate mr-2">{c.label}</p>
+                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#00c9a7' }}>{c.contribution}y</span>
+              </div>
+            ))}
+            {allAssets.length === 0 && <p className="text-xs text-gray-600">No assets yet — keep tracking.</p>}
           </div>
-        ))}
-        {allOpportunities.length === 0 && (
-          <p className="text-sm text-green-400">All metrics are trending in a healthy direction. Keep it up.</p>
-        )}
+          <div>
+            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Top Liabilities</p>
+            {allOpportunities.slice(0, 3).map(c => (
+              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
+                <p className="text-xs text-gray-300 truncate mr-2">{c.label}</p>
+                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#ef4444' }}>+{c.contribution}y</span>
+              </div>
+            ))}
+            {allOpportunities.length === 0 && <p className="text-xs text-gray-600 text-green-400">Clean slate.</p>}
+          </div>
+        </div>
       </div>
+
+      {/* Healthspan Delta Engine */}
+      {healthspanDeltas.length > 0 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
+          <p className="text-[10px] text-gray-600 mb-3">One-tier improvement on each factor</p>
+          <div className="space-y-3">
+            {healthspanDeltas.slice(0, 5).map(d => (
+              <div key={d.label} className="flex items-start gap-3">
+                <span className="text-lg font-bold flex-shrink-0" style={{ color: '#00c9a7', minWidth: 32 }}>+{d.gain}y</span>
+                <div>
+                  <p className="text-sm font-medium text-white">{d.label}</p>
+                  <p className="text-xs text-gray-500">{d.action}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-600 mt-3">Estimates based on next-tier bio age scoring. Actual gains compound with multiple improvements.</p>
+        </div>
+      )}
+
+      {/* Social Jet Lag */}
+      {socialJetLag !== null && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Circadian Alignment</p>
+          <div className="flex items-end gap-3 mb-2">
+            <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#00c9a7' : socialJetLag <= 45 ? '#3b82f6' : socialJetLag <= 75 ? '#f59e0b' : '#ef4444' }}>
+              {socialJetLag}
+            </span>
+            <div className="pb-1">
+              <p className="text-sm text-gray-400">min variability</p>
+              <p className="text-xs text-gray-600">
+                {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate social jet lag' : 'High social jet lag — metabolic risk'}
+              </p>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-600">Standard deviation of your sleep midpoint timing across last 30 nights. &lt;20 min = elite consistency. Adapted from Roenneberg 2012.</p>
+        </div>
+      )}
+
+      {/* Sleep Apnea Risk */}
+      {sleepApneaRisk !== null && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Apnea Risk</p>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#00c9a7' : sleepApneaRisk.riskLevel === 1 ? '#f59e0b' : '#ef4444' }}>
+                {sleepApneaRisk.risk}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Based on SpO₂ during sleep</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-600">Min SpO₂</p>
+              <p className="text-lg font-bold" style={{ color: sleepApneaRisk.minSpo2 >= 93 ? '#00c9a7' : sleepApneaRisk.minSpo2 >= 88 ? '#f59e0b' : '#ef4444' }}>
+                {sleepApneaRisk.minSpo2}%
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase mb-1">Est. ODI</p>
+              <p className="text-base font-bold text-white">{sleepApneaRisk.odi}<span className="text-xs text-gray-600"> /hr</span></p>
+            </div>
+            <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase mb-1">Avg SpO₂</p>
+              <p className="text-base font-bold text-white">{sleepApneaRisk.avgSpo2}%</p>
+            </div>
+          </div>
+          {sleepApneaRisk.brElevated && (
+            <p className="text-xs text-amber-500 mt-1">Elevated respiratory rate detected — additional risk signal.</p>
+          )}
+          {sleepApneaRisk.riskLevel >= 2 && (
+            <p className="text-xs text-red-400 mt-1">Consider a sleep study (polysomnography). Untreated apnea raises CVD and cognitive decline risk.</p>
+          )}
+          <p className="text-[10px] text-gray-600 mt-2">ODI = estimated oxygen desaturation events/hour using 5-min SpO₂ intervals during sleep. Not a medical diagnosis.</p>
+        </div>
+      )}
     </div>
   )
 }

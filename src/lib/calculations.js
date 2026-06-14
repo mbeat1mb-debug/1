@@ -967,6 +967,130 @@ export function calculateHRR(hrIntradayData) {
   }
 }
 
+// ── Social Jet Lag ──────────────────────────────────────────────────────────
+// Standard deviation of sleep midpoints (minutes from midnight) over last 30 nights.
+// Lower = more consistent circadian timing. Reference: Roenneberg Curr Biol 2012.
+export function calculateSocialJetLag(sleepHistory) {
+  const entries = sleepHistory.filter(s => s.startTime && s.endTime).slice(-30)
+  if (entries.length < 5) return null
+  const midpoints = entries.map(s => {
+    const midnight = new Date(s.date + 'T00:00:00')
+    const s0 = Math.round((new Date(s.startTime) - midnight) / 60000)
+    const e0 = Math.round((new Date(s.endTime)   - midnight) / 60000)
+    return (s0 + e0) / 2
+  })
+  const mean = midpoints.reduce((a, b) => a + b, 0) / midpoints.length
+  const variance = midpoints.reduce((sq, v) => sq + Math.pow(v - mean, 2), 0) / midpoints.length
+  return Math.round(Math.sqrt(variance))  // minutes
+}
+
+// ── Sleep Apnea Risk Engine ─────────────────────────────────────────────────
+// Uses per-5-minute SpO2 intraday readings during sleep to estimate desaturation
+// burden. Supplemented by elevated BR. ODI = desaturation events per hour.
+export function calculateSleepApneaRisk({ spo2Intraday, br, todaySleep }) {
+  const readings = spo2Intraday?.minutes
+  if (!readings?.length) return null
+
+  const sleepStart = todaySleep?.startTime ? new Date(todaySleep.startTime) : null
+  const sleepEnd   = todaySleep?.endTime   ? new Date(todaySleep.endTime)   : null
+  const sleepReads = sleepStart && sleepEnd
+    ? readings.filter(r => { const t = new Date(r.minute); return t >= sleepStart && t <= sleepEnd })
+    : readings
+  if (!sleepReads.length) return null
+
+  const vals = sleepReads.map(r => r.value)
+  const minSpo2 = Math.min(...vals)
+  const avgSpo2 = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+  const below94 = vals.filter(v => v < 94).length
+  const below90 = vals.filter(v => v < 90).length
+  const sleepHours = todaySleep ? (todaySleep.minutesAsleep || 420) / 60 : 7
+  // Each 5-min interval below 94% treated as a proxy desaturation event
+  const odi = Math.round((below94 / sleepHours) * 10) / 10
+  const brElevated = br != null && br > 18
+
+  let risk = 'Low', riskLevel = 0
+  if (minSpo2 < 85 || odi > 15 || below90 > 2) { risk = 'Very High'; riskLevel = 3 }
+  else if (minSpo2 < 88 || odi > 10)            { risk = 'High';      riskLevel = 2 }
+  else if (minSpo2 < 93 || odi > 5 || brElevated) { risk = 'Moderate'; riskLevel = 1 }
+
+  return { risk, riskLevel, minSpo2, avgSpo2, odi, brElevated }
+}
+
+// ── Healthspan Delta Engine ─────────────────────────────────────────────────
+// For each modifiable factor, computes how many biological years you'd gain
+// by reaching the next better tier. Sorted by highest gain first.
+export function getHealthspanDeltas({ vo2Max, steps, weeklyAZM, avgHRV, avgSleepHours, bodyFatPct, waistCm, gripKg, bp }) {
+  const userAge = getUserAge()
+  const deltas = []
+
+  if (vo2Max > 0) {
+    const [fair, good, excel] = ageNorm(VO2_NORMS_MEN, userAge)
+    const cur = vo2Max >= excel + 5 ? -5 : vo2Max >= excel ? -3 : vo2Max >= good ? -1 : vo2Max >= fair ? 2 : vo2Max >= fair * 0.8 ? 4 : 6
+    if (cur > -3) {
+      const tgt = vo2Max < fair * 0.8 ? Math.ceil(fair * 0.8) : vo2Max < fair ? fair : vo2Max < good ? good : excel
+      const nxt = tgt >= excel ? -3 : tgt >= good ? -1 : tgt >= fair ? 2 : 4
+      if (cur > nxt) deltas.push({ label: 'VO₂ Max', gain: cur - nxt, action: `Raise to ${tgt}+ mL/kg/min with zone 2 training` })
+    }
+  }
+
+  if (steps > 0 && steps < 10000) {
+    const cur = steps >= 7000 ? -1 : steps >= 5000 ? 0 : steps >= 3000 ? 1 : 3
+    const [nxt, lbl] = steps < 3000 ? [1, '3,000'] : steps < 5000 ? [0, '5,000'] : steps < 7000 ? [-1, '7,000'] : [-2, '10,000']
+    if (cur > nxt) deltas.push({ label: 'Daily Steps', gain: cur - nxt, action: `Reach ${lbl}+ steps/day` })
+  }
+
+  if (weeklyAZM < 500) {
+    const cur = weeklyAZM >= 300 ? -1 : weeklyAZM >= 150 ? 0 : weeklyAZM >= 75 ? 1 : 2
+    const [nxt, lbl] = weeklyAZM < 75 ? [1, '75'] : weeklyAZM < 150 ? [0, '150'] : weeklyAZM < 300 ? [-1, '300'] : [-2, '500']
+    if (cur > nxt) deltas.push({ label: 'Active Zone Minutes', gain: cur - nxt, action: `Reach ${lbl}+ min/week of elevated HR` })
+  }
+
+  if (bodyFatPct !== null && bodyFatPct >= 15) {
+    const cur = bodyFatPct < 15 ? -2 : bodyFatPct < 20 ? -1 : bodyFatPct < 27 ? 0 : bodyFatPct < 32 ? 3 : 5
+    const [nxt, lbl] = bodyFatPct >= 32 ? [3, '<32%'] : bodyFatPct >= 27 ? [0, '<27%'] : bodyFatPct >= 20 ? [-1, '15–20%'] : [-2, '10–15%']
+    if (cur > nxt) deltas.push({ label: 'Body Fat %', gain: cur - nxt, action: `Reduce to ${lbl}` })
+  }
+
+  if (bp?.sys > 0 && (bp.sys >= 130 || bp.dia >= 80)) {
+    const cur = bp.sys >= 160 || bp.dia >= 100 ? 5 : bp.sys >= 140 || bp.dia >= 90 ? 3 : 1
+    deltas.push({ label: 'Blood Pressure', gain: cur + 1, action: 'Normalize to <120/80 mmHg' })
+  }
+
+  if (avgHRV > 0) {
+    const norm = ageNorm(HRV_NORMS_FITBIT_MEN, userAge)
+    const ratio = avgHRV / norm
+    if (ratio < 0.85) {
+      const cur = ratio >= 0.65 ? 2 : 4
+      deltas.push({ label: 'HRV', gain: cur - 0, action: `Raise baseline toward ${Math.round(norm * 0.85)} ms (sleep, stress, training)` })
+    } else if (ratio < 1.2) {
+      deltas.push({ label: 'HRV', gain: 1, action: `Raise baseline from ${Math.round(avgHRV)} toward ${Math.round(norm * 1.2)}+ ms` })
+    }
+  }
+
+  if (avgSleepHours > 0 && (avgSleepHours < 7 || avgSleepHours > 9)) {
+    const cur = avgSleepHours < 6 ? 3 : 1
+    deltas.push({ label: 'Sleep Duration', gain: cur + 1, action: 'Target 7–9 hours nightly' })
+  }
+
+  if (waistCm > 0 && waistCm >= 94) {
+    const cur = waistCm >= 102 ? 4 : 2
+    const [nxt, lbl] = waistCm >= 102 ? [2, '<102 cm'] : [-1, '<90 cm']
+    deltas.push({ label: 'Waist Circumference', gain: cur - nxt, action: `Reduce to ${lbl}` })
+  }
+
+  if (gripKg > 0) {
+    const norm = ageNorm(GRIP_NORMS_MEN, userAge)
+    const ratio = gripKg / norm
+    if (ratio < 1.0) {
+      const cur = ratio >= 0.8 ? 0 : ratio >= 0.65 ? 2 : 3
+      const nxt = ratio >= 0.8 ? -1 : 0
+      if (cur > nxt) deltas.push({ label: 'Grip Strength', gain: cur - nxt, action: `Reach ≥${Math.round(norm)} kg with resistance training` })
+    }
+  }
+
+  return deltas.sort((a, b) => b.gain - a.gain)
+}
+
 export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
   const points = hrIntradayData?.['activities-heart-intraday']?.dataset
   if (!points?.length || !rhr) return null
