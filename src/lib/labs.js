@@ -319,12 +319,7 @@ export const LAB_MARKERS = [
     unit: 'mg/dL',
     group: 'Metabolic',
     ref: 'Optimal <85 · Prediabetes 100–125',
-    score(v) {
-      if (v < 85) return -1;
-      if (v < 100) return 0;
-      if (v < 126) return 1;
-      return 3;
-    },
+    score(v) { return 0 },  // PhenoAge panel marker; metabolic signal captured via HOMA-IR
     grade(v) {
       if (v < 85) return 'Optimal';
       if (v < 100) return 'Normal';
