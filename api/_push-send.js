@@ -1,13 +1,34 @@
 import webPush from 'web-push'
 import { kv } from '@vercel/kv'
 
-function buildPayload(type, scores) {
+function getDataReminder(prefs) {
+  const now = new Date()
+  const day = now.getDay()   // 0=Sun,1=Mon,3=Wed,5=Fri
+  const date = now.getDate()
+  const month = now.getMonth() // 0-11
+
+  if (prefs.labsReminderEnabled !== false && date === 1 && [0, 3, 6, 9].includes(month)) {
+    return 'Time for quarterly bloodwork?'
+  }
+  if (prefs.bodyMetricsReminderEnabled !== false && date === 1) {
+    return 'Log waist + grip strength for the month'
+  }
+  if (prefs.bpReminderEnabled !== false && [1, 3, 5].includes(day)) {
+    return 'Log your blood pressure today'
+  }
+  return null
+}
+
+function buildPayload(type, scores, prefs = {}) {
   if (type === 'morning') {
+    let body = scores
+      ? `Recovery ${scores.recovery}% · HRV ${scores.hrv}ms · RHR ${scores.rhr}bpm`
+      : 'Your recovery and HRV summary is ready.'
+    const reminder = getDataReminder(prefs)
+    if (reminder) body += ` · ${reminder}`
     return {
       title: 'Morning Brief 🌅',
-      body: scores
-        ? `Recovery ${scores.recovery}% · HRV ${scores.hrv}ms · RHR ${scores.rhr}bpm`
-        : 'Your recovery and HRV summary is ready.',
+      body,
       url: '/',
       tag: 'morning',
     }
@@ -92,7 +113,7 @@ export async function sendScheduledPush(type) {
 
   // Fetch latest health scores for rich notification body
   const scores = await kv.get('push:latest_scores').catch(() => null)
-  const payload = buildPayload(type, scores)
+  const payload = buildPayload(type, scores, prefs)
 
   try {
     await webPush.sendNotification(subscription, JSON.stringify(payload))

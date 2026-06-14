@@ -11,7 +11,7 @@ import { detectAlerts } from './lib/alerts'
 import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
 } from './lib/achievements'
-import { fireDataNotifications } from './lib/notifications'
+import { fireDataNotifications, fireDataEntryReminders } from './lib/notifications'
 import { saveDay, saveDaysBatch, getHistory, saveSnapshot, getLatestSnapshot } from './lib/db'
 import { createBackup, getLastBackupAt } from './lib/backup'
 
@@ -260,6 +260,7 @@ export default function App() {
     const result = { ...base, personalRecords: pr, streaks, unlockedAchievements: unlocked, alerts }
 
     fireDataNotifications(result, newUnlocks)
+    fireDataEntryReminders()
     return result
   }, [])
 

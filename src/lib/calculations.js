@@ -214,6 +214,10 @@ function ageNorm(table, age) {
   return (table.find(([maxAge]) => age <= maxAge) ?? table[table.length - 1])[1]
 }
 
+export function getHRVNorm(age) {
+  return ageNorm(HRV_NORMS_FITBIT_MEN, age)
+}
+
 export function getUserWaistCm() {
   try { const v = parseFloat(localStorage.getItem('user_waist_cm') || '0'); return isNaN(v) || v <= 0 ? 0 : v } catch { return 0 }
 }

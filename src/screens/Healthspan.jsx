@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -158,19 +158,23 @@ export default function Healthspan({ data, onNav }) {
       label: 'HRV',
       value: Math.round(avgHRV),
       unit: 'ms avg',
-      contribution: avgHRV > 60 ? -3 : avgHRV > 50 ? -1 : avgHRV > 40 ? 1 : 3,
+      contribution: (() => {
+        if (avgHRV <= 0) return 0
+        const r = avgHRV / getHRVNorm(userAge)
+        return r >= 1.5 ? -3 : r >= 1.2 ? -1 : r >= 0.85 ? 0 : r >= 0.65 ? 2 : 4
+      })(),
     },
     {
       label: 'Resting Heart Rate',
       value: Math.round(avgRHR),
       unit: 'bpm avg',
-      contribution: avgRHR < 55 ? -3 : avgRHR < 65 ? -1 : avgRHR > 75 ? 2 : 1,
+      contribution: avgRHR < 50 ? -2 : avgRHR < 60 ? -1 : avgRHR < 70 ? 0 : avgRHR < 80 ? 2 : avgRHR < 90 ? 3 : 4,
     },
     {
       label: 'Sleep Duration',
       value: Math.round(avgSleepHours * 10) / 10,
       unit: 'h avg',
-      contribution: avgSleepHours >= 7.5 ? -2 : avgSleepHours >= 7 ? -1 : avgSleepHours < 6 ? 3 : 1,
+      contribution: avgSleepHours >= 7 && avgSleepHours <= 9 ? -1 : avgSleepHours >= 6 || avgSleepHours > 9 ? 1 : 3,
     },
     ...(avgDeepPct > 0 ? [{
       label: 'Sleep Quality',
@@ -188,23 +192,21 @@ export default function Healthspan({ data, onNav }) {
       label: 'Active Zone Minutes',
       value: weeklyAZM,
       unit: '/week',
-      contribution: weeklyAZM >= 150 ? -1 : weeklyAZM < 50 ? 2 : 0,
+      contribution: weeklyAZM >= 500 ? -2 : weeklyAZM >= 300 ? -1 : weeklyAZM >= 150 ? 0 : weeklyAZM >= 75 ? 1 : 2,
     },
     ...(vo2Max > 0 ? [{
       label: 'VO2 Max (Cardio Fitness)',
       value: vo2Max,
       unit: ' mL/kg/min',
       contribution: (() => {
-        const age = userAge
-        const norms = age <= 29 ? [25, 33, 42] : age <= 39 ? [23, 30, 39] : age <= 49 ? [20, 27, 36] : age <= 59 ? [18, 24, 33] : [16, 22, 30]
+        const norms = userAge <= 29 ? [25, 33, 42] : userAge <= 39 ? [23, 30, 39] : userAge <= 49 ? [20, 27, 36] : userAge <= 59 ? [18, 24, 33] : [16, 22, 30]
         const [fair, good, excel] = norms
-        return vo2Max >= excel ? -5 : vo2Max >= good ? -3 : vo2Max >= fair ? -1 : vo2Max >= fair * 0.75 ? 2 : 5
+        return vo2Max >= excel + 5 ? -5 : vo2Max >= excel ? -3 : vo2Max >= good ? -1 : vo2Max >= fair ? 2 : vo2Max >= fair * 0.8 ? 4 : 6
       })(),
       sublabel: (() => {
-        const age = userAge
-        const norms = age <= 29 ? [25, 33, 42] : age <= 39 ? [23, 30, 39] : age <= 49 ? [20, 27, 36] : age <= 59 ? [18, 24, 33] : [16, 22, 30]
+        const norms = userAge <= 29 ? [25, 33, 42] : userAge <= 39 ? [23, 30, 39] : userAge <= 49 ? [20, 27, 36] : userAge <= 59 ? [18, 24, 33] : [16, 22, 30]
         const [fair, good, excel] = norms
-        return vo2Max >= excel ? 'Superior (top 15%)' : vo2Max >= good ? 'Excellent' : vo2Max >= fair ? 'Good' : vo2Max >= fair * 0.75 ? 'Fair' : 'Poor'
+        return vo2Max >= excel + 5 ? 'Elite (top 2%)' : vo2Max >= excel ? 'Superior (top 15%)' : vo2Max >= good ? 'Excellent' : vo2Max >= fair ? 'Good' : vo2Max >= fair * 0.8 ? 'Fair' : 'Poor'
       })(),
     }] : []),
     ...(todaySpO2 > 0 ? [{

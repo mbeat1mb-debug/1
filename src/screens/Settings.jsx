@@ -236,6 +236,31 @@ function PushNotificationsSection() {
         )}
       </div>
 
+      {/* Data reminders */}
+      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
+        <p className="text-xs text-gray-500 uppercase tracking-wider pt-1">Data Entry Reminders</p>
+        {[
+          { key: 'bpReminderEnabled', label: 'Blood Pressure', desc: 'Reminds you Mon · Wed · Fri' },
+          { key: 'bodyMetricsReminderEnabled', label: 'Waist & Grip Strength', desc: 'Reminds you monthly' },
+          { key: 'labsReminderEnabled', label: 'Blood Work', desc: 'Reminds you quarterly' },
+        ].map(({ key, label, desc }) => (
+          <div key={key} className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-white">{label}</span>
+              <p className="text-[11px] text-gray-600">{desc}</p>
+            </div>
+            <button
+              onClick={() => setPrefs(p => ({ ...p, [key]: !p[key] }))}
+              className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
+              style={{ background: prefs[key] !== false ? '#00c9a7' : '#333' }}
+            >
+              <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
+                style={{ left: prefs[key] !== false ? '22px' : '4px' }} />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Timezone */}
       <div className="space-y-1.5">
         <p className="text-xs text-gray-500 uppercase tracking-wider">Your Timezone</p>
@@ -709,16 +734,17 @@ export default function Settings({ onBack }) {
       if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
       else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
+      const today = new Date().toISOString().split('T')[0]
       if (units === 'imperial') {
         const wIn = parseFloat(waistIn)
-        if (!isNaN(wIn) && wIn > 0) localStorage.setItem('user_waist_cm', String(Math.round(wIn * 2.54)))
+        if (!isNaN(wIn) && wIn > 0) { localStorage.setItem('user_waist_cm', String(Math.round(wIn * 2.54))); localStorage.setItem('user_waist_date', today) }
         const gLbs = parseFloat(gripLbs)
-        if (!isNaN(gLbs) && gLbs > 0) localStorage.setItem('user_grip_kg', String(Math.round(gLbs / 2.2046 * 10) / 10))
+        if (!isNaN(gLbs) && gLbs > 0) { localStorage.setItem('user_grip_kg', String(Math.round(gLbs / 2.2046 * 10) / 10)); localStorage.setItem('user_grip_date', today) }
       } else {
         const wCm = parseFloat(waistCmVal)
-        if (!isNaN(wCm) && wCm > 0) localStorage.setItem('user_waist_cm', String(wCm))
+        if (!isNaN(wCm) && wCm > 0) { localStorage.setItem('user_waist_cm', String(wCm)); localStorage.setItem('user_waist_date', today) }
         const gKg = parseFloat(gripKgVal)
-        if (!isNaN(gKg) && gKg > 0) localStorage.setItem('user_grip_kg', String(gKg))
+        if (!isNaN(gKg) && gKg > 0) { localStorage.setItem('user_grip_kg', String(gKg)); localStorage.setItem('user_grip_date', today) }
       }
 
       localStorage.setItem('user_smoking', smoking)
