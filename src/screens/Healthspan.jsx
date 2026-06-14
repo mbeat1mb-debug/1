@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult } from '../lib/labs'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -119,6 +119,10 @@ export default function Healthspan({ data, onNav }) {
   const smoking = getUserSmoking()
   const alcoholWeek = getUserAlcohol()
   const bp = getAverageBP()
+  const waistCm = getUserWaistCm()
+  const gripKg = getUserGripStrengthKg()
+  const homaIR = getHOMAIR()
+  const ffmi = leanMass !== null && heightCm > 0 ? Math.round((leanMass / Math.pow(heightCm / 100, 2)) * 10) / 10 : null
   const labContributions = getLabContributions()
   const labAdj = getLabAgeAdjustment()
   const phenoAge = getPhenoAgeResult()
@@ -129,7 +133,7 @@ export default function Healthspan({ data, onNav }) {
     vo2Max, avgDeepPct, avgRemPct,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj])
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
@@ -221,14 +225,50 @@ export default function Healthspan({ data, onNav }) {
       label: 'Body Fat %',
       value: bodyFatPct,
       unit: '%',
-      contribution: bodyFatPct < 18 ? -1 : bodyFatPct < 27 ? 0 : bodyFatPct < 32 ? 3 : 5,
+      contribution: bodyFatPct < 15 ? -2 : bodyFatPct < 20 ? -1 : bodyFatPct < 27 ? 0 : bodyFatPct < 32 ? 3 : 5,
       sublabel: getBodyFatLabel(bodyFatPct),
     }] : bmi !== null ? [{
       label: 'BMI (body fat % not set)',
       value: bmi,
       unit: '',
-      contribution: bmi < 18.5 ? 1 : bmi < 25 ? -1 : bmi < 30 ? 1 : bmi < 35 ? 2 : 4,
+      contribution: bmi < 18.5 ? 1 : bmi < 25 ? -1 : bmi < 30 ? 1 : bmi < 35 ? 3 : 5,
       sublabel: getBMILabel(bmi),
+    }] : []),
+    ...(ffmi !== null ? [{
+      label: 'Muscle Mass Index (FFMI)',
+      value: ffmi,
+      unit: ' kg/m²',
+      contribution: ffmi > 24 ? -2 : ffmi > 21 ? -1 : ffmi >= 18 ? 0 : ffmi >= 16 ? 2 : 3,
+      sublabel: ffmi > 24 ? 'Athletic' : ffmi > 21 ? 'Above Average' : ffmi >= 18 ? 'Average' : ffmi >= 16 ? 'Below Average' : 'Low',
+    }] : []),
+    ...(waistCm > 0 ? [{
+      label: 'Waist Circumference',
+      value: units === 'imperial' ? Math.round(waistCm / 2.54) : waistCm,
+      unit: units === 'imperial' ? ' in' : ' cm',
+      contribution: waistCm < 90 ? -1 : waistCm < 94 ? 0 : waistCm < 102 ? 2 : 4,
+      sublabel: waistCm < 90 ? 'Optimal' : waistCm < 94 ? 'Acceptable' : waistCm < 102 ? 'Elevated Risk' : 'High Risk',
+    }] : []),
+    ...(gripKg > 0 ? [{
+      label: 'Grip Strength',
+      value: units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg,
+      unit: units === 'imperial' ? ' lbs' : ' kg',
+      contribution: (() => {
+        const norm = userAge < 40 ? 47 : userAge < 50 ? 46 : userAge < 60 ? 43 : userAge < 70 ? 39 : 33
+        const r = gripKg / norm
+        return r >= 1.2 ? -2 : r >= 1.0 ? -1 : r >= 0.8 ? 0 : r >= 0.65 ? 2 : 3
+      })(),
+      sublabel: (() => {
+        const norm = userAge < 40 ? 47 : userAge < 50 ? 46 : userAge < 60 ? 43 : userAge < 70 ? 39 : 33
+        const r = gripKg / norm
+        return r >= 1.2 ? 'Top quartile' : r >= 1.0 ? 'Above median' : r >= 0.8 ? 'Below median' : r >= 0.65 ? 'Low' : 'Very Low'
+      })(),
+    }] : []),
+    ...(homaIR > 0 ? [{
+      label: 'Insulin Resistance (HOMA-IR)',
+      value: homaIR,
+      unit: '',
+      contribution: homaIR < 1.0 ? -1 : homaIR < 2.0 ? 0 : homaIR < 3.0 ? 2 : homaIR < 5.0 ? 4 : 6,
+      sublabel: homaIR < 1.0 ? 'Excellent sensitivity' : homaIR < 2.0 ? 'Normal' : homaIR < 3.0 ? 'Insulin Resistant' : homaIR < 5.0 ? 'Significant IR' : 'Severe IR',
     }] : []),
     {
       label: 'Smoking',

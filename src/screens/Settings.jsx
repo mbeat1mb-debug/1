@@ -646,6 +646,16 @@ export default function Settings({ onBack }) {
   const [weightKg, setWeightKg] = useState(() => storedWKg ? String(Math.round(storedWKg * 10) / 10) : '')
   const [bodyFatPct, setBodyFatPct] = useState(() => localStorage.getItem('user_body_fat_pct') || '')
 
+  // Waist circumference — stored in cm, displayed per units preference
+  const storedWaistCm = parseFloat(localStorage.getItem('user_waist_cm') || '0') || 0
+  const [waistIn, setWaistIn] = useState(() => storedWaistCm ? String(Math.round(storedWaistCm / 2.54)) : '')
+  const [waistCmVal, setWaistCmVal] = useState(() => storedWaistCm ? String(Math.round(storedWaistCm)) : '')
+
+  // Grip strength — stored in kg, displayed per units preference
+  const storedGripKg = parseFloat(localStorage.getItem('user_grip_kg') || '0') || 0
+  const [gripLbs, setGripLbs] = useState(() => storedGripKg ? String(Math.round(storedGripKg * 2.2046)) : '')
+  const [gripKgVal, setGripKgVal] = useState(() => storedGripKg ? String(Math.round(storedGripKg * 10) / 10) : '')
+
   // Live BMI preview
   const previewBMI = (() => {
     let hCm = 0, wKg = 0
@@ -698,6 +708,18 @@ export default function Settings({ onBack }) {
       const fatPct = parseFloat(bodyFatPct)
       if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
       else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
+
+      if (units === 'imperial') {
+        const wIn = parseFloat(waistIn)
+        if (!isNaN(wIn) && wIn > 0) localStorage.setItem('user_waist_cm', String(Math.round(wIn * 2.54)))
+        const gLbs = parseFloat(gripLbs)
+        if (!isNaN(gLbs) && gLbs > 0) localStorage.setItem('user_grip_kg', String(Math.round(gLbs / 2.2046 * 10) / 10))
+      } else {
+        const wCm = parseFloat(waistCmVal)
+        if (!isNaN(wCm) && wCm > 0) localStorage.setItem('user_waist_cm', String(wCm))
+        const gKg = parseFloat(gripKgVal)
+        if (!isNaN(gKg) && gKg > 0) localStorage.setItem('user_grip_kg', String(gKg))
+      }
 
       localStorage.setItem('user_smoking', smoking)
       const alcohol = parseInt(alcoholWeek, 10)
@@ -998,6 +1020,68 @@ export default function Settings({ onBack }) {
             </span>
           </p>
         )}
+
+        {/* Waist Circumference */}
+        <div>
+          <p className="text-xs text-gray-500 mb-0.5">Waist Circumference</p>
+          <p className="text-[11px] text-gray-600 mb-1.5">Measure around your belly button — used for visceral fat risk</p>
+          <div className="flex gap-2 items-center">
+            {units === 'imperial' ? (
+              <>
+                <input
+                  type="number" min={20} max={80} step={0.5}
+                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="34"
+                  value={waistIn}
+                  onChange={e => setWaistIn(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">inches</span>
+              </>
+            ) : (
+              <>
+                <input
+                  type="number" min={50} max={200} step={0.5}
+                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="87"
+                  value={waistCmVal}
+                  onChange={e => setWaistCmVal(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">cm</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Grip Strength */}
+        <div>
+          <p className="text-xs text-gray-500 mb-0.5">Grip Strength (dominant hand)</p>
+          <p className="text-[11px] text-gray-600 mb-1.5">Use a hand dynamometer — one of the best longevity predictors</p>
+          <div className="flex gap-2 items-center">
+            {units === 'imperial' ? (
+              <>
+                <input
+                  type="number" min={20} max={200} step={1}
+                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="95"
+                  value={gripLbs}
+                  onChange={e => setGripLbs(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">lbs</span>
+              </>
+            ) : (
+              <>
+                <input
+                  type="number" min={10} max={100} step={0.5}
+                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  placeholder="43"
+                  value={gripKgVal}
+                  onChange={e => setGripKgVal(e.target.value)}
+                />
+                <span className="text-xs text-gray-600">kg</span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Lifestyle factors */}

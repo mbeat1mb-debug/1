@@ -205,140 +205,230 @@ const HRV_NORMS_FITBIT_MEN = [
   [99, 28], // 60+: ECG ~24ms
 ]
 
+// Grip strength medians for men (kg) — Leong Lancet 2015 / normative data
+const GRIP_NORMS_MEN = [
+  [29, 47], [39, 46], [49, 43], [59, 39], [99, 33],
+]
+
 function ageNorm(table, age) {
   return (table.find(([maxAge]) => age <= maxAge) ?? table[table.length - 1])[1]
 }
 
+export function getUserWaistCm() {
+  try { const v = parseFloat(localStorage.getItem('user_waist_cm') || '0'); return isNaN(v) || v <= 0 ? 0 : v } catch { return 0 }
+}
+
+export function getUserGripStrengthKg() {
+  try { const v = parseFloat(localStorage.getItem('user_grip_kg') || '0'); return isNaN(v) || v <= 0 ? 0 : v } catch { return 0 }
+}
+
+export function getHOMAIR() {
+  try {
+    const labs = JSON.parse(localStorage.getItem('lab_results') || '{}')
+    const g = parseFloat(labs['glucose']?.value), i = parseFloat(labs['insulin']?.value)
+    if (isNaN(g) || isNaN(i) || g <= 0 || i <= 0) return 0
+    return Math.round((g * i / 405) * 100) / 100
+  } catch { return 0 }
+}
+
 export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0 }) {
   const userAge = getUserAge()
-  let adj = 0
+  const heightCm = getUserHeightCm()
+  const weightKg = getUserWeightKg()
+  const bodyFatPct = getUserBodyFatPct()
+  const waistCm = getUserWaistCm()
+  const gripKg = getUserGripStrengthKg()
+  const homaIR = getHOMAIR()
+  const smoking = getUserSmoking()
+  const alcohol = getUserAlcohol()
+  const bp = getAverageBP()
 
-  // ── VO2 Max — strongest single longevity predictor ─────────────────────────
-  // Mandsager (JAMA 2018): each fitness quintile = ~4-5y mortality equivalence.
-  // Fitbit Cardio Fitness Score has ±3.5 ml/kg/min uncertainty — scored conservatively.
+  // FFMI (Fat-Free Mass Index) from Hume scale lean mass
+  const leanMassKg = weightKg > 0 && bodyFatPct ? weightKg * (1 - bodyFatPct / 100) : 0
+  const hM = heightCm > 0 ? heightCm / 100 : 0
+  const ffmi = leanMassKg > 0 && hM > 0 ? leanMassKg / (hM * hM) : 0
+
+  // ── Domain 1: Cardiorespiratory Fitness ──────────────────────────────────
+  // Mandsager JAMA 2018: elite fitness = 5x lower all-cause mortality vs sedentary.
+  // Most influential single longevity predictor in the dataset.
+  let cardio = 0
+
   if (vo2Max > 0) {
     const [fair, good, excel] = ageNorm(VO2_NORMS_MEN, userAge)
-    if (vo2Max >= excel)      adj -= 5  // Superior — top 15%
-    else if (vo2Max >= good)  adj -= 3  // Excellent
-    else if (vo2Max >= fair)  adj -= 1  // Good
-    else if (vo2Max >= fair * 0.75) adj += 2  // Fair
-    else                      adj += 5  // Poor — strong mortality signal
+    if (vo2Max >= excel + 5)       cardio -= 5  // Elite
+    else if (vo2Max >= excel)      cardio -= 3  // Excellent
+    else if (vo2Max >= good)       cardio -= 1  // Good
+    else if (vo2Max >= fair)       cardio += 2  // Fair
+    else if (vo2Max >= fair * 0.8) cardio += 4  // Poor
+    else                           cardio += 6  // Very poor
   }
 
-  // ── HRV — autonomic nervous system age ────────────────────────────────────
-  // Age-normed ratio vs Fitbit-calibrated population median.
-  // Ratio >1.4 = well above average for age; <0.6 = well below.
   if (avgHRV > 0) {
     const norm = ageNorm(HRV_NORMS_FITBIT_MEN, userAge)
     const ratio = avgHRV / norm
-    if (ratio >= 1.4)       adj -= 3
-    else if (ratio >= 1.15) adj -= 1
-    else if (ratio >= 0.85) adj += 0  // Within normal range for age
-    else if (ratio >= 0.65) adj += 2
-    else                    adj += 4
+    if (ratio >= 1.5)       cardio -= 3
+    else if (ratio >= 1.2)  cardio -= 1
+    else if (ratio >= 0.85) cardio += 0
+    else if (ratio >= 0.65) cardio += 2
+    else                    cardio += 4
   }
 
-  // ── Resting HR — Zhang meta-analysis dose-response ───────────────────────
-  // Zhang (Heart 2016): each 10 bpm above 60 = ~9% higher all-cause mortality.
-  // Translated to ~1.5y biological age equivalent per 10 bpm step.
+  // Zhang Heart 2016: each 10 bpm above 60 = ~9% higher all-cause mortality
   if (avgRHR > 0) {
-    if (avgRHR < 50)       adj -= 3  // Elite / highly trained
-    else if (avgRHR < 60)  adj -= 1  // Excellent
-    else if (avgRHR < 70)  adj += 0  // Good (reference band)
-    else if (avgRHR < 80)  adj += 2  // Elevated (~9% risk increase)
-    else if (avgRHR < 90)  adj += 3  // High (~18% risk increase)
-    else                   adj += 4  // Very high (>27% risk increase)
+    if (avgRHR < 50)      cardio -= 2
+    else if (avgRHR < 60) cardio -= 1
+    else if (avgRHR < 70) cardio += 0
+    else if (avgRHR < 80) cardio += 2
+    else if (avgRHR < 90) cardio += 3
+    else                  cardio += 4
   }
 
-  // ── Sleep — Cappuccio U-curve + stage quality ─────────────────────────────
-  // Cappuccio (Sleep 2010): <6h or >9h both associate with elevated mortality.
-  // REM: Backhaus (2018) — each 5% reduction below 15% = HR 1.13 per year.
-  if (avgSleep > 0) {
-    if (avgSleep >= 7 && avgSleep <= 9)         adj -= 1
-    else if (avgSleep >= 6 && avgSleep < 7)     adj += 1
-    else if (avgSleep > 9)                      adj += 1  // often symptom of poor health
-    else                                        adj += 3  // <6h — strong mortality signal
+  const cardioCapped = clamp(cardio, -7, 9)
 
-    if (avgRemPct >= 0.22)                      adj -= 1
-    else if (avgRemPct > 0 && avgRemPct < 0.15) adj += 1
+  // ── Domain 2: Body Composition ────────────────────────────────────────────
+  // Fat % (Bhaskaran Lancet 2018) + muscle mass / FFMI (Studenski JAMA 2011)
+  // + visceral fat (waist) + grip strength (Leong Lancet 2015)
+  let composition = 0
 
-    if (avgDeepPct >= 0.18)                     adj -= 1
-    else if (avgDeepPct > 0 && avgDeepPct < 0.10) adj += 1
-  }
-
-  // ── Sleep consistency ─────────────────────────────────────────────────────
-  // Irregular sleep timing disrupts circadian rhythm independent of duration.
-  if (sleepConsistency >= 0.8)      adj -= 1
-  else if (sleepConsistency < 0.5)  adj += 1
-
-  // ── Blood pressure — Ettehad linear dose-response ─────────────────────────
-  // Ettehad (Lancet 2016): each 10mmHg SBP reduction → 10-13% CVD event reduction.
-  // Evaluated highest-severity-first so OR conditions don't misclassify mixed readings.
-  // e.g. sys=145, dia=85 → Stage 2 by systolic despite diastolic being Stage 1.
-  const bp = getAverageBP()
-  if (bp.sys > 0) {
-    if (bp.sys >= 160 || bp.dia >= 100)      adj += 5  // Severe HTN
-    else if (bp.sys >= 140 || bp.dia >= 90)  adj += 3  // Stage 2 HTN
-    else if (bp.sys >= 130 || bp.dia >= 80)  adj += 1  // Stage 1 / Elevated
-    else if (bp.sys < 120 && bp.dia < 80)    adj -= 1  // Optimal
-    // else Normal (120-129 / <80) → adj += 0
-  }
-
-  // ── Body composition — fat % primary, BMI as fallback ────────────────────
-  // Bhaskaran (Lancet 2018): ≥27% body fat in men = HR 1.78 vs 20-24% reference.
-  // BMI is a weaker independent predictor after adjusting for fat %.
-  const bodyFatPct = getUserBodyFatPct()
   if (bodyFatPct !== null) {
-    if (bodyFatPct < 10)       adj += 0  // Essential — not necessarily protective
-    else if (bodyFatPct < 18)  adj -= 1  // Athletic/fit
-    else if (bodyFatPct < 27)  adj += 0  // Acceptable range
-    else if (bodyFatPct < 32)  adj += 3  // Elevated risk (HR ~1.78)
-    else                       adj += 5  // High risk
+    if (bodyFatPct < 10)       composition += 0  // Essential fat — not protective
+    else if (bodyFatPct < 15)  composition -= 2  // Athletic
+    else if (bodyFatPct < 20)  composition -= 1  // Fitness
+    else if (bodyFatPct < 27)  composition += 0  // Acceptable
+    else if (bodyFatPct < 32)  composition += 3  // Elevated risk
+    else                       composition += 5  // High risk
   } else {
-    // BMI fallback when body fat % unavailable
-    const bmi = calculateBMI(getUserHeightCm(), getUserWeightKg())
+    const bmi = calculateBMI(heightCm, weightKg)
     if (bmi !== null) {
-      if (bmi < 18.5)     adj += 1  // Underweight
-      else if (bmi < 25)  adj -= 1  // Healthy
-      else if (bmi < 30)  adj += 1  // Overweight
-      else if (bmi < 35)  adj += 2  // Obese I
-      else                adj += 4  // Obese II+
+      if (bmi < 18.5)     composition += 1
+      else if (bmi < 25)  composition -= 1
+      else if (bmi < 30)  composition += 1
+      else if (bmi < 35)  composition += 3
+      else                composition += 5
     }
   }
 
-  // ── Steps — Paluch 2022 dose-response curve ───────────────────────────────
-  // Paluch (JAMA NM 2022): 7k-10k steps saturates most mortality benefit.
+  // FFMI: men >24 = athletic, 21-24 = above avg, 18-21 = avg, <18 = sarcopenia risk
+  if (ffmi > 0) {
+    if (ffmi > 24)        composition -= 2
+    else if (ffmi > 21)   composition -= 1
+    else if (ffmi >= 18)  composition += 0
+    else if (ffmi >= 16)  composition += 2
+    else                  composition += 3
+  }
+
+  // Waist circumference — visceral fat; WHO/IDF thresholds for men
+  if (waistCm > 0) {
+    if (waistCm < 90)       composition -= 1
+    else if (waistCm < 94)  composition += 0
+    else if (waistCm < 102) composition += 2
+    else                    composition += 4
+  }
+
+  // Grip strength — Leong Lancet 2015: each 5 kg lower = 16% higher mortality
+  if (gripKg > 0) {
+    const gripNorm = ageNorm(GRIP_NORMS_MEN, userAge)
+    const gripRatio = gripKg / gripNorm
+    if (gripRatio >= 1.2)       composition -= 2
+    else if (gripRatio >= 1.0)  composition -= 1
+    else if (gripRatio >= 0.80) composition += 0
+    else if (gripRatio >= 0.65) composition += 2
+    else                        composition += 3
+  }
+
+  const compositionCapped = clamp(composition, -5, 8)
+
+  // ── Domain 3: Metabolic Health ────────────────────────────────────────────
+  // BP (Ettehad Lancet 2016) + insulin resistance (HOMA-IR) + bloodwork / PhenoAge
+  let metabolic = 0
+
+  if (bp.sys > 0) {
+    if (bp.sys >= 160 || bp.dia >= 100)     metabolic += 5
+    else if (bp.sys >= 140 || bp.dia >= 90) metabolic += 3
+    else if (bp.sys >= 130 || bp.dia >= 80) metabolic += 1
+    else if (bp.sys < 120 && bp.dia < 80)   metabolic -= 1
+  }
+
+  // HOMA-IR: (glucose mg/dL × insulin µIU/mL) / 405 — Matthews 1985
+  // >2.5 = insulin resistant; compounded risk with obesity/CVD
+  if (homaIR > 0) {
+    if (homaIR < 1.0)      metabolic -= 1
+    else if (homaIR < 2.0) metabolic += 0
+    else if (homaIR < 3.0) metabolic += 2
+    else if (homaIR < 5.0) metabolic += 4
+    else                   metabolic += 6
+  }
+
+  // PhenoAge (Levine 2018) when all 9 markers present; additive scoring otherwise
+  metabolic += Math.max(-4, Math.min(6, getLabAgeAdjustment()))
+
+  const metabolicCapped = clamp(metabolic, -5, 10)
+
+  // ── Domain 4: Sleep & Recovery ────────────────────────────────────────────
+  // Cappuccio Sleep 2010 U-curve + stage quality + circadian consistency
+  let sleepD = 0
+
+  if (avgSleep > 0) {
+    if (avgSleep >= 7 && avgSleep <= 9)           sleepD -= 1
+    else if (avgSleep >= 6 && avgSleep < 7)       sleepD += 1
+    else if (avgSleep > 9)                        sleepD += 1
+    else                                          sleepD += 3  // <6h
+
+    if (avgRemPct >= 0.22)                        sleepD -= 1
+    else if (avgRemPct > 0 && avgRemPct < 0.15)   sleepD += 1
+
+    if (avgDeepPct >= 0.18)                       sleepD -= 1
+    else if (avgDeepPct > 0 && avgDeepPct < 0.10) sleepD += 1
+  }
+
+  if (sleepConsistency >= 0.8)      sleepD -= 1
+  else if (sleepConsistency < 0.5)  sleepD += 1
+
+  const sleepCapped = clamp(sleepD, -3, 5)
+
+  // ── Domain 5: Activity ────────────────────────────────────────────────────
+  // Steps (Paluch JAMA NM 2022) + AZM (Arem JAMA IM 2015)
+  let activity = 0
+
   if (avgSteps > 0) {
-    if (avgSteps >= 10000)     adj -= 2
-    else if (avgSteps >= 7000) adj -= 1
-    else if (avgSteps >= 5000) adj += 0
-    else if (avgSteps >= 3000) adj += 1
-    else                       adj += 3
+    if (avgSteps >= 10000)     activity -= 2
+    else if (avgSteps >= 7000) activity -= 1
+    else if (avgSteps >= 5000) activity += 0
+    else if (avgSteps >= 3000) activity += 1
+    else                       activity += 3
   }
 
-  // ── Active Zone Minutes — Arem 2015 dose-response ────────────────────────
-  // Arem (JAMA IM 2015): 3-5× WHO recommendation (300-500 min/wk) = 35-39% mortality reduction.
-  if (weeklyAZM >= 500)        adj -= 2  // 3×+ WHO guideline
-  else if (weeklyAZM >= 300)   adj -= 1  // 2× WHO
-  else if (weeklyAZM >= 150)   adj += 0  // Meets WHO
-  else if (weeklyAZM >= 75)    adj += 1  // Below guideline
-  else                         adj += 2  // Sedentary
+  if (weeklyAZM >= 500)       activity -= 2
+  else if (weeklyAZM >= 300)  activity -= 1
+  else if (weeklyAZM >= 150)  activity += 0
+  else if (weeklyAZM >= 75)   activity += 1
+  else                        activity += 2
 
-  // ── Lifestyle factors ──────────────────────────────────────────────────────
-  const smoking = getUserSmoking()
-  if (smoking === 'current')      adj += 7
-  else if (smoking === 'former')  adj += 2
+  const activityCapped = clamp(activity, -3, 5)
 
-  const alcohol = getUserAlcohol()
+  // ── Lifestyle — uncapped because smoking is clinically large ──────────────
+  let lifestyle = 0
+  if (smoking === 'current')     lifestyle += 7
+  else if (smoking === 'former') lifestyle += 2
   if (alcohol !== null) {
-    if (alcohol >= 14)      adj += 3
-    else if (alcohol >= 7)  adj += 1
+    if (alcohol >= 14)     lifestyle += 3
+    else if (alcohol >= 7) lifestyle += 1
   }
 
-  // ── Bloodwork ──────────────────────────────────────────────────────────────
-  // Uses PhenoAge Levine formula when all 9 required markers are present.
-  // Falls back to additive marker scoring otherwise. Clamped to ±8y.
-  adj += Math.max(-8, Math.min(8, getLabAgeAdjustment()))
+  // ── Synergy: compounding risk when multiple domains are adverse ────────────
+  // Framingham / SCORE2 risk models show risk factors multiply, not just add.
+  // badDomains = domains where the net contribution is ≥3 years adverse.
+  const domains = [cardioCapped, compositionCapped, metabolicCapped, sleepCapped, activityCapped]
+  const badDomains = domains.filter(d => d >= 3).length
+  const goodDomains = domains.filter(d => d <= -2).length
+  let synergy = 0
+  if (badDomains >= 4)       synergy += 5
+  else if (badDomains >= 3)  synergy += 3
+  else if (badDomains >= 2)  synergy += 1
+  if (goodDomains >= 3)      synergy -= 2
+  else if (goodDomains >= 2) synergy -= 1
+
+  const adj = cardioCapped + compositionCapped + metabolicCapped + sleepCapped + activityCapped + lifestyle + synergy
 
   return Math.round(Math.max(userAge - 15, Math.min(userAge + 20, userAge + adj)))
 }
