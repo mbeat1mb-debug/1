@@ -1,8 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm } from '../lib/calculations'
-import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult } from '../lib/labs'
-import { LineGraph } from '../components/TrendChart'
-import { StatRow } from '../components/MetricCard'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings } from '../lib/calculations'
+import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress } from '../lib/labs'
+import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
 function BackButton({ onNav }) {
   return (
@@ -14,7 +13,7 @@ function BackButton({ onNav }) {
   )
 }
 
-function AgeMeter({ physAge, chronAge, phenoAge }) {
+function AgeMeter({ physAge, chronAge, phenoAge, phenoProgress }) {
   const diff = physAge - chronAge
   const color = diff <= -3 ? '#00c9a7' : diff <= 0 ? '#3b82f6' : diff <= 3 ? '#f59e0b' : '#ef4444'
   const label = diff <= -3 ? 'Excellent' : diff <= 0 ? 'Good' : diff <= 3 ? 'Fair' : 'Needs Work'
@@ -40,19 +39,34 @@ function AgeMeter({ physAge, chronAge, phenoAge }) {
           {diff < 0 ? `${Math.abs(diff)} years younger` : diff > 0 ? `${diff} years older` : 'Same as calendar age'} — {label}
         </span>
       </div>
-      {phenoAge !== null && (
-        <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
+        {phenoAge !== null ? (
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500">PhenoAge (Levine Formula)</p>
-              <p className="text-xs text-gray-600 mt-0.5">Validated clinical model · 9 bloodwork markers</p>
+              <p className="text-xs text-gray-600 mt-0.5">Validated clinical model · all 9 markers entered</p>
             </div>
             <span className="text-lg font-bold" style={{ color: phenoAge < chronAge ? '#00c9a7' : phenoAge < chronAge + 5 ? '#f59e0b' : '#ef4444' }}>
               {Math.round(phenoAge)}y
             </span>
           </div>
-        </div>
-      )}
+        ) : phenoProgress ? (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-500">PhenoAge — bloodwork panel</p>
+              <span className="text-xs font-bold text-gray-400">{phenoProgress.present}/{phenoProgress.total} markers</span>
+            </div>
+            <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#222' }}>
+              <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#3b82f6' }} />
+            </div>
+            {phenoProgress.missingNames.length > 0 && (
+              <p className="text-[10px] text-gray-600">
+                Still needed: {phenoProgress.missingNames.join(', ')}
+              </p>
+            )}
+          </div>
+        ) : null}
+      </div>
       <p className="text-xs text-gray-600 text-center mt-3">
         Wearable estimate ± ~3y. Updates daily with new data.
       </p>
@@ -92,6 +106,36 @@ export default function Healthspan({ data, onNav }) {
     weight: units === 'imperial' ? Math.round(entry.kg * 2.2046) : Math.round(entry.kg * 10) / 10,
   }))
 
+  const weeklyZone2 = data.weeklyZone2 ?? 0
+  const vo2MaxRange = data.vo2MaxRange ?? null
+
+  const gripHistory = getGripHistory()
+  const gripChartData = gripHistory.slice(-20).map((entry, i, arr) => ({
+    label: i === arr.length - 1 ? 'Today' : entry.date.slice(5),
+    grip: units === 'imperial' ? Math.round(entry.kg * 2.2046) : entry.kg,
+  }))
+
+  const waistHistory = getWaistHistory()
+  const waistChartData = waistHistory.slice(-20).map((entry, i, arr) => ({
+    label: i === arr.length - 1 ? 'Today' : entry.date.slice(5),
+    waist: units === 'imperial' ? Math.round(entry.cm / 2.54 * 10) / 10 : entry.cm,
+  }))
+
+  const bpReadings = getBPReadings()
+  const bpChartData = bpReadings.slice(-30).map((r, i, arr) => ({
+    label: i === arr.length - 1 ? 'Today' : r.date.slice(5),
+    sys: r.sys,
+    dia: r.dia,
+  }))
+
+  const vo2MaxHistoryArr = data.vo2MaxHistory ?? []
+  const vo2ChartData = vo2MaxHistoryArr.slice(-20).map((entry, i, arr) => ({
+    label: i === arr.length - 1 ? 'Today' : entry.date.slice(5),
+    vo2Max: entry.vo2Max,
+  }))
+
+  const phenoProgress = getPhenoAgeProgress()
+
   const avgHRV = hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1)
   const avgRHR = data.rhrHistory?.filter(Boolean).reduce((a, b) => a + b, 0) / (data.rhrHistory?.filter(Boolean).length || 1) || 0
   const avgSleepHours = sleepHistory.length
@@ -130,10 +174,10 @@ export default function Healthspan({ data, onNav }) {
   const physAge = useMemo(() => calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
     avgSteps: steps, weeklyAZM,
-    vo2Max, avgDeepPct, avgRemPct,
+    vo2Max, avgDeepPct, avgRemPct, hrvHistory,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct])
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct, hrvHistory])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
@@ -196,8 +240,8 @@ export default function Healthspan({ data, onNav }) {
     },
     ...(vo2Max > 0 ? [{
       label: 'VO2 Max (Cardio Fitness)',
-      value: vo2Max,
-      unit: ' mL/kg/min',
+      value: vo2MaxRange ?? vo2Max,
+      unit: vo2MaxRange ? ' mL/kg/min (Fitbit range)' : ' mL/kg/min',
       contribution: (() => {
         const norms = userAge <= 29 ? [25, 33, 42] : userAge <= 39 ? [23, 30, 39] : userAge <= 49 ? [20, 27, 36] : userAge <= 59 ? [18, 24, 33] : [16, 22, 30]
         const [fair, good, excel] = norms
@@ -323,7 +367,7 @@ export default function Healthspan({ data, onNav }) {
           )}
         </div>
       ) : (
-        <AgeMeter physAge={physAge} chronAge={userAge} phenoAge={phenoAge} />
+        <AgeMeter physAge={physAge} chronAge={userAge} phenoAge={phenoAge} phenoProgress={phenoProgress} />
       )}
 
       {/* Body composition */}
@@ -390,6 +434,22 @@ export default function Healthspan({ data, onNav }) {
             </>
           )}
 
+          {/* Grip strength trend */}
+          {gripChartData.length >= 2 && (
+            <div className="mt-3">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Grip Strength Trend</p>
+              <LineGraph data={gripChartData} dataKey="grip" color="#00c9a7" unit={units === 'imperial' ? 'lbs' : 'kg'} height={70} />
+            </div>
+          )}
+
+          {/* Waist trend */}
+          {waistChartData.length >= 2 && (
+            <div className="mt-3">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Waist Circumference Trend</p>
+              <LineGraph data={waistChartData} dataKey="waist" color="#f59e0b" unit={units === 'imperial' ? 'in' : 'cm'} height={70} reference={units === 'imperial' ? Math.round(94 / 2.54) : 94} />
+            </div>
+          )}
+
           {weightKg === 0 && bodyFatPct === null && (
             <p className="text-xs text-gray-600">Set height, weight, and body fat % in Settings to see composition metrics.</p>
           )}
@@ -398,6 +458,29 @@ export default function Healthspan({ data, onNav }) {
           )}
         </div>
       )}
+
+      {/* Zone 2 Training */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Zone 2 Cardio This Week</p>
+        <div className="flex items-end gap-3 mb-3">
+          <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#00c9a7' : weeklyZone2 >= 150 ? '#3b82f6' : '#f59e0b' }}>
+            {weeklyZone2}
+          </span>
+          <div className="pb-1">
+            <p className="text-sm text-gray-400">minutes</p>
+            <p className="text-xs text-gray-600">{weeklyZone2 >= 300 ? 'Excellent — above longevity target' : weeklyZone2 >= 150 ? 'Good — meets minimum target' : 'Below target — aim for 150+ min'}</p>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-full rounded-full h-2" style={{ background: '#1a1a1a' }}>
+              <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (weeklyZone2 / 300) * 100)}%`, background: weeklyZone2 >= 300 ? '#00c9a7' : weeklyZone2 >= 150 ? '#3b82f6' : '#f59e0b' }} />
+            </div>
+            <span className="text-[10px] text-gray-600 whitespace-nowrap">300 goal</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-gray-600 mt-2">60–70% max HR (Fitbit Zone 2). 150 min/week = good, 300 min/week = excellent for longevity.</p>
+      </div>
 
       {/* What's moving the needle */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
@@ -411,6 +494,15 @@ export default function Healthspan({ data, onNav }) {
           })}
         </div>
       </div>
+
+      {/* VO2 Max History */}
+      {vo2ChartData.length >= 2 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">VO2 Max Trend</p>
+          <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Lower bound shown.</p>
+          <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#3b82f6" unit=" mL/kg/min" height={90} />
+        </div>
+      )}
 
       {/* Pace of aging */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
@@ -475,6 +567,25 @@ export default function Healthspan({ data, onNav }) {
               return <MetricContribution key={c.label} {...c} color={color} />
             })}
           </div>
+        </div>
+      )}
+
+      {/* Blood Pressure Trend */}
+      {bpChartData.length >= 2 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Blood Pressure Trend</p>
+          <p className="text-[10px] text-gray-600 mb-3">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
+          <DualLineGraph
+            data={bpChartData}
+            dataKey1="sys"
+            dataKey2="dia"
+            color1="#ef4444"
+            color2="#3b82f6"
+            unit=" mmHg"
+            height={100}
+            reference1={120}
+            reference2={80}
+          />
         </div>
       )}
 

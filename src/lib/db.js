@@ -56,6 +56,8 @@ export async function saveDay(result) {
       steps: result.steps,
       calories: result.calories,
       activeMinutes: result.activeMinutes ?? 0,
+      vo2Max: result.vo2Max ?? 0,
+      zone2Minutes: result.zoneMinutes?.[1] ?? 0,
       spo2: result.todaySpO2 ?? null,
       br: result.todayBR ?? null,
       skinTempDev: result.skinTempDev ?? null,

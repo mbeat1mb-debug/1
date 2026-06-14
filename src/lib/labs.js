@@ -887,6 +887,29 @@ export function getPhenoAgeResult() {
   } catch { return null }
 }
 
+const PHENO_MARKERS = ['albumin', 'creatinine', 'glucose', 'hscrp', 'lymphocyte', 'mcv', 'rdw', 'alk_phos', 'wbc']
+const PHENO_MARKER_NAMES = {
+  albumin: 'Albumin', creatinine: 'Creatinine', glucose: 'Glucose', hscrp: 'hs-CRP',
+  lymphocyte: 'Lymphocyte %', mcv: 'MCV', rdw: 'RDW', alk_phos: 'Alk. Phos.', wbc: 'WBC',
+}
+
+export function getPhenoAgeProgress() {
+  const labs = getLabResults()
+  const present = PHENO_MARKERS.filter(k => {
+    const v = labs[k]?.value
+    return v != null && !isNaN(parseFloat(v))
+  })
+  const missing = PHENO_MARKERS.filter(k => {
+    const v = labs[k]?.value
+    return !(v != null && !isNaN(parseFloat(v)))
+  })
+  return {
+    present: present.length,
+    total: 9,
+    missingNames: missing.map(k => PHENO_MARKER_NAMES[k]),
+  }
+}
+
 /**
  * Returns an array of contribution objects for all entered markers.
  * Each item: { label, value, unit, contribution, sublabel, color }

@@ -40,3 +40,19 @@ export function BarGraph({ data, dataKey, color = '#3b82f6', unit = '', height =
     </ResponsiveContainer>
   )
 }
+
+export function DualLineGraph({ data, dataKey1, dataKey2, color1 = '#ef4444', color2 = '#3b82f6', unit = '', height = 80, reference1, reference2 }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+        <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
+        {reference1 && <ReferenceLine y={reference1} stroke="#444" strokeDasharray="3 3" />}
+        {reference2 && <ReferenceLine y={reference2} stroke="#333" strokeDasharray="3 3" />}
+        <Tooltip content={<CustomTooltip unit={unit} />} />
+        <Line type="monotone" dataKey={dataKey1} stroke={color1} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: color1 }} />
+        <Line type="monotone" dataKey={dataKey2} stroke={color2} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: color2 }} />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}

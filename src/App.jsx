@@ -58,6 +58,12 @@ const DEMO = {
   steps: 8340, calories: 2180, activeMinutes: 42, weeklyAZM: 310,
   zoneMinutes: [18, 32, 25, 8, 2],
   vo2Max: 47,
+  vo2MaxRange: '47-51',
+  weeklyZone2: 180,
+  vo2MaxHistory: Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (7 - i) * 25)
+    return { date: d.toISOString().split('T')[0], vo2Max: 44 + i }
+  }),
   skinTempDev: 0.10,
   todaySleep: {
     minutesAsleep: 447, timeInBed: 490, efficiency: 91,
@@ -326,7 +332,14 @@ export default function App() {
       const last6AZM = dbHistory.slice(-6).map(d => d.activeMinutes || 0)
       const weeklyAZM = (result.activeMinutes || 0) + last6AZM.reduce((a, b) => a + b, 0)
 
-      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM }
+      // Weekly Zone 2 minutes (60-70% max HR): today + last 6 days from DB
+      const last6Zone2 = dbHistory.slice(-6).map(d => d.zone2Minutes || 0)
+      const weeklyZone2 = (result.zoneMinutes?.[1] || 0) + last6Zone2.reduce((a, b) => a + b, 0)
+
+      // VO2 Max longitudinal history from IndexedDB (Fitbit updates infrequently)
+      const vo2MaxHistory = dbHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
+
+      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory }
       await saveSnapshot(finalResult)
       setAppData(finalResult)
       setDemo(false)

@@ -218,6 +218,44 @@ export function getHRVNorm(age) {
   return ageNorm(HRV_NORMS_FITBIT_MEN, age)
 }
 
+export function getGripHistory() {
+  try { return JSON.parse(localStorage.getItem('grip_history') || '[]') } catch { return [] }
+}
+
+export function saveGripEntry(date, kg) {
+  if (!kg || kg < 5 || kg > 100) return
+  try {
+    const history = getGripHistory()
+    const idx = history.findIndex(e => e.date === date)
+    const entry = { date, kg: Math.round(kg * 10) / 10 }
+    if (idx >= 0) history[idx] = entry
+    else history.push(entry)
+    history.sort((a, b) => a.date.localeCompare(b.date))
+    localStorage.setItem('grip_history', JSON.stringify(history.slice(-120)))
+    localStorage.setItem('user_grip_kg', String(entry.kg))
+    localStorage.setItem('user_grip_date', date)
+  } catch {}
+}
+
+export function getWaistHistory() {
+  try { return JSON.parse(localStorage.getItem('waist_history') || '[]') } catch { return [] }
+}
+
+export function saveWaistEntry(date, cm) {
+  if (!cm || cm < 40 || cm > 200) return
+  try {
+    const history = getWaistHistory()
+    const idx = history.findIndex(e => e.date === date)
+    const entry = { date, cm: Math.round(cm * 10) / 10 }
+    if (idx >= 0) history[idx] = entry
+    else history.push(entry)
+    history.sort((a, b) => a.date.localeCompare(b.date))
+    localStorage.setItem('waist_history', JSON.stringify(history.slice(-120)))
+    localStorage.setItem('user_waist_cm', String(entry.cm))
+    localStorage.setItem('user_waist_date', date)
+  } catch {}
+}
+
 export function getUserWaistCm() {
   try { const v = parseFloat(localStorage.getItem('user_waist_cm') || '0'); return isNaN(v) || v <= 0 ? 0 : v } catch { return 0 }
 }
@@ -235,7 +273,7 @@ export function getHOMAIR() {
   } catch { return 0 }
 }
 
-export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0 }) {
+export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0, hrvHistory = [] }) {
   const userAge = getUserAge()
   const heightCm = getUserHeightCm()
   const weightKg = getUserWeightKg()
@@ -270,11 +308,18 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   if (avgHRV > 0) {
     const norm = ageNorm(HRV_NORMS_FITBIT_MEN, userAge)
     const ratio = avgHRV / norm
-    if (ratio >= 1.5)       cardio -= 3
-    else if (ratio >= 1.2)  cardio -= 1
-    else if (ratio >= 0.85) cardio += 0
-    else if (ratio >= 0.65) cardio += 2
-    else                    cardio += 4
+    let base = ratio >= 1.5 ? -3 : ratio >= 1.2 ? -1 : ratio >= 0.85 ? 0 : ratio >= 0.65 ? 2 : 4
+    // Trend adjustment: if HRV improving/declining meaningfully, shift one tier
+    const recent7 = hrvHistory.slice(-7).filter(Boolean)
+    const prior7 = hrvHistory.slice(-14, -7).filter(Boolean)
+    if (recent7.length >= 4 && prior7.length >= 4) {
+      const rAvg = recent7.reduce((a, b) => a + b, 0) / recent7.length
+      const pAvg = prior7.reduce((a, b) => a + b, 0) / prior7.length
+      const trend = (rAvg - pAvg) / pAvg
+      if (trend > 0.06) base = Math.max(base - 1, -3)
+      else if (trend < -0.08) base = Math.min(base + 1, 4)
+    }
+    cardio += base
   }
 
   // Zhang Heart 2016: each 10 bpm above 60 = ~9% higher all-cause mortality
@@ -485,6 +530,7 @@ export function parseFitbitData(raw) {
   // VO2 Max from Fitbit Cardio Fitness Score (value is string like "47-51" — take lower bound)
   const vo2MaxRaw = cardioFitness?.cardioScore?.[0]?.value?.vo2Max ?? null
   const vo2Max = vo2MaxRaw ? parseInt(String(vo2MaxRaw).split('-')[0], 10) || 0 : 0
+  const vo2MaxRange = vo2MaxRaw ? String(vo2MaxRaw) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
   const skinTempDev = skinTemp?.tempSkin?.[0]?.value?.nightlyRelative ?? null
@@ -524,7 +570,7 @@ export function parseFitbitData(raw) {
     hrvHistory, rhrHistory, historyDates, sleepHistory,
     hrvByDate, rhrByDate,
     hrIntradayData: hrIntraday,
-    vo2Max, skinTempDev, sleepEndHour,
+    vo2Max, vo2MaxRange, skinTempDev, sleepEndHour,
   }
 }
 

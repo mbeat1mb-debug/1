@@ -6,7 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry, saveGripEntry, saveWaistEntry } from '../lib/calculations'
 import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
@@ -737,14 +737,14 @@ export default function Settings({ onBack }) {
       const today = new Date().toISOString().split('T')[0]
       if (units === 'imperial') {
         const wIn = parseFloat(waistIn)
-        if (!isNaN(wIn) && wIn > 0) { localStorage.setItem('user_waist_cm', String(Math.round(wIn * 2.54))); localStorage.setItem('user_waist_date', today) }
+        if (!isNaN(wIn) && wIn > 0) saveWaistEntry(today, Math.round(wIn * 2.54))
         const gLbs = parseFloat(gripLbs)
-        if (!isNaN(gLbs) && gLbs > 0) { localStorage.setItem('user_grip_kg', String(Math.round(gLbs / 2.2046 * 10) / 10)); localStorage.setItem('user_grip_date', today) }
+        if (!isNaN(gLbs) && gLbs > 0) saveGripEntry(today, Math.round(gLbs / 2.2046 * 10) / 10)
       } else {
         const wCm = parseFloat(waistCmVal)
-        if (!isNaN(wCm) && wCm > 0) { localStorage.setItem('user_waist_cm', String(wCm)); localStorage.setItem('user_waist_date', today) }
+        if (!isNaN(wCm) && wCm > 0) saveWaistEntry(today, wCm)
         const gKg = parseFloat(gripKgVal)
-        if (!isNaN(gKg) && gKg > 0) { localStorage.setItem('user_grip_kg', String(gKg)); localStorage.setItem('user_grip_date', today) }
+        if (!isNaN(gKg) && gKg > 0) saveGripEntry(today, gKg)
       }
 
       localStorage.setItem('user_smoking', smoking)
