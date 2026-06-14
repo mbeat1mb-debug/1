@@ -8,12 +8,12 @@
 //           lymphocyte (%), mcv (fL), rdw (%), alk_phos (U/L), wbc (1000 cells/µL), age (years)
 export function calculatePhenoAge({ albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age }) {
   if ([albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age].some(v => v == null || isNaN(v))) return null
-  const crpSafe = Math.max(0.01, crp)  // ln(0) undefined; CRP is never truly zero
-  const creatinineUmol = creatinine * 88.4  // Levine formula uses µmol/L; marker is entered in mg/dL
+  const crpSafe = Math.max(0.01, crp)           // CRP in mg/L; floor prevents ln(0)
+  const glucoseMmol = glucose / 18.018          // Levine NHANES model uses mmol/L, not mg/dL
   const xb = -19.9067
     - 0.0336  * albumin
-    + 0.0095  * creatinineUmol
-    + 0.1953  * glucose
+    + 0.0095  * creatinine                      // mg/dL (NHANES source units — no µmol/L conversion)
+    + 0.1953  * glucoseMmol
     + 0.0954  * Math.log(crpSafe)
     - 0.0120  * lymphocyte
     + 0.0268  * mcv

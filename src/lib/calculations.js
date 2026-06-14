@@ -185,13 +185,13 @@ export function getStressColor(score) {
 
 // ACSM VO2 Max normative thresholds for men (ml/kg/min)
 // Columns: [Fair, Good, Excellent] — below Fair = Poor, above Excellent = Superior
-// Source: ACSM Guidelines for Exercise Testing and Prescription
+// Source: ACSM Guidelines for Exercise Testing and Prescription, 11th Edition (2022)
 const VO2_NORMS_MEN = [
-  [29, [25, 33, 42]],  // age 20-29
-  [39, [23, 30, 39]],  // age 30-39
-  [49, [20, 27, 36]],  // age 40-49
-  [59, [18, 24, 33]],  // age 50-59
-  [99, [16, 22, 30]],  // age 60+
+  [29, [34, 42, 53]],  // age 20-29
+  [39, [31, 39, 49]],  // age 30-39
+  [49, [27, 35, 45]],  // age 40-49
+  [59, [25, 34, 44]],  // age 50-59
+  [99, [22, 30, 40]],  // age 60+
 ]
 
 // HRV (RMSSD) norms for men, adjusted to Fitbit overnight context.

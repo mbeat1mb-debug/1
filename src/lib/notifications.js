@@ -44,11 +44,14 @@ function pruneNotifFlags() {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 7)
   const cutoffStr = cutoff.toISOString().split('T')[0]
-  for (let i = localStorage.length - 1; i >= 0; i--) {
+  // Collect keys first — deleting while iterating by index shifts indices and skips entries
+  const toDelete = []
+  for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     const m = key?.match(/^notif_.+_(\d{4}-\d{2}-\d{2})$/)
-    if (m && m[1] < cutoffStr) localStorage.removeItem(key)
+    if (m && m[1] < cutoffStr) toDelete.push(key)
   }
+  for (const key of toDelete) localStorage.removeItem(key)
 }
 
 export function showNotification(title, body) {

@@ -243,12 +243,12 @@ export default function Healthspan({ data, onNav }) {
       value: vo2MaxRange ?? vo2Max,
       unit: vo2MaxRange ? ' mL/kg/min (Fitbit range)' : ' mL/kg/min',
       contribution: (() => {
-        const norms = userAge <= 29 ? [25, 33, 42] : userAge <= 39 ? [23, 30, 39] : userAge <= 49 ? [20, 27, 36] : userAge <= 59 ? [18, 24, 33] : [16, 22, 30]
+        const norms = userAge <= 29 ? [34, 42, 53] : userAge <= 39 ? [31, 39, 49] : userAge <= 49 ? [27, 35, 45] : userAge <= 59 ? [25, 34, 44] : [22, 30, 40]
         const [fair, good, excel] = norms
         return vo2Max >= excel + 5 ? -5 : vo2Max >= excel ? -3 : vo2Max >= good ? -1 : vo2Max >= fair ? 2 : vo2Max >= fair * 0.8 ? 4 : 6
       })(),
       sublabel: (() => {
-        const norms = userAge <= 29 ? [25, 33, 42] : userAge <= 39 ? [23, 30, 39] : userAge <= 49 ? [20, 27, 36] : userAge <= 59 ? [18, 24, 33] : [16, 22, 30]
+        const norms = userAge <= 29 ? [34, 42, 53] : userAge <= 39 ? [31, 39, 49] : userAge <= 49 ? [27, 35, 45] : userAge <= 59 ? [25, 34, 44] : [22, 30, 40]
         const [fair, good, excel] = norms
         return vo2Max >= excel + 5 ? 'Elite (top 2%)' : vo2Max >= excel ? 'Superior (top 15%)' : vo2Max >= good ? 'Excellent' : vo2Max >= fair ? 'Good' : vo2Max >= fair * 0.8 ? 'Fair' : 'Poor'
       })(),
@@ -314,7 +314,7 @@ export default function Healthspan({ data, onNav }) {
       value: homaIR,
       unit: '',
       contribution: homaIR < 1.0 ? -1 : homaIR < 2.0 ? 0 : homaIR < 3.0 ? 2 : homaIR < 5.0 ? 4 : 6,
-      sublabel: homaIR < 1.0 ? 'Excellent sensitivity' : homaIR < 2.0 ? 'Normal' : homaIR < 3.0 ? 'Insulin Resistant' : homaIR < 5.0 ? 'Significant IR' : 'Severe IR',
+      sublabel: (homaIR < 1.0 ? 'Excellent sensitivity' : homaIR < 2.0 ? 'Normal' : homaIR < 3.0 ? 'Insulin Resistant' : homaIR < 5.0 ? 'Significant IR' : 'Severe IR') + ' · fasting values only',
     }] : []),
     {
       label: 'Smoking',
