@@ -80,11 +80,31 @@ export default function LabResultsSection() {
     e.target.value = '';
 
     setPdfImporting(true);
-    setPdfMsg('Reading your lab report…');
 
     try {
-      const extracted = await extractLabsFromPdf(file);
-      const validKeys = Object.keys(extracted).filter((k) => extracted[k] > 0);
+      let extracted = {};
+      let method = 'basic';
+      const apiKey = localStorage.getItem('claude_api_key');
+
+      if (apiKey) {
+        setPdfMsg('Analyzing with AI…');
+        try {
+          extracted = await extractLabsWithAI(file, apiKey);
+          method = 'ai';
+        } catch {
+          // AI failed — fall back silently
+          setPdfMsg('AI read failed, trying basic scan…');
+          extracted = await extractLabsFromPdf(file);
+        }
+      } else {
+        setPdfMsg('Reading your lab report…');
+        extracted = await extractLabsFromPdf(file);
+      }
+
+      const validKeys = Object.keys(extracted).filter((k) => {
+        const v = parseFloat(extracted[k]);
+        return !isNaN(v) && v > 0;
+      });
 
       if (validKeys.length === 0) {
         throw new Error("Couldn't find any lab values in this PDF. Make sure it's a text-based PDF (not a scanned image).");
@@ -93,7 +113,7 @@ export default function LabResultsSection() {
       setDraft((prev) => {
         const next = { ...prev };
         for (const key of validKeys) {
-          next[key] = String(extracted[key]);
+          next[key] = String(parseFloat(extracted[key]));
         }
         return next;
       });
@@ -108,12 +128,62 @@ export default function LabResultsSection() {
         return next;
       });
 
-      setPdfMsg(`Found ${validKeys.length} value${validKeys.length !== 1 ? 's' : ''} — review them below, then hit Save.`);
+      const suffix = method === 'ai' ? ' (AI-read)' : '';
+      setPdfMsg(`Found ${validKeys.length} value${validKeys.length !== 1 ? 's' : ''}${suffix} — review them below, then hit Save.`);
     } catch (err) {
       setPdfMsg(err.message);
     } finally {
       setPdfImporting(false);
     }
+  }
+
+  async function extractLabsWithAI(file, apiKey) {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const markerList = LAB_MARKERS.map((m) => `"${m.key}" (${m.label}, ${m.unit})`).join(', ');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-beta': 'pdfs-2024-09-25',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+            },
+            {
+              type: 'text',
+              text: `Extract all lab values from this report. Return ONLY a valid JSON object using these exact keys (omit any you cannot find): ${markerList}. No explanation — just the JSON.`,
+            },
+          ],
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API error ${response.status}`);
+    }
+
+    const result = await response.json();
+    const text = result.content?.[0]?.text || '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in AI response');
+    return JSON.parse(jsonMatch[0]);
   }
 
   function filledCount(group) {
