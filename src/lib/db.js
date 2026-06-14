@@ -71,9 +71,14 @@ export async function saveDaysBatch(rows) {
   if (!rows?.length) return
   try {
     const db = await openDB()
-    for (const row of rows) {
-      await dbPut(db, 'health_days', row)
-    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('health_days', 'readwrite')
+      const store = tx.objectStore('health_days')
+      tx.oncomplete = () => resolve()
+      tx.onerror = ({ target: { error } }) => reject(error)
+      tx.onabort = ({ target: { error } }) => reject(error)
+      for (const row of rows) store.put(row)
+    })
   } catch {}
 }
 

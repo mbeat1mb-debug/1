@@ -90,7 +90,7 @@ function MetricContribution({ label, value, unit, contribution, color, sublabel 
 
 export default function Healthspan({ data, onNav }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [],
-    steps = 0, vo2Max = 0, todaySpO2 = 0, todayBR = 0 } = data
+    steps = 0, vo2Max = 0 } = data
   const userAge = getUserAge()
   const ageIsSet = !!localStorage.getItem('user_age')
   const heightCm = getUserHeightCm()
@@ -205,7 +205,17 @@ export default function Healthspan({ data, onNav }) {
       contribution: (() => {
         if (avgHRV <= 0) return 0
         const r = avgHRV / getHRVNorm(userAge)
-        return r >= 1.5 ? -3 : r >= 1.2 ? -1 : r >= 0.85 ? 0 : r >= 0.65 ? 2 : 4
+        let base = r >= 1.5 ? -3 : r >= 1.2 ? -1 : r >= 0.85 ? 0 : r >= 0.65 ? 2 : 4
+        const recent7 = hrvHistory.slice(-7).filter(Boolean)
+        const prior7 = hrvHistory.slice(-14, -7).filter(Boolean)
+        if (recent7.length >= 4 && prior7.length >= 4) {
+          const rAvg = recent7.reduce((a, b) => a + b, 0) / recent7.length
+          const pAvg = prior7.reduce((a, b) => a + b, 0) / prior7.length
+          const trend = (rAvg - pAvg) / pAvg
+          if (trend > 0.06) base = Math.max(base - 1, -3)
+          else if (trend < -0.08) base = Math.min(base + 1, 4)
+        }
+        return base
       })(),
     },
     {
@@ -224,13 +234,13 @@ export default function Healthspan({ data, onNav }) {
       label: 'Sleep Quality',
       value: `${Math.round(avgDeepPct * 100)}% deep / ${Math.round(avgRemPct * 100)}% REM`,
       unit: '',
-      contribution: (avgDeepPct >= 0.18 ? -1 : avgDeepPct < 0.10 ? 2 : 0) + (avgRemPct >= 0.20 ? -1 : avgRemPct < 0.15 ? 1 : 0),
+      contribution: (avgDeepPct >= 0.18 ? -1 : avgDeepPct < 0.10 ? 2 : 0) + (avgRemPct >= 0.22 ? -1 : avgRemPct < 0.15 ? 1 : 0),
     }] : []),
     {
       label: 'Daily Steps',
       value: steps.toLocaleString(),
       unit: '/day',
-      contribution: steps >= 10000 ? -2 : steps >= 7000 ? -1 : steps < 4000 ? 2 : 0,
+      contribution: steps >= 10000 ? -2 : steps >= 7000 ? -1 : steps >= 5000 ? 0 : steps >= 3000 ? 1 : 3,
     },
     {
       label: 'Active Zone Minutes',
@@ -253,25 +263,11 @@ export default function Healthspan({ data, onNav }) {
         return vo2Max >= excel + 5 ? 'Elite (top 2%)' : vo2Max >= excel ? 'Superior (top 15%)' : vo2Max >= good ? 'Excellent' : vo2Max >= fair ? 'Good' : vo2Max >= fair * 0.8 ? 'Fair' : 'Poor'
       })(),
     }] : []),
-    ...(todaySpO2 > 0 ? [{
-      label: 'Blood Oxygen (SpO2)',
-      value: todaySpO2,
-      unit: '%',
-      contribution: todaySpO2 >= 97 ? -1 : todaySpO2 >= 95 ? 0 : todaySpO2 >= 93 ? 1 : 2,
-      sublabel: todaySpO2 >= 97 ? 'Excellent' : todaySpO2 >= 95 ? 'Normal' : 'Low',
-    }] : []),
-    ...(todayBR > 0 ? [{
-      label: 'Respiratory Rate',
-      value: todayBR,
-      unit: ' br/min',
-      contribution: todayBR <= 16 ? -1 : todayBR <= 18 ? 0 : 1,
-      sublabel: todayBR <= 16 ? 'Optimal' : todayBR <= 18 ? 'Normal' : 'Elevated',
-    }] : []),
     ...(bodyFatPct !== null ? [{
       label: 'Body Fat %',
       value: bodyFatPct,
       unit: '%',
-      contribution: bodyFatPct < 15 ? -2 : bodyFatPct < 20 ? -1 : bodyFatPct < 27 ? 0 : bodyFatPct < 32 ? 3 : 5,
+      contribution: bodyFatPct < 10 ? 0 : bodyFatPct < 15 ? -2 : bodyFatPct < 20 ? -1 : bodyFatPct < 27 ? 0 : bodyFatPct < 32 ? 3 : 5,
       sublabel: getBodyFatLabel(bodyFatPct),
     }] : bmi !== null ? [{
       label: 'BMI (body fat % not set)',
@@ -299,12 +295,12 @@ export default function Healthspan({ data, onNav }) {
       value: units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg,
       unit: units === 'imperial' ? ' lbs' : ' kg',
       contribution: (() => {
-        const norm = userAge < 40 ? 47 : userAge < 50 ? 46 : userAge < 60 ? 43 : userAge < 70 ? 39 : 33
+        const norm = userAge <= 29 ? 47 : userAge <= 39 ? 46 : userAge <= 49 ? 43 : userAge <= 59 ? 39 : 33
         const r = gripKg / norm
         return r >= 1.2 ? -2 : r >= 1.0 ? -1 : r >= 0.8 ? 0 : r >= 0.65 ? 2 : 3
       })(),
       sublabel: (() => {
-        const norm = userAge < 40 ? 47 : userAge < 50 ? 46 : userAge < 60 ? 43 : userAge < 70 ? 39 : 33
+        const norm = userAge <= 29 ? 47 : userAge <= 39 ? 46 : userAge <= 49 ? 43 : userAge <= 59 ? 39 : 33
         const r = gripKg / norm
         return r >= 1.2 ? 'Top quartile' : r >= 1.0 ? 'Above median' : r >= 0.8 ? 'Below median' : r >= 0.65 ? 'Low' : 'Very Low'
       })(),

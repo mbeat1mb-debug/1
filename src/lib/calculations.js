@@ -488,7 +488,7 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
 export function calculatePaceOfAging() {
   try {
     const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
-    if (history.length < 2) return null
+    if (history.length < 7) return null
     const first = history[0]
     const last = history[history.length - 1]
     const calDays = Math.round((new Date(last.date) - new Date(first.date)) / 86400000)
