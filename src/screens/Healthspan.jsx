@@ -149,6 +149,7 @@ export default function Healthspan({ data, onNav }) {
         return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
       }, 0) / 6) / 2
     : 0.7
+  const sri = calculateSRI(sleepHistory)
   // SRI (timing-based) is more accurate than duration variance; use it when available
   const sleepConsistency = sri !== null ? sri : durationConsistency
 
@@ -169,7 +170,6 @@ export default function Healthspan({ data, onNav }) {
   const gripKg = getUserGripStrengthKg()
   const homaIR = getHOMAIR()
   const tygIndex = getTyGIndex()
-  const sri = calculateSRI(sleepHistory)
   const sleepApneaRisk = data.sleepApneaRisk ?? null
   const socialJetLag = data.socialJetLag ?? null
   const ffmi = leanMass !== null && heightCm > 0 ? Math.round((leanMass / Math.pow(heightCm / 100, 2)) * 10) / 10 : null

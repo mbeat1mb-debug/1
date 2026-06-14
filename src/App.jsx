@@ -346,10 +346,12 @@ export default function App() {
       const weeklyAZM = (result.activeMinutes || 0) + prior6Days.reduce((a, b) => a + (b.activeMinutes || 0), 0)
       const weeklyZone2 = (result.zoneMinutes?.[1] || 0) + prior6Days.reduce((a, b) => a + (b.zone2Minutes || 0), 0)
 
-      // Recovery:Strain ratio — 14-day rolling trend; only days with valid data
+      // Recovery:Strain ratio — last 14 calendar days with valid data
+      const rsTrendCutoff = new Date(result.date)
+      rsTrendCutoff.setDate(rsTrendCutoff.getDate() - 13)
+      const rsTrendCutoffStr = rsTrendCutoff.toISOString().split('T')[0]
       const rsTrend = dbHistory
-        .filter(d => d.recovery > 0 && d.strain > 0)
-        .slice(-14)
+        .filter(d => d.recovery > 0 && d.strain > 0 && d.date >= rsTrendCutoffStr)
         .map(d => ({ label: d.date.slice(5), ratio: Math.round(d.recovery / d.strain * 10) / 10 }))
 
       // VO2 Max longitudinal history from IndexedDB (Fitbit updates infrequently)

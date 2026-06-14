@@ -957,14 +957,13 @@ export function calculateHRR(hrIntradayData) {
   }
   if (boutStart !== null && pts.length - boutStart >= 5) bouts.push({ start: boutStart, end: pts.length - 1 })
   if (!bouts.length) return null
-  const peak = bouts[bouts.length - 1].end
-  if (peak + 1 >= pts.length) return null
-  const peakHR = pts[peak].value
-  return {
-    peakHR,
-    hrr60: peakHR - pts[peak + 1].value,
-    hrr120: peak + 2 < pts.length ? peakHR - pts[peak + 2].value : null,
-  }
+  const lastBout = bouts[bouts.length - 1]
+  if (lastBout.end + 1 >= pts.length) return null
+  const peakHR = Math.max(...pts.slice(lastBout.start, lastBout.end + 1).map(p => p.value))
+  const hrr60 = peakHR - pts[lastBout.end + 1].value
+  if (hrr60 <= 0) return null
+  const hrr120 = lastBout.end + 2 < pts.length ? peakHR - pts[lastBout.end + 2].value : null
+  return { peakHR, hrr60, hrr120 }
 }
 
 // ── Social Jet Lag ──────────────────────────────────────────────────────────
