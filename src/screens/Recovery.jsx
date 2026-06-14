@@ -57,6 +57,7 @@ export default function Recovery({ data, onNav }) {
   const yesterdayTiming = getTimingForDate(yesterdayStr)
   const healthHistory = (data.calendarDays || []).filter(d => d.recovery != null).map(d => ({ date: d.date, recovery: d.recovery }))
   const timingInsights = (() => {
+    if (data.isDemo) return []
     const seen = new Set(yesterdayTiming.map(e => e.substance))
     const out = []
     for (const substanceId of seen) {

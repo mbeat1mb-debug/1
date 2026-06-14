@@ -119,7 +119,7 @@ export function getTimingForDate(date) {
 
 export function addTimingEntry(date, substance, time) {
   const log = getTimingLog()
-  const entry = { id: `t_${Date.now()}`, date, substance, time }
+  const entry = { id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, date, substance, time }
   log.push(entry)
   localStorage.setItem(TIMING_KEY, JSON.stringify(log.slice(-500)))
   return entry
@@ -154,7 +154,7 @@ export function analyzeTimingCorrelation(substanceId, healthHistory) {
     const rec = recoveryByDate[nextDate]
     withNextDay.push(rec)
     if (times.some(t => t >= '14:00')) lateDay.push(rec)
-    else earlyOnly.push(rec)
+    if (times.some(t => t < '14:00')) earlyOnly.push(rec)
   }
   if (withNextDay.length < 2) return null
 

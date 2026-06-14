@@ -86,6 +86,7 @@ export default function Journal({ data, onNav }) {
     if (!timingTime) return
     addTimingEntry(today(), timingSubstance, timingTime)
     setTimingEntries(getTimingForDate(today()))
+    setTimingTime(nowTime())
   }
 
   const handleRemoveTiming = (id) => {

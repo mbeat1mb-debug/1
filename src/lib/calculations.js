@@ -971,7 +971,8 @@ export function calculateHRR(hrIntradayData) {
   const peakHR = Math.max(...pts.slice(lastBout.start, lastBout.end + 1).map(p => p.value))
   const hrr60 = peakHR - pts[lastBout.end + 1].value
   if (hrr60 <= 0) return null
-  const hrr120 = lastBout.end + 2 < pts.length ? peakHR - pts[lastBout.end + 2].value : null
+  const hrr120Raw = lastBout.end + 2 < pts.length ? peakHR - pts[lastBout.end + 2].value : null
+  const hrr120 = hrr120Raw !== null && hrr120Raw > 0 ? hrr120Raw : null
   return { peakHR, hrr60, hrr120 }
 }
 
@@ -983,8 +984,11 @@ export function calculateSocialJetLag(sleepHistory) {
   if (entries.length < 5) return null
   const midpoints = entries.map(s => {
     const midnight = new Date(s.date + 'T00:00:00')
-    const s0 = Math.round((new Date(s.startTime) - midnight) / 60000)
-    const e0 = Math.round((new Date(s.endTime)   - midnight) / 60000)
+    let s0 = Math.round((new Date(s.startTime) - midnight) / 60000)
+    // Fitbit's dateOfSleep is sometimes the wake date; a start > 20h after midnight
+    // means the record date is the wake date and sleep actually started the prior evening.
+    if (s0 > 1200) s0 -= 1440
+    const e0 = Math.round((new Date(s.endTime) - midnight) / 60000)
     return (s0 + e0) / 2
   })
   const mean = midpoints.reduce((a, b) => a + b, 0) / midpoints.length
@@ -1016,7 +1020,7 @@ export function calculateSleepApneaRisk({ spo2Intraday, br, todaySleep }) {
   // Baseline = 90th-percentile SpO2 (resistant to being dragged down by sustained desaturations),
   // capped at 97 since overnight SpO2 rarely exceeds that even in healthy sleepers.
   const sorted = [...vals].sort((a, b) => a - b)
-  const baseline = Math.min(97, sorted[Math.floor(vals.length * 0.9)] ?? 97)
+  const baseline = Math.min(97, sorted[Math.floor((vals.length - 1) * 0.9)] ?? 97)
   const dropThreshold = baseline - 3
   let eventCount = 0
   let inEvent = false

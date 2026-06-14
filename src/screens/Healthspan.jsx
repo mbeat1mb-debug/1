@@ -567,7 +567,7 @@ export default function Healthspan({ data, onNav }) {
       {vo2ChartData.length >= 2 && (
         <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">VO2 Max Trend</p>
-          <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Lower bound shown.</p>
+          <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
           <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#3b82f6" unit=" mL/kg/min" height={90} />
         </div>
       )}
