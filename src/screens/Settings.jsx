@@ -250,7 +250,7 @@ function PushNotificationsSection() {
               <p className="text-[11px] text-gray-600">{desc}</p>
             </div>
             <button
-              onClick={() => setPrefs(p => ({ ...p, [key]: !p[key] }))}
+              onClick={() => setPrefs(p => ({ ...p, [key]: p[key] !== false ? false : true }))}
               className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
               style={{ background: prefs[key] !== false ? '#00c9a7' : '#333' }}
             >
