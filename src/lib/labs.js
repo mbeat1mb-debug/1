@@ -1,7 +1,163 @@
 // Lab markers for biological age calculation
 // No imports needed — only uses localStorage
 
+// ── Levine PhenoAge Formula (Aging 2018) ────────────────────────────────────
+// Exact coefficients from Morgan Levine's validated biological age model.
+// Returns estimated biological age in years, or null if any required marker is missing.
+// Required: albumin (g/dL), creatinine (mg/dL), glucose (mg/dL), crp (mg/L),
+//           lymphocyte (%), mcv (fL), rdw (%), alk_phos (U/L), wbc (1000 cells/µL), age (years)
+export function calculatePhenoAge({ albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age }) {
+  if ([albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age].some(v => v == null || isNaN(v))) return null
+  const crpSafe = Math.max(0.01, crp)  // ln(0) undefined; CRP is never truly zero
+  const xb = -19.9067
+    - 0.0336  * albumin
+    + 0.0095  * creatinine
+    + 0.1953  * glucose
+    + 0.0954  * Math.log(crpSafe)
+    - 0.0120  * lymphocyte
+    + 0.0268  * mcv
+    + 0.3306  * rdw
+    + 0.00188 * alk_phos
+    + 0.0554  * wbc
+    + 0.0804  * age
+  const M = 1 - Math.exp(-Math.exp(xb) * 1.51714 / 0.0076927)
+  const phenoAge = 141.50225 + Math.log(-0.00553 * Math.log(1 - M)) / 0.090165
+  return Math.round(phenoAge * 10) / 10
+}
+
+// Keys for the 9 PhenoAge required bloodwork markers
+const PHENOAGE_KEYS = ['albumin', 'creatinine', 'glucose', 'hscrp', 'lymphocyte', 'mcv', 'rdw', 'alk_phos', 'wbc']
+
 export const LAB_MARKERS = [
+  // ── PhenoAge CBC/CMP core markers (listed first for prominence) ─────────
+  {
+    key: 'albumin',
+    label: 'Albumin',
+    unit: 'g/dL',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 3.8–5.0 · Higher is better (protein/liver health)',
+    score(v) { return 0 },  // Handled by PhenoAge formula
+    grade(v) {
+      if (v >= 4.0) return 'Optimal'
+      if (v >= 3.5) return 'Normal'
+      return 'Low'
+    },
+    color(v) {
+      if (v >= 4.0) return '#00c9a7'
+      if (v >= 3.5) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'creatinine',
+    label: 'Creatinine',
+    unit: 'mg/dL',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 0.7–1.2 men · Lower indicates better kidney function',
+    score(v) { return 0 },
+    grade(v) {
+      if (v <= 1.2) return 'Normal'
+      if (v <= 1.5) return 'Mildly Elevated'
+      return 'Elevated'
+    },
+    color(v) {
+      if (v <= 1.2) return '#00c9a7'
+      if (v <= 1.5) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'lymphocyte',
+    label: 'Lymphocyte %',
+    unit: '%',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 20–40% · Lower suggests immune aging',
+    score(v) { return 0 },
+    grade(v) {
+      if (v >= 25 && v <= 40) return 'Optimal'
+      if (v >= 20) return 'Normal'
+      return 'Low'
+    },
+    color(v) {
+      if (v >= 25 && v <= 40) return '#00c9a7'
+      if (v >= 20) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'mcv',
+    label: 'MCV (Red Cell Volume)',
+    unit: 'fL',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 80–96 fL · Elevated = nutritional gaps or aging',
+    score(v) { return 0 },
+    grade(v) {
+      if (v >= 80 && v <= 96) return 'Normal'
+      if (v > 96) return 'Elevated'
+      return 'Low'
+    },
+    color(v) {
+      if (v >= 80 && v <= 96) return '#00c9a7'
+      if (v > 96 || v < 80) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'rdw',
+    label: 'RDW (Red Cell Width)',
+    unit: '%',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 11.5–14.5% · Higher predicts mortality across diseases',
+    score(v) { return 0 },
+    grade(v) {
+      if (v <= 13) return 'Optimal'
+      if (v <= 14.5) return 'Normal'
+      return 'Elevated'
+    },
+    color(v) {
+      if (v <= 13) return '#00c9a7'
+      if (v <= 14.5) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'alk_phos',
+    label: 'Alkaline Phosphatase',
+    unit: 'U/L',
+    group: 'PhenoAge Panel',
+    ref: 'Optimal <70 · Elevated suggests liver/bone stress',
+    score(v) { return 0 },
+    grade(v) {
+      if (v < 70) return 'Optimal'
+      if (v <= 120) return 'Normal'
+      return 'Elevated'
+    },
+    color(v) {
+      if (v < 70) return '#00c9a7'
+      if (v <= 120) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+  {
+    key: 'wbc',
+    label: 'White Blood Cell Count',
+    unit: 'K/µL',
+    group: 'PhenoAge Panel',
+    ref: 'Normal 4.5–9.0 · Chronic elevation signals inflammation',
+    score(v) { return 0 },
+    grade(v) {
+      if (v >= 4.5 && v <= 7.5) return 'Optimal'
+      if (v <= 9.0) return 'Normal'
+      return 'Elevated'
+    },
+    color(v) {
+      if (v >= 4.5 && v <= 7.5) return '#00c9a7'
+      if (v <= 9.0) return '#f59e0b'
+      return '#ef4444'
+    },
+  },
+
+
   // ── Lipids ──────────────────────────────────────────────────────────────
   {
     key: 'ldl',
@@ -677,22 +833,56 @@ export function saveLabResults(results) {
 }
 
 /**
- * Sum score(value) for all entered markers.
- * Returns an integer year adjustment (negative = younger, positive = older).
+ * Returns a year adjustment for the biological age calculation.
+ * When all 9 Levine PhenoAge markers are present, uses the validated clinical
+ * formula and returns (PhenoAge - chronologicalAge). Otherwise falls back to
+ * additive marker scoring. Clamped to ±8 years before returning.
  */
 export function getLabAgeAdjustment() {
   const results = getLabResults();
+  const val = key => { const e = results[key]; if (!e || e.value == null || e.value === '') return null; const v = parseFloat(e.value); return isNaN(v) ? null : v }
+
+  const albumin    = val('albumin')
+  const creatinine = val('creatinine')
+  const glucose    = val('glucose')
+  const crp        = val('hscrp')
+  const lymphocyte = val('lymphocyte')
+  const mcv        = val('mcv')
+  const rdw        = val('rdw')
+  const alk_phos   = val('alk_phos')
+  const wbc        = val('wbc')
+
+  if ([albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc].every(v => v !== null)) {
+    try {
+      const age = (() => { try { const a = parseInt(localStorage.getItem('user_age'), 10); return isNaN(a) ? 39 : a } catch { return 39 } })()
+      const phenoAge = calculatePhenoAge({ albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age })
+      if (phenoAge !== null) return Math.round(Math.max(-8, Math.min(8, phenoAge - age)))
+    } catch {}
+  }
+
+  // Fallback: additive scoring for whatever markers are entered
+  // PhenoAge panel markers (albumin, creatinine, etc.) score 0 since they're only
+  // meaningful as a complete set — don't let partial panels distort the result.
   let total = 0;
   for (const marker of LAB_MARKERS) {
-    const entry = results[marker.key];
-    if (entry != null && entry.value != null && entry.value !== '') {
-      const v = parseFloat(entry.value);
-      if (!isNaN(v)) {
-        total += marker.score(v);
-      }
-    }
+    const v = val(marker.key)
+    if (v !== null) total += marker.score(v)
   }
   return total;
+}
+
+/**
+ * Returns PhenoAge if all 9 required markers are entered, else null.
+ */
+export function getPhenoAgeResult() {
+  const results = getLabResults();
+  const val = key => { const e = results[key]; if (!e || e.value == null) return null; const v = parseFloat(e.value); return isNaN(v) ? null : v }
+  const markers = { albumin: val('albumin'), creatinine: val('creatinine'), glucose: val('glucose'), crp: val('hscrp'), lymphocyte: val('lymphocyte'), mcv: val('mcv'), rdw: val('rdw'), alk_phos: val('alk_phos'), wbc: val('wbc') }
+  if (Object.values(markers).some(v => v === null)) return null
+  try {
+    const age = (() => { try { const a = parseInt(localStorage.getItem('user_age'), 10); return isNaN(a) ? 39 : a } catch { return 39 } })()
+    return calculatePhenoAge({ ...markers, age })
+  } catch { return null }
 }
 
 /**

@@ -183,107 +183,175 @@ export function getStressColor(score) {
   return '#ef4444'
 }
 
+// ACSM VO2 Max normative thresholds for men (ml/kg/min)
+// Columns: [Fair, Good, Excellent] — below Fair = Poor, above Excellent = Superior
+// Source: ACSM Guidelines for Exercise Testing and Prescription
+const VO2_NORMS_MEN = [
+  [29, [25, 33, 42]],  // age 20-29
+  [39, [23, 30, 39]],  // age 30-39
+  [49, [20, 27, 36]],  // age 40-49
+  [59, [18, 24, 33]],  // age 50-59
+  [99, [16, 22, 30]],  // age 60+
+]
+
+// HRV (RMSSD) norms for men, adjusted to Fitbit overnight context.
+// Published ECG-equivalent medians (Shaffer & Ginsberg 2017) scaled ×1.15
+// because Fitbit overnight RMSSD reads ~15% higher than daytime ECG reference values.
+const HRV_NORMS_FITBIT_MEN = [
+  [29, 69], // 20s: ECG ~60ms
+  [39, 53], // 30s: ECG ~46ms
+  [49, 40], // 40s: ECG ~35ms
+  [59, 33], // 50s: ECG ~29ms
+  [99, 28], // 60+: ECG ~24ms
+]
+
+function ageNorm(table, age) {
+  return (table.find(([maxAge]) => age <= maxAge) ?? table[table.length - 1])[1]
+}
+
 export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0 }) {
   const userAge = getUserAge()
   let adj = 0
 
-  // BMI adjustment when height/weight are set
-  const bmi = calculateBMI(getUserHeightCm(), getUserWeightKg())
-  if (bmi !== null) {
-    if (bmi < 18.5) adj += 1
-    else if (bmi < 25) adj -= 1
-    else if (bmi < 30) adj += 1
-    else if (bmi < 35) adj += 2
-    else adj += 4
-  }
-
-  // HRV norms decline ~1ms/year. Expected median ≈ 65 - 0.6*(age-25) for healthy adults.
-  // Adjustments are relative to age-expected HRV so a 60-year-old isn't penalized for
-  // having lower absolute HRV than a 25-year-old.
-  const ageExpectedHRV = Math.max(20, 65 - 0.6 * (userAge - 25))
-  const hrvRatio = avgHRV > 0 ? avgHRV / ageExpectedHRV : 1
-  if (hrvRatio > 1.4) adj -= 4
-  else if (hrvRatio > 1.2) adj -= 3
-  else if (hrvRatio > 1.0) adj -= 1
-  else if (hrvRatio > 0.8) adj += 1
-  else if (hrvRatio > 0.6) adj += 2
-  else adj += 4
-
-  // RHR: <50 is elite regardless of age; >80 is a meaningful concern at any age.
-  // Guard avgRHR > 0 so a missing-data day (0) stays neutral instead of scoring as elite.
-  if (avgRHR > 0) {
-    if (avgRHR < 50) adj -= 4
-    else if (avgRHR < 58) adj -= 2
-    else if (avgRHR < 68) adj -= 1
-    else if (avgRHR > 80) adj += 2
-    else adj += 1
-  }
-
-  if (avgSleep >= 7.5 && sleepConsistency >= 0.8) adj -= 3
-  else if (avgSleep >= 7.0 && sleepConsistency >= 0.65) adj -= 1
-  else if (avgSleep < 5.5 || sleepConsistency < 0.5) adj += 3
-  else adj += 1
-
-  if (avgSteps >= 12000) adj -= 2
-  else if (avgSteps >= 8000) adj -= 1
-  else if (avgSteps < 4000) adj += 2
-
-  if (weeklyAZM >= 300) adj -= 2
-  else if (weeklyAZM >= 150) adj -= 1
-  else if (weeklyAZM < 50) adj += 2
-
-  // VO2 Max — strongest single longevity predictor (Mandsager et al., JAMA 2018)
-  // Age-normalize: healthy 40-year-old baseline ~40 ml/kg/min, declining ~0.3/yr after 25
+  // ── VO2 Max — strongest single longevity predictor ─────────────────────────
+  // Mandsager (JAMA 2018): each fitness quintile = ~4-5y mortality equivalence.
+  // Fitbit Cardio Fitness Score has ±3.5 ml/kg/min uncertainty — scored conservatively.
   if (vo2Max > 0) {
-    const ageExpectedVO2 = Math.max(20, 43 - 0.3 * (userAge - 40))
-    const vo2Ratio = vo2Max / ageExpectedVO2
-    if (vo2Ratio >= 1.35) adj -= 3      // elite: >135% of age-expected
-    else if (vo2Ratio >= 1.10) adj -= 1  // above average
-    else if (vo2Ratio >= 0.85) adj += 0  // average
-    else if (vo2Ratio >= 0.65) adj += 2  // below average
-    else adj += 4                         // poor (strong mortality predictor)
+    const [fair, good, excel] = ageNorm(VO2_NORMS_MEN, userAge)
+    if (vo2Max >= excel)      adj -= 5  // Superior — top 15%
+    else if (vo2Max >= good)  adj -= 3  // Excellent
+    else if (vo2Max >= fair)  adj -= 1  // Good
+    else if (vo2Max >= fair * 0.75) adj += 2  // Fair
+    else                      adj += 5  // Poor — strong mortality signal
   }
 
-  // Sleep stages — deep sleep drives cellular repair, REM drives cognitive health
-  if (avgDeepPct > 0) {
-    if (avgDeepPct >= 0.18) adj -= 1
-    else if (avgDeepPct < 0.10) adj += 2
-  }
-  if (avgRemPct > 0) {
-    if (avgRemPct >= 0.20) adj -= 1
-    else if (avgRemPct < 0.15) adj += 1
-  }
-
-  // Smoking
-  const smoking = getUserSmoking()
-  if (smoking === 'current') adj += 7
-  else if (smoking === 'former') adj += 2
-
-  // Alcohol (drinks/week) — only applied when user has entered a value
-  const alcohol = getUserAlcohol()
-  if (alcohol !== null) {
-    if (alcohol >= 14) adj += 3
-    else if (alcohol >= 7) adj += 1
+  // ── HRV — autonomic nervous system age ────────────────────────────────────
+  // Age-normed ratio vs Fitbit-calibrated population median.
+  // Ratio >1.4 = well above average for age; <0.6 = well below.
+  if (avgHRV > 0) {
+    const norm = ageNorm(HRV_NORMS_FITBIT_MEN, userAge)
+    const ratio = avgHRV / norm
+    if (ratio >= 1.4)       adj -= 3
+    else if (ratio >= 1.15) adj -= 1
+    else if (ratio >= 0.85) adj += 0  // Within normal range for age
+    else if (ratio >= 0.65) adj += 2
+    else                    adj += 4
   }
 
-  // Blood pressure — rolling average of periodic readings, falls back to static setting
+  // ── Resting HR — Zhang meta-analysis dose-response ───────────────────────
+  // Zhang (Heart 2016): each 10 bpm above 60 = ~9% higher all-cause mortality.
+  // Translated to ~1.5y biological age equivalent per 10 bpm step.
+  if (avgRHR > 0) {
+    if (avgRHR < 50)       adj -= 3  // Elite / highly trained
+    else if (avgRHR < 60)  adj -= 1  // Excellent
+    else if (avgRHR < 70)  adj += 0  // Good (reference band)
+    else if (avgRHR < 80)  adj += 2  // Elevated (~9% risk increase)
+    else if (avgRHR < 90)  adj += 3  // High (~18% risk increase)
+    else                   adj += 4  // Very high (>27% risk increase)
+  }
+
+  // ── Sleep — Cappuccio U-curve + stage quality ─────────────────────────────
+  // Cappuccio (Sleep 2010): <6h or >9h both associate with elevated mortality.
+  // REM: Backhaus (2018) — each 5% reduction below 15% = HR 1.13 per year.
+  if (avgSleep > 0) {
+    if (avgSleep >= 7 && avgSleep <= 9)         adj -= 1
+    else if (avgSleep >= 6 && avgSleep < 7)     adj += 1
+    else if (avgSleep > 9)                      adj += 1  // often symptom of poor health
+    else                                        adj += 3  // <6h — strong mortality signal
+
+    if (avgRemPct >= 0.22)                      adj -= 1
+    else if (avgRemPct > 0 && avgRemPct < 0.15) adj += 1
+
+    if (avgDeepPct >= 0.18)                     adj -= 1
+    else if (avgDeepPct > 0 && avgDeepPct < 0.10) adj += 1
+  }
+
+  // ── Blood pressure — Ettehad linear dose-response ─────────────────────────
+  // Ettehad (Lancet 2016): each 10mmHg SBP reduction → 10-13% CVD event reduction.
   const bp = getAverageBP()
   if (bp.sys > 0) {
-    if (bp.sys >= 160 || bp.dia >= 100) adj += 4
-    else if (bp.sys >= 140 || bp.dia >= 90) adj += 2
-    else if (bp.sys >= 130 || bp.dia >= 80) adj += 1
-    else adj -= 1
+    if (bp.sys < 120 && bp.dia < 80)        adj -= 1  // Optimal
+    else if (bp.sys < 130)                  adj += 0  // Normal
+    else if (bp.sys < 140 || bp.dia < 90)   adj += 1  // Elevated / Stage 1
+    else if (bp.sys < 160 || bp.dia < 100)  adj += 3  // Stage 2 HTN
+    else                                    adj += 5  // Severe HTN (>20mmHg above Stage 2)
   }
 
-  // Bloodwork lab panel — clamped to ±8y so no single category dominates
+  // ── Body composition — fat % primary, BMI as fallback ────────────────────
+  // Bhaskaran (Lancet 2018): ≥27% body fat in men = HR 1.78 vs 20-24% reference.
+  // BMI is a weaker independent predictor after adjusting for fat %.
+  const bodyFatPct = getUserBodyFatPct()
+  if (bodyFatPct !== null) {
+    if (bodyFatPct < 10)       adj += 0  // Essential — not necessarily protective
+    else if (bodyFatPct < 18)  adj -= 1  // Athletic/fit
+    else if (bodyFatPct < 27)  adj += 0  // Acceptable range
+    else if (bodyFatPct < 32)  adj += 3  // Elevated risk (HR ~1.78)
+    else                       adj += 5  // High risk
+  } else {
+    // BMI fallback when body fat % unavailable
+    const bmi = calculateBMI(getUserHeightCm(), getUserWeightKg())
+    if (bmi !== null) {
+      if (bmi < 18.5)     adj += 1  // Underweight
+      else if (bmi < 25)  adj -= 1  // Healthy
+      else if (bmi < 30)  adj += 1  // Overweight
+      else if (bmi < 35)  adj += 2  // Obese I
+      else                adj += 4  // Obese II+
+    }
+  }
+
+  // ── Steps — Paluch 2022 dose-response curve ───────────────────────────────
+  // Paluch (JAMA NM 2022): 7k-10k steps saturates most mortality benefit.
+  if (avgSteps > 0) {
+    if (avgSteps >= 10000)     adj -= 2
+    else if (avgSteps >= 7000) adj -= 1
+    else if (avgSteps >= 5000) adj += 0
+    else if (avgSteps >= 3000) adj += 1
+    else                       adj += 3
+  }
+
+  // ── Active Zone Minutes — Arem 2015 dose-response ────────────────────────
+  // Arem (JAMA IM 2015): 3-5× WHO recommendation (300-500 min/wk) = 35-39% mortality reduction.
+  if (weeklyAZM >= 500)        adj -= 2  // 3×+ WHO guideline
+  else if (weeklyAZM >= 300)   adj -= 1  // 2× WHO
+  else if (weeklyAZM >= 150)   adj += 0  // Meets WHO
+  else if (weeklyAZM >= 75)    adj += 1  // Below guideline
+  else                         adj += 2  // Sedentary
+
+  // ── Lifestyle factors ──────────────────────────────────────────────────────
+  const smoking = getUserSmoking()
+  if (smoking === 'current')      adj += 7
+  else if (smoking === 'former')  adj += 2
+
+  const alcohol = getUserAlcohol()
+  if (alcohol !== null) {
+    if (alcohol >= 14)      adj += 3
+    else if (alcohol >= 7)  adj += 1
+  }
+
+  // ── Bloodwork ──────────────────────────────────────────────────────────────
+  // Uses PhenoAge Levine formula when all 9 required markers are present.
+  // Falls back to additive marker scoring otherwise. Clamped to ±8y.
   adj += Math.max(-8, Math.min(8, getLabAgeAdjustment()))
 
-  return userAge + adj
+  return Math.round(Math.max(userAge - 15, Math.min(userAge + 20, userAge + adj)))
 }
 
-export function calculatePaceOfAging(recentAge, baselineAge) {
-  const diff = recentAge - baselineAge
-  return Math.round(diff * 10) / 10
+// Returns rate in biological years per calendar year from longitudinal history.
+// rate < 1.0 = aging slower than calendar (favorable)
+// rate > 1.0 = aging faster than calendar (unfavorable)
+export function calculatePaceOfAging() {
+  try {
+    const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
+    if (history.length < 2) return null
+    const first = history[0]
+    const last = history[history.length - 1]
+    const calDays = Math.round((new Date(last.date) - new Date(first.date)) / 86400000)
+    if (calDays < 14) return null
+    const bioAgeDelta = last.physAge - first.physAge
+    const calYears = calDays / 365.25
+    const rate = Math.round((bioAgeDelta / calYears) * 100) / 100
+    return { rate, bioAgeDelta: Math.round(bioAgeDelta * 10) / 10, calDays }
+  } catch { return null }
 }
 
 export function parseFitbitData(raw) {
