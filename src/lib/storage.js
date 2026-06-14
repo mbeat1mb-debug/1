@@ -93,6 +93,93 @@ export function analyzeTagCorrelation(tagId, healthHistory) {
   }
 }
 
+// ── Substance & Timing Log ──────────────────────────────────────────────────
+// Time-stamped intake events correlated with next-day recovery score.
+
+const TIMING_KEY = 'substance_timing_log'
+
+export const TIMING_SUBSTANCES = [
+  { id: 'caffeine',     label: 'Caffeine',    emoji: '☕' },
+  { id: 'creatine',    label: 'Creatine',    emoji: '💪' },
+  { id: 'preworkout',  label: 'Pre-workout', emoji: '⚡' },
+  { id: 'alcohol',     label: 'Alcohol',     emoji: '🍷' },
+  { id: 'melatonin',   label: 'Melatonin',   emoji: '🌙' },
+  { id: 'nsaid',       label: 'NSAIDs',      emoji: '💊' },
+  { id: 'ashwagandha', label: 'Ashwagandha', emoji: '🌿' },
+  { id: 'magnesium',   label: 'Magnesium',   emoji: '🔋' },
+]
+
+export function getTimingLog() {
+  try { return JSON.parse(localStorage.getItem(TIMING_KEY) || '[]') } catch { return [] }
+}
+
+export function getTimingForDate(date) {
+  return getTimingLog().filter(e => e.date === date).sort((a, b) => a.time.localeCompare(b.time))
+}
+
+export function addTimingEntry(date, substance, time) {
+  const log = getTimingLog()
+  const entry = { id: `t_${Date.now()}`, date, substance, time }
+  log.push(entry)
+  localStorage.setItem(TIMING_KEY, JSON.stringify(log.slice(-500)))
+  return entry
+}
+
+export function removeTimingEntry(id) {
+  localStorage.setItem(TIMING_KEY, JSON.stringify(getTimingLog().filter(e => e.id !== id)))
+}
+
+// Substance taken on day D correlated with recovery score on day D+1.
+// Stimulants/alcohol also split by timing (before vs after 14:00) since
+// the hour of intake matters more than the fact of intake.
+export function analyzeTimingCorrelation(substanceId, healthHistory) {
+  const log = getTimingLog()
+  const substanceDays = {}
+  for (const e of log) {
+    if (e.substance !== substanceId) continue
+    if (!substanceDays[e.date]) substanceDays[e.date] = []
+    substanceDays[e.date].push(e.time)
+  }
+  if (Object.keys(substanceDays).length < 2) return null
+
+  const recoveryByDate = {}
+  for (const day of healthHistory) recoveryByDate[day.date] = day.recovery
+
+  const withNextDay = [], earlyOnly = [], lateDay = []
+  for (const [date, times] of Object.entries(substanceDays)) {
+    const d = new Date(date + 'T12:00:00')
+    d.setDate(d.getDate() + 1)
+    const nextDate = d.toISOString().split('T')[0]
+    if (recoveryByDate[nextDate] == null) continue
+    const rec = recoveryByDate[nextDate]
+    withNextDay.push(rec)
+    if (times.some(t => t >= '14:00')) lateDay.push(rec)
+    else earlyOnly.push(rec)
+  }
+  if (withNextDay.length < 2) return null
+
+  // "Without" days = user was logging (has any timing entry that day) but not this substance
+  const allLoggedDates = new Set(log.map(e => e.date))
+  const withoutNextDay = []
+  for (const day of healthHistory) {
+    const d = new Date(day.date + 'T12:00:00')
+    d.setDate(d.getDate() - 1)
+    const prev = d.toISOString().split('T')[0]
+    if (allLoggedDates.has(prev) && !substanceDays[prev]) withoutNextDay.push(day.recovery)
+  }
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null
+  return {
+    withAvg: avg(withNextDay),
+    withoutAvg: withoutNextDay.length >= 2 ? avg(withoutNextDay) : null,
+    diff: withoutNextDay.length >= 2 ? avg(withNextDay) - avg(withoutNextDay) : null,
+    earlyAvg: earlyOnly.length >= 2 ? avg(earlyOnly) : null,
+    lateAvg: lateDay.length >= 2 ? avg(lateDay) : null,
+    timingDiff: earlyOnly.length >= 2 && lateDay.length >= 2 ? avg(earlyOnly) - avg(lateDay) : null,
+    count: withNextDay.length,
+  }
+}
+
 // Analyze how self-reported energy correlates with recovery score
 export function analyzeEnergyCorrelation(healthHistory) {
   const entries = getJournalEntries().filter(e => e.energy != null)

@@ -4,6 +4,7 @@ import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings } from '../lib/calculations'
 import { getHistory } from '../lib/db'
+import { getTimingForDate, TIMING_SUBSTANCES, analyzeTimingCorrelation } from '../lib/storage'
 
 function BackButton({ onNav }) {
   return (
@@ -51,6 +52,25 @@ export default function Recovery({ data, onNav }) {
   const avgBP = getAverageBP()
   const bpReadings = getBPReadings()
   const hasBP = avgBP.sys > 0
+
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] })()
+  const yesterdayTiming = getTimingForDate(yesterdayStr)
+  const healthHistory = (data.calendarDays || []).filter(d => d.recovery != null).map(d => ({ date: d.date, recovery: d.recovery }))
+  const timingInsights = (() => {
+    const seen = new Set(yesterdayTiming.map(e => e.substance))
+    const out = []
+    for (const substanceId of seen) {
+      const sub = TIMING_SUBSTANCES.find(s => s.id === substanceId)
+      const corr = analyzeTimingCorrelation(substanceId, healthHistory)
+      if (!corr) continue
+      if (corr.timingDiff !== null && Math.abs(corr.timingDiff) >= 5) {
+        out.push({ label: `${sub?.emoji} ${sub?.label}: early vs late`, diff: corr.timingDiff })
+      } else if (corr.diff !== null && Math.abs(corr.diff) >= 5) {
+        out.push({ label: `${sub?.emoji} Days with ${sub?.label}`, diff: corr.diff })
+      }
+    }
+    return out
+  })()
 
   const todayStr = new Date().toISOString().split('T')[0]
   const hrv14 = hrvHistory.slice(-14)
@@ -233,6 +253,45 @@ export default function Recovery({ data, onNav }) {
               return latest >= 6 ? 'Very fresh — consider increasing load.' : latest >= 4 ? 'Well balanced.' : latest >= 2 ? 'Moderate load — monitor recovery.' : 'High load — prioritize rest.'
             })()}
           </p>
+        </div>
+      )}
+
+      {/* Yesterday's substance log */}
+      {yesterdayTiming.length > 0 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Yesterday's Substances</p>
+          <div className="space-y-2 mb-2">
+            {yesterdayTiming.map(entry => {
+              const sub = TIMING_SUBSTANCES.find(s => s.id === entry.substance)
+              const lateStim = ['caffeine', 'preworkout'].includes(entry.substance) && entry.time >= '14:00'
+              const lateAlc = entry.substance === 'alcohol' && entry.time >= '19:00'
+              const timeDisplay = new Date(`2000-01-01T${entry.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+              return (
+                <div key={entry.id} className="flex items-center gap-3">
+                  <span className="text-base">{sub?.emoji ?? '💊'}</span>
+                  <span className="text-sm text-white">{sub?.label ?? entry.substance}</span>
+                  <span className="text-sm text-gray-500">{timeDisplay}</span>
+                  {(lateStim || lateAlc) && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#f59e0b20', color: '#f59e0b' }}>late</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {timingInsights.length > 0 && (
+            <div className="space-y-1.5 pt-2 mt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Your patterns — next-day recovery</p>
+              {timingInsights.map(ins => (
+                <div key={ins.label} className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">{ins.label}</span>
+                  <span className="text-xs font-bold" style={{ color: ins.diff >= 0 ? '#00c9a7' : '#ef4444' }}>
+                    {ins.diff > 0 ? '+' : ''}{ins.diff} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-gray-600 mt-2">Today's recovery above reflects last night — shaped by these inputs.</p>
         </div>
       )}
 

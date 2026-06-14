@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation } from '../lib/storage'
+import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry } from '../lib/storage'
 import { getBPReadings, saveBPReading } from '../lib/calculations'
 
 function today() {
   return new Date().toISOString().split('T')[0]
+}
+
+function nowTime() {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function TagButton({ tag, selected, onToggle }) {
@@ -43,6 +48,9 @@ export default function Journal({ data, onNav }) {
   const [showAdd, setShowAdd] = useState(false)
   const [newTagLabel, setNewTagLabel] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
+  const [timingSubstance, setTimingSubstance] = useState('caffeine')
+  const [timingTime, setTimingTime] = useState(nowTime)
+  const [timingEntries, setTimingEntries] = useState([])
   const savedTimerRef = useRef(null)
   const tags = getAllTags()
 
@@ -55,6 +63,7 @@ export default function Journal({ data, onNav }) {
     setEnergy(entry.energy ?? null)
     const existing = getBPReadings().find(r => r.date === today())
     if (existing) { setBpSys(String(existing.sys)); setBpDia(String(existing.dia)) }
+    setTimingEntries(getTimingForDate(today()))
   }, [])
 
   useEffect(() => () => clearTimeout(savedTimerRef.current), [])
@@ -71,6 +80,17 @@ export default function Journal({ data, onNav }) {
     setSaved(true)
     clearTimeout(savedTimerRef.current)
     savedTimerRef.current = setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleAddTiming = () => {
+    if (!timingTime) return
+    addTimingEntry(today(), timingSubstance, timingTime)
+    setTimingEntries(getTimingForDate(today()))
+  }
+
+  const handleRemoveTiming = (id) => {
+    removeTimingEntry(id)
+    setTimingEntries(getTimingForDate(today()))
   }
 
   const addTag = () => {
@@ -220,6 +240,62 @@ export default function Journal({ data, onNav }) {
           )}
         </div>
         <p className="text-[10px] text-gray-600 mt-2">Saved readings build a rolling average used in your biological age.</p>
+      </div>
+
+      {/* Substance & Timing Log */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Substance Log</p>
+        <div className="flex gap-2 mb-3">
+          <select
+            value={timingSubstance}
+            onChange={e => setTimingSubstance(e.target.value)}
+            className="flex-1 appearance-none bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+            style={{ colorScheme: 'dark' }}
+          >
+            {TIMING_SUBSTANCES.map(s => (
+              <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+            ))}
+          </select>
+          <input
+            type="time"
+            value={timingTime}
+            onChange={e => setTimingTime(e.target.value)}
+            className="w-28 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+            style={{ colorScheme: 'dark' }}
+          />
+          <button
+            onClick={handleAddTiming}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold"
+            style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+          >
+            Add
+          </button>
+        </div>
+        {timingEntries.length > 0 ? (
+          <div className="space-y-1.5">
+            {timingEntries.map(entry => {
+              const sub = TIMING_SUBSTANCES.find(s => s.id === entry.substance)
+              const lateStim = ['caffeine', 'preworkout'].includes(entry.substance) && entry.time >= '14:00'
+              const lateAlc = entry.substance === 'alcohol' && entry.time >= '19:00'
+              const timeDisplay = new Date(`2000-01-01T${entry.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+              return (
+                <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: '#1a1a1a' }}>
+                  <div className="flex items-center gap-2">
+                    <span>{sub?.emoji ?? '💊'}</span>
+                    <span className="text-sm text-white">{sub?.label ?? entry.substance}</span>
+                    <span className="text-sm text-gray-500">{timeDisplay}</span>
+                    {(lateStim || lateAlc) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#f59e0b20', color: '#f59e0b' }}>late</span>
+                    )}
+                  </div>
+                  <button onClick={() => handleRemoveTiming(entry.id)} className="text-gray-600 pl-2 text-xl leading-none">×</button>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-600">Log what you took and when — next-day effects show in Recovery.</p>
+        )}
       </div>
 
       {/* Notes */}
