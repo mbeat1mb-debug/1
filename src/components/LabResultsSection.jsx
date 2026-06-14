@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { LAB_MARKERS, getLabResults, saveLabResults } from '../lib/labs';
 
 const GROUPS = [
@@ -8,6 +8,7 @@ const GROUPS = [
   'Vitamins & Minerals',
   'Hormones',
   'Organ Function',
+  'PhenoAge Panel',
 ];
 
 function today() {
@@ -27,7 +28,6 @@ export default function LabResultsSection() {
   const saved = getLabResults();
   const initialDate = getMostRecentDate(saved);
 
-  // Local draft values: key → string (empty string = not entered)
   const initialDraft = {};
   for (const marker of LAB_MARKERS) {
     const entry = saved[marker.key];
@@ -38,7 +38,10 @@ export default function LabResultsSection() {
   const [testDate, setTestDate] = useState(initialDate);
   const [draft, setDraft] = useState(initialDraft);
   const [openGroups, setOpenGroups] = useState({ Lipids: true });
-  const [savedState, setSavedState] = useState(true); // false = unsaved changes
+  const [savedState, setSavedState] = useState(true);
+  const [pdfImporting, setPdfImporting] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState('');
+  const pdfInputRef = useRef(null);
 
   function handleChange(key, val) {
     setDraft((prev) => ({ ...prev, [key]: val }));
@@ -65,10 +68,113 @@ export default function LabResultsSection() {
           updated[marker.key] = { value: v, date: testDate };
         }
       }
-      // empty fields do not overwrite existing entries
     }
     saveLabResults(updated);
     setSavedState(true);
+  }
+
+  async function handlePdfImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const apiKey = localStorage.getItem('claude_api_key');
+    if (!apiKey) {
+      setPdfMsg('Add your Claude API key in Settings first, then try again.');
+      return;
+    }
+
+    setPdfImporting(true);
+    setPdfMsg('Reading your lab report…');
+
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const markerList = LAB_MARKERS.map(
+        (m) => `"${m.key}" (${m.label}, ${m.unit})`
+      ).join(', ');
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-beta': 'pdfs-2024-09-25',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'document',
+                  source: {
+                    type: 'base64',
+                    media_type: 'application/pdf',
+                    data: base64,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: `Extract all lab values from this report. Return ONLY a valid JSON object using these exact keys (skip any you cannot find with confidence): ${markerList}. No explanation — just the JSON object.`,
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      const text = result.content?.[0]?.text || '';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No values found in this PDF.');
+
+      const extracted = JSON.parse(jsonMatch[0]);
+      const validKeys = Object.keys(extracted).filter((k) => {
+        const v = extracted[k];
+        return v != null && v !== '' && !isNaN(parseFloat(v));
+      });
+
+      if (validKeys.length === 0) throw new Error('No lab values found in this PDF.');
+
+      setDraft((prev) => {
+        const next = { ...prev };
+        for (const key of validKeys) {
+          next[key] = String(parseFloat(extracted[key]));
+        }
+        return next;
+      });
+      setSavedState(false);
+
+      // Open every group that received a value
+      setOpenGroups((prev) => {
+        const next = { ...prev };
+        for (const key of validKeys) {
+          const marker = LAB_MARKERS.find((m) => m.key === key);
+          if (marker) next[marker.group] = true;
+        }
+        return next;
+      });
+
+      setPdfMsg(`Found ${validKeys.length} value${validKeys.length !== 1 ? 's' : ''} — review them below, then hit Save.`);
+    } catch (err) {
+      setPdfMsg(`Couldn't read the PDF: ${err.message}`);
+    } finally {
+      setPdfImporting(false);
+    }
   }
 
   function filledCount(group) {
@@ -87,15 +193,68 @@ export default function LabResultsSection() {
       className="rounded-2xl p-6 flex flex-col gap-5"
     >
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold text-white tracking-tight">
-          Lab Results
-        </h2>
-        <p className="text-sm text-gray-400">
-          Enter values from your blood panel. Updates biological age and
-          healthspan metrics.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold text-white tracking-tight">
+            Lab Results
+          </h2>
+          <p className="text-sm text-gray-400">
+            Upload a PDF from your doctor or enter values by hand. Updates your
+            biological age and healthspan score.
+          </p>
+        </div>
+
+        {/* PDF import button */}
+        <button
+          type="button"
+          onClick={() => pdfInputRef.current?.click()}
+          disabled={pdfImporting}
+          style={{
+            background: pdfImporting ? '#1a1a1a' : '#00c9a715',
+            border: '1px solid #00c9a740',
+            color: '#00c9a7',
+          }}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80 active:scale-95 disabled:opacity-40"
+        >
+          {pdfImporting ? (
+            <>
+              <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4" strokeDashoffset="10" />
+              </svg>
+              Reading…
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Import PDF
+            </>
+          )}
+        </button>
+        <input
+          ref={pdfInputRef}
+          type="file"
+          accept=".pdf"
+          onChange={handlePdfImport}
+          className="hidden"
+        />
       </div>
+
+      {/* PDF status message */}
+      {pdfMsg && (
+        <div
+          style={{
+            background: pdfMsg.startsWith('Couldn') ? '#ef444415' : '#00c9a715',
+            border: `1px solid ${pdfMsg.startsWith('Couldn') ? '#ef444440' : '#00c9a740'}`,
+            color: pdfMsg.startsWith('Couldn') ? '#ef4444' : '#00c9a7',
+          }}
+          className="rounded-xl px-4 py-3 text-sm flex items-start gap-2"
+        >
+          <span className="mt-px">{pdfMsg.startsWith('Couldn') ? '⚠' : '✓'}</span>
+          <span>{pdfMsg}</span>
+        </div>
+      )}
 
       {/* Test Date */}
       <div className="flex items-center gap-3">
@@ -124,6 +283,7 @@ export default function LabResultsSection() {
       <div className="flex flex-col gap-2">
         {GROUPS.map((group) => {
           const markers = LAB_MARKERS.filter((m) => m.group === group);
+          if (markers.length === 0) return null;
           const isOpen = !!openGroups[group];
           const filled = filledCount(group);
           const total = groupTotal(group);
@@ -134,7 +294,6 @@ export default function LabResultsSection() {
               style={{ background: '#1a1a1a', border: '1px solid #222' }}
               className="rounded-xl overflow-hidden"
             >
-              {/* Group header */}
               <button
                 type="button"
                 onClick={() => toggleGroup(group)}
@@ -172,7 +331,6 @@ export default function LabResultsSection() {
                 </svg>
               </button>
 
-              {/* Marker rows */}
               {isOpen && (
                 <div
                   style={{ borderTop: '1px solid #222' }}
@@ -193,7 +351,6 @@ export default function LabResultsSection() {
                         key={marker.key}
                         className="flex items-center gap-3 px-4 py-3"
                       >
-                        {/* Label + grade badge */}
                         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm text-gray-300 leading-tight">
@@ -217,7 +374,6 @@ export default function LabResultsSection() {
                           </span>
                         </div>
 
-                        {/* Input + unit */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           <input
                             type="number"
