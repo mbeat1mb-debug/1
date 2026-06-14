@@ -905,6 +905,24 @@ export function getPhenoAgeProgress() {
   }
 }
 
+// ── TyG Index ──────────────────────────────────────────────────────────────
+// Triglyceride-Glucose Index = ln(trig_mg/dL × glucose_mg/dL / 2)
+// Validated surrogate for insulin resistance when fasting insulin is unavailable.
+export function calculateTyGIndex(trig, glucose) {
+  if (!trig || !glucose || trig <= 0 || glucose <= 0) return null
+  return Math.round(Math.log(trig * glucose / 2) * 100) / 100
+}
+
+export function getTyGIndex() {
+  try {
+    const results = JSON.parse(localStorage.getItem('lab_results') || '{}')
+    const trig = parseFloat(results['trig']?.value)
+    const glucose = parseFloat(results['glucose']?.value)
+    if (isNaN(trig) || isNaN(glucose) || trig <= 0 || glucose <= 0) return null
+    return calculateTyGIndex(trig, glucose)
+  } catch { return null }
+}
+
 /**
  * Returns an array of contribution objects for all entered markers.
  * Each item: { label, value, unit, contribution, sublabel, color }

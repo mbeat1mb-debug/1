@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings } from '../lib/calculations'
-import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress } from '../lib/labs'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI } from '../lib/calculations'
+import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
 function BackButton({ onNav }) {
@@ -143,12 +143,14 @@ export default function Healthspan({ data, onNav }) {
     : 7
 
   const sleepDates = sleepHistory.map(s => s.date).sort()
-  const sleepConsistency = sleepDates.length >= 7
+  const durationConsistency = sleepDates.length >= 7
     ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) => {
         if (i === 0) return acc
         return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
       }, 0) / 6) / 2
     : 0.7
+  // SRI (timing-based) is more accurate than duration variance; use it when available
+  const sleepConsistency = sri !== null ? sri : durationConsistency
 
   // Sleep stage averages — only entries that have stage data
   const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
@@ -166,6 +168,8 @@ export default function Healthspan({ data, onNav }) {
   const waistCm = getUserWaistCm()
   const gripKg = getUserGripStrengthKg()
   const homaIR = getHOMAIR()
+  const tygIndex = getTyGIndex()
+  const sri = calculateSRI(sleepHistory)
   const ffmi = leanMass !== null && heightCm > 0 ? Math.round((leanMass / Math.pow(heightCm / 100, 2)) * 10) / 10 : null
   const labContributions = getLabContributions()
   const labAdj = getLabAgeAdjustment()
@@ -177,7 +181,7 @@ export default function Healthspan({ data, onNav }) {
     vo2Max, avgDeepPct, avgRemPct, hrvHistory,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, bodyFatPct, data.hrvHistory?.length])
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri, data.hrvHistory?.length])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
@@ -311,6 +315,13 @@ export default function Healthspan({ data, onNav }) {
       unit: '',
       contribution: homaIR < 1.0 ? -1 : homaIR < 2.0 ? 0 : homaIR < 3.0 ? 2 : homaIR < 5.0 ? 4 : 6,
       sublabel: (homaIR < 1.0 ? 'Excellent sensitivity' : homaIR < 2.0 ? 'Normal' : homaIR < 3.0 ? 'Insulin Resistant' : homaIR < 5.0 ? 'Significant IR' : 'Severe IR') + ' · fasting values only',
+    }] : []),
+    ...(homaIR === 0 && tygIndex !== null ? [{
+      label: 'TyG Index (Insulin Resistance)',
+      value: tygIndex,
+      unit: '',
+      contribution: tygIndex < 4.5 ? -1 : tygIndex < 4.68 ? 0 : tygIndex < 5.0 ? 2 : 4,
+      sublabel: (tygIndex < 4.5 ? 'Low IR risk' : tygIndex < 4.68 ? 'Borderline' : tygIndex < 5.0 ? 'Elevated IR risk' : 'High IR risk') + ' · ln(trig × glucose ÷ 2)',
     }] : []),
     {
       label: 'Smoking',
@@ -477,6 +488,58 @@ export default function Healthspan({ data, onNav }) {
         </div>
         <p className="text-[10px] text-gray-600 mt-2">60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
       </div>
+
+      {/* Sleep Regularity Index */}
+      {sri !== null && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Regularity Index</p>
+          <div className="flex items-end gap-3 mb-2">
+            <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#00c9a7' : sri >= 0.80 ? '#3b82f6' : sri >= 0.70 ? '#f59e0b' : '#ef4444' }}>
+              {Math.round(sri * 100)}
+            </span>
+            <div className="pb-1">
+              <p className="text-sm text-gray-400">/ 100</p>
+              <p className="text-xs text-gray-600">
+                {sri >= 0.87 ? 'Excellent regularity' : sri >= 0.80 ? 'Good' : sri >= 0.70 ? 'Moderate — work on consistency' : 'Poor — irregular schedule'}
+              </p>
+            </div>
+          </div>
+          <div className="w-full rounded-full h-2 mb-2" style={{ background: '#1a1a1a' }}>
+            <div className="h-2 rounded-full" style={{ width: `${Math.round(sri * 100)}%`, background: sri >= 0.87 ? '#00c9a7' : sri >= 0.80 ? '#3b82f6' : sri >= 0.70 ? '#f59e0b' : '#ef4444' }} />
+          </div>
+          <p className="text-[10px] text-gray-600">Probability of same sleep/wake state 24h apart. ≥87 = excellent circadian rhythm. Used as sleep consistency in your biological age.</p>
+        </div>
+      )}
+
+      {/* Post-exercise Heart Rate Recovery */}
+      {data.hrr && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Heart Rate Recovery</p>
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">HRR-60</p>
+              <p className="text-2xl font-bold" style={{ color: data.hrr.hrr60 >= 18 ? '#00c9a7' : data.hrr.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
+                -{data.hrr.hrr60}<span className="text-sm font-normal text-gray-500"> bpm</span>
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: data.hrr.hrr60 >= 25 ? '#00c9a7' : data.hrr.hrr60 >= 18 ? '#00c9a7' : data.hrr.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
+                {data.hrr.hrr60 >= 25 ? 'Excellent' : data.hrr.hrr60 >= 18 ? 'Good' : data.hrr.hrr60 >= 12 ? 'Average' : 'Poor (↑ risk)'}
+              </p>
+            </div>
+            {data.hrr.hrr120 !== null && (
+              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">HRR-120</p>
+                <p className="text-2xl font-bold" style={{ color: data.hrr.hrr120 >= 42 ? '#00c9a7' : data.hrr.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
+                  -{data.hrr.hrr120}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                </p>
+                <p className="text-[10px] mt-0.5" style={{ color: data.hrr.hrr120 >= 42 ? '#00c9a7' : data.hrr.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
+                  {data.hrr.hrr120 >= 42 ? 'Excellent' : data.hrr.hrr120 >= 30 ? 'Good' : 'Below average'}
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="text-[10px] text-gray-600">Peak HR {data.hrr.peakHR} bpm · Drop after exercise. HRR &lt;12 bpm at 1 min predicts higher mortality (Cole NEJM 1999).</p>
+        </div>
+      )}
 
       {/* What's moving the needle */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>

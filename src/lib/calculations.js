@@ -1,4 +1,4 @@
-import { getLabAgeAdjustment } from './labs'
+import { getLabAgeAdjustment, getTyGIndex } from './labs'
 
 // Dynamic user age from settings
 export function getUserAge() {
@@ -406,6 +406,17 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else if (homaIR < 3.0) metabolic += 2
     else if (homaIR < 5.0) metabolic += 4
     else                   metabolic += 6
+  }
+
+  // TyG Index fallback: validated IR surrogate when HOMA-IR unavailable (no fasting insulin)
+  if (homaIR === 0) {
+    const tyg = getTyGIndex()
+    if (tyg !== null) {
+      if (tyg < 4.5)       metabolic -= 1
+      else if (tyg < 4.68) metabolic += 0
+      else if (tyg < 5.0)  metabolic += 2
+      else                 metabolic += 4
+    }
   }
 
   // PhenoAge (Levine 2018) when all 9 markers present; additive scoring otherwise
@@ -894,6 +905,67 @@ export function getBodyFatColor(pct) {
 // ── Daytime Stress ──────────────────────────────────────────────────────────
 // Measures sympathetic nervous system activation during waking hours using
 // intraday HR. Elevated resting HR above personal RHR = autonomic stress load.
+
+// ── Sleep Regularity Index ──────────────────────────────────────────────────
+// Phillips et al. 2017: probability of same sleep/wake state 24h apart.
+// Requires startTime/endTime per sleep entry; 5-min resolution sampling.
+export function calculateSRI(sleepHistory) {
+  const valid = sleepHistory
+    .filter(s => s.startTime && s.endTime && s.date)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30)
+  if (valid.length < 2) return null
+  const STEP = 5
+  let matchMins = 0, totalMins = 0
+  for (let i = 0; i < valid.length - 1; i++) {
+    const n1 = valid[i], n2 = valid[i + 1]
+    if (Math.round((new Date(n2.date) - new Date(n1.date)) / 86400000) !== 1) continue
+    const m1 = new Date(n1.date + 'T00:00:00')
+    const m2 = new Date(n2.date + 'T00:00:00')
+    const s1s = Math.round((new Date(n1.startTime) - m1) / 60000)
+    const s1e = Math.round((new Date(n1.endTime)   - m1) / 60000)
+    const s2s = Math.round((new Date(n2.startTime) - m2) / 60000)
+    const s2e = Math.round((new Date(n2.endTime)   - m2) / 60000)
+    for (let t = -360; t < 1080; t += STEP) {
+      const a1 = t >= s1s && t < s1e
+      const a2 = t >= s2s && t < s2e
+      if (a1 === a2) matchMins += STEP
+      totalMins += STEP
+    }
+  }
+  if (totalMins === 0) return null
+  return Math.round((matchMins / totalMins) * 100) / 100
+}
+
+// ── Post-exercise Heart Rate Recovery ──────────────────────────────────────
+// Cole et al. NEJM 1999: HRR < 12 bpm at 1 min predicts mortality.
+// Detects last vigorous bout (≥70% maxHR for ≥5 min) and measures HR drop.
+export function calculateHRR(hrIntradayData) {
+  const pts = hrIntradayData?.['activities-heart-intraday']?.dataset
+  if (!pts?.length) return null
+  const maxHR = getMaxHR()
+  const threshold = maxHR * 0.70
+  const bouts = []
+  let boutStart = null
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i].value >= threshold) {
+      if (boutStart === null) boutStart = i
+    } else if (boutStart !== null) {
+      if (i - boutStart >= 5) bouts.push({ start: boutStart, end: i - 1 })
+      boutStart = null
+    }
+  }
+  if (boutStart !== null && pts.length - boutStart >= 5) bouts.push({ start: boutStart, end: pts.length - 1 })
+  if (!bouts.length) return null
+  const peak = bouts[bouts.length - 1].end
+  if (peak + 1 >= pts.length) return null
+  const peakHR = pts[peak].value
+  return {
+    peakHR,
+    hrr60: peakHR - pts[peak + 1].value,
+    hrr120: peak + 2 < pts.length ? peakHR - pts[peak + 2].value : null,
+  }
+}
 
 export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
   const points = hrIntradayData?.['activities-heart-intraday']?.dataset

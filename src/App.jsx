@@ -5,7 +5,7 @@ import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
-  calculateTrainingEffect, calculateDaytimeStress,
+  calculateTrainingEffect, calculateDaytimeStress, calculateHRR,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
 import {
@@ -248,10 +248,12 @@ export default function App() {
       rhr: parsed.rhrByDate[s.date] ?? null,
     }))
 
+    const hrr = calculateHRR(parsed.hrIntradayData)
+
     const base = {
       ...parsed, recoveryScore, strainScore, zoneMinutes, trainingEffect, daytimeStress,
       stressScore, sleepScore, sleepDebt, optimalSleepWindow, recoveryHistory, calendarDays,
-      stressHistory, recoveryVelocity, stressVelocity,
+      stressHistory, recoveryVelocity, stressVelocity, hrr,
     }
 
     const pr = updatePersonalRecords({
@@ -328,13 +330,20 @@ export default function App() {
       // Weekly pattern from merged 90-day calendar
       const weeklyPattern = calculateWeeklyPattern(mergedCalendar)
 
-      // True 7-day Active Zone Minutes: today + last 6 days from DB history
-      const last6AZM = dbHistory.slice(-6).map(d => d.activeMinutes || 0)
-      const weeklyAZM = (result.activeMinutes || 0) + last6AZM.reduce((a, b) => a + b, 0)
+      // True 7-day Active Zone Minutes and Zone 2: today + prior 6 calendar days
+      // Use date-based filter so a gap in syncing doesn't silently shift the window
+      const sixDaysAgo = new Date(result.date)
+      sixDaysAgo.setDate(sixDaysAgo.getDate() - 6)
+      const sixDaysAgoStr = sixDaysAgo.toISOString().split('T')[0]
+      const prior6Days = dbHistory.filter(d => d.date >= sixDaysAgoStr && d.date < result.date)
+      const weeklyAZM = (result.activeMinutes || 0) + prior6Days.reduce((a, b) => a + (b.activeMinutes || 0), 0)
+      const weeklyZone2 = (result.zoneMinutes?.[1] || 0) + prior6Days.reduce((a, b) => a + (b.zone2Minutes || 0), 0)
 
-      // Weekly Zone 2 minutes (60-70% max HR): today + last 6 days from DB
-      const last6Zone2 = dbHistory.slice(-6).map(d => d.zone2Minutes || 0)
-      const weeklyZone2 = (result.zoneMinutes?.[1] || 0) + last6Zone2.reduce((a, b) => a + b, 0)
+      // Recovery:Strain ratio — 14-day rolling trend; only days with valid data
+      const rsTrend = dbHistory
+        .filter(d => d.recovery > 0 && d.strain > 0)
+        .slice(-14)
+        .map(d => ({ label: d.date.slice(5), ratio: Math.round(d.recovery / d.strain * 10) / 10 }))
 
       // VO2 Max longitudinal history from IndexedDB (Fitbit updates infrequently)
       // dbHistory is fetched before saveDay, so today's entry may not be present yet — append it
@@ -343,7 +352,7 @@ export default function App() {
         vo2MaxHistory.push({ date: result.date, vo2Max: result.vo2Max })
       }
 
-      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory }
+      const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory, rsTrend }
       await saveSnapshot(finalResult)
       setAppData(finalResult)
       setDemo(false)

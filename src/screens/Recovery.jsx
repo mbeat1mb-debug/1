@@ -190,6 +190,22 @@ export default function Recovery({ data, onNav }) {
         </div>
       )}
 
+      {/* Recovery : Strain ratio trend */}
+      {data.rsTrend?.length >= 3 && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Recovery:Strain Ratio — 14 Days</p>
+          <p className="text-[10px] text-gray-600 mb-3">Above 4 = well-recovered · Below 2 = accumulated load</p>
+          <LineGraph data={data.rsTrend} dataKey="ratio" color="#00c9a7" unit="" reference={4} height={80} />
+          <p className="text-[10px] text-gray-600 mt-2">
+            {(() => {
+              const latest = data.rsTrend[data.rsTrend.length - 1]?.ratio
+              if (!latest) return null
+              return latest >= 6 ? 'Very fresh — consider increasing load.' : latest >= 4 ? 'Well balanced.' : latest >= 2 ? 'Moderate load — monitor recovery.' : 'High load — prioritize rest.'
+            })()}
+          </p>
+        </div>
+      )}
+
       {/* Recovery guidance */}
       <div className="rounded-2xl p-4" style={{ background: color + '10', border: `1px solid ${color}33` }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color }}>Recommendation</p>
