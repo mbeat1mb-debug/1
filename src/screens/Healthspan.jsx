@@ -248,8 +248,8 @@ export default function Healthspan({ data, onNav }) {
       label: 'Blood Pressure',
       value: `${bp.sys}/${bp.dia}`,
       unit: ' mmHg',
-      contribution: bp.sys >= 160 || bp.dia >= 100 ? 4 : bp.sys >= 140 || bp.dia >= 90 ? 2 : bp.sys >= 130 || bp.dia >= 80 ? 1 : -1,
-      sublabel: bp.sys >= 160 || bp.dia >= 100 ? 'Stage 2 HTN' : bp.sys >= 140 || bp.dia >= 90 ? 'Stage 1 HTN' : bp.sys >= 130 || bp.dia >= 80 ? 'Elevated' : bp.sys < 120 ? 'Optimal' : 'Normal',
+      contribution: bp.sys >= 160 || bp.dia >= 100 ? 5 : bp.sys >= 140 || bp.dia >= 90 ? 3 : bp.sys >= 130 || bp.dia >= 80 ? 1 : -1,
+      sublabel: bp.sys >= 160 || bp.dia >= 100 ? 'Severe HTN' : bp.sys >= 140 || bp.dia >= 90 ? 'Stage 2 HTN' : bp.sys >= 130 || bp.dia >= 80 ? 'Stage 1 / Elevated' : bp.sys < 120 && bp.dia < 80 ? 'Optimal' : 'Normal',
     }] : []),
   ]
 
@@ -374,9 +374,9 @@ export default function Healthspan({ data, onNav }) {
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pace of Aging</p>
         {pace ? (() => {
-          const bioYrsPerCalYr = pace.rate + 1  // rate is delta, convert to pace
-          const paceColor = bioYrsPerCalYr <= 0.85 ? '#00c9a7' : bioYrsPerCalYr <= 1.05 ? '#3b82f6' : bioYrsPerCalYr <= 1.2 ? '#f59e0b' : '#ef4444'
-          const paceLabel = bioYrsPerCalYr <= 0.85 ? 'Slowing down' : bioYrsPerCalYr <= 1.05 ? 'On track' : bioYrsPerCalYr <= 1.2 ? 'Slightly fast' : 'Accelerated'
+          const bioYrsPerCalYr = pace.rate  // bio years elapsed per calendar year (1.0 = calendar rate)
+          const paceColor = bioYrsPerCalYr <= 0 ? '#00c9a7' : bioYrsPerCalYr <= 0.9 ? '#00c9a7' : bioYrsPerCalYr <= 1.1 ? '#3b82f6' : bioYrsPerCalYr <= 1.5 ? '#f59e0b' : '#ef4444'
+          const paceLabel = bioYrsPerCalYr <= 0 ? 'Getting younger' : bioYrsPerCalYr <= 0.9 ? 'Slowing down' : bioYrsPerCalYr <= 1.1 ? 'On track' : bioYrsPerCalYr <= 1.5 ? 'Slightly fast' : 'Accelerated'
           const months = Math.round(pace.calDays / 30)
           const windowLabel = months < 2 ? `${pace.calDays}d` : months < 12 ? `${months}mo` : `${Math.round(months / 12)}yr`
           return (

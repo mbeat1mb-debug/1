@@ -9,9 +9,10 @@
 export function calculatePhenoAge({ albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age }) {
   if ([albumin, creatinine, glucose, crp, lymphocyte, mcv, rdw, alk_phos, wbc, age].some(v => v == null || isNaN(v))) return null
   const crpSafe = Math.max(0.01, crp)  // ln(0) undefined; CRP is never truly zero
+  const creatinineUmol = creatinine * 88.4  // Levine formula uses µmol/L; marker is entered in mg/dL
   const xb = -19.9067
     - 0.0336  * albumin
-    + 0.0095  * creatinine
+    + 0.0095  * creatinineUmol
     + 0.1953  * glucose
     + 0.0954  * Math.log(crpSafe)
     - 0.0120  * lymphocyte
@@ -22,6 +23,7 @@ export function calculatePhenoAge({ albumin, creatinine, glucose, crp, lymphocyt
     + 0.0804  * age
   const M = 1 - Math.exp(-Math.exp(xb) * 1.51714 / 0.0076927)
   const phenoAge = 141.50225 + Math.log(-0.00553 * Math.log(1 - M)) / 0.090165
+  if (!isFinite(phenoAge)) return null  // guard against extreme lab values overflowing M→1
   return Math.round(phenoAge * 10) / 10
 }
 

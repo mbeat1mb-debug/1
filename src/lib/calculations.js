@@ -266,15 +266,22 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else if (avgDeepPct > 0 && avgDeepPct < 0.10) adj += 1
   }
 
+  // ── Sleep consistency ─────────────────────────────────────────────────────
+  // Irregular sleep timing disrupts circadian rhythm independent of duration.
+  if (sleepConsistency >= 0.8)      adj -= 1
+  else if (sleepConsistency < 0.5)  adj += 1
+
   // ── Blood pressure — Ettehad linear dose-response ─────────────────────────
   // Ettehad (Lancet 2016): each 10mmHg SBP reduction → 10-13% CVD event reduction.
+  // Evaluated highest-severity-first so OR conditions don't misclassify mixed readings.
+  // e.g. sys=145, dia=85 → Stage 2 by systolic despite diastolic being Stage 1.
   const bp = getAverageBP()
   if (bp.sys > 0) {
-    if (bp.sys < 120 && bp.dia < 80)        adj -= 1  // Optimal
-    else if (bp.sys < 130)                  adj += 0  // Normal
-    else if (bp.sys < 140 || bp.dia < 90)   adj += 1  // Elevated / Stage 1
-    else if (bp.sys < 160 || bp.dia < 100)  adj += 3  // Stage 2 HTN
-    else                                    adj += 5  // Severe HTN (>20mmHg above Stage 2)
+    if (bp.sys >= 160 || bp.dia >= 100)      adj += 5  // Severe HTN
+    else if (bp.sys >= 140 || bp.dia >= 90)  adj += 3  // Stage 2 HTN
+    else if (bp.sys >= 130 || bp.dia >= 80)  adj += 1  // Stage 1 / Elevated
+    else if (bp.sys < 120 && bp.dia < 80)    adj -= 1  // Optimal
+    // else Normal (120-129 / <80) → adj += 0
   }
 
   // ── Body composition — fat % primary, BMI as fallback ────────────────────
