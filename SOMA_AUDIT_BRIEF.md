@@ -7,7 +7,7 @@ This document gives you everything you need to audit the Soma app end-to-end: wh
 
 ## 1. What The App Is
 
-**Soma** is a personal longevity-tracking Progressive Web App (PWA) deployed on Vercel. It connects to the Fitbit Web API via OAuth 2.0 and displays health metrics focused on biological aging: recovery, sleep, HRV, VO2 max, body composition, bloodwork, and a 5-domain biological age estimate.
+**Soma** is a single-user personal longevity-tracking Progressive Web App (PWA) deployed on Vercel, built for one adult male. It connects to the Fitbit Web API via OAuth 2.0 and displays health metrics focused on biological aging: recovery, sleep, HRV, VO2 max, body composition, bloodwork, and a 5-domain biological age estimate. All norm tables (HRV, VO2 Max, grip strength, waist, body fat) are male-calibrated by design — this is correct and intentional.
 
 **Tech stack:**
 - React 18, Vite, Tailwind CSS
