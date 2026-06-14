@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { LAB_MARKERS, getLabResults, saveLabResults } from '../lib/labs';
+import { extractLabsFromPdf } from '../lib/pdfLabExtract';
 
 const GROUPS = [
   'Lipids',
@@ -78,88 +79,26 @@ export default function LabResultsSection() {
     if (!file) return;
     e.target.value = '';
 
-    const apiKey = localStorage.getItem('claude_api_key');
-    if (!apiKey) {
-      setPdfMsg('Add your Claude API key in Settings first, then try again.');
-      return;
-    }
-
     setPdfImporting(true);
     setPdfMsg('Reading your lab report…');
 
     try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const extracted = await extractLabsFromPdf(file);
+      const validKeys = Object.keys(extracted).filter((k) => extracted[k] > 0);
 
-      const markerList = LAB_MARKERS.map(
-        (m) => `"${m.key}" (${m.label}, ${m.unit})`
-      ).join(', ');
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'anthropic-beta': 'pdfs-2024-09-25',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'document',
-                  source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: base64,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: `Extract all lab values from this report. Return ONLY a valid JSON object using these exact keys (skip any you cannot find with confidence): ${markerList}. No explanation — just the JSON object.`,
-                },
-              ],
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `Error ${response.status}`);
+      if (validKeys.length === 0) {
+        throw new Error("Couldn't find any lab values in this PDF. Make sure it's a text-based PDF (not a scanned image).");
       }
-
-      const result = await response.json();
-      const text = result.content?.[0]?.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No values found in this PDF.');
-
-      const extracted = JSON.parse(jsonMatch[0]);
-      const validKeys = Object.keys(extracted).filter((k) => {
-        const v = extracted[k];
-        return v != null && v !== '' && !isNaN(parseFloat(v));
-      });
-
-      if (validKeys.length === 0) throw new Error('No lab values found in this PDF.');
 
       setDraft((prev) => {
         const next = { ...prev };
         for (const key of validKeys) {
-          next[key] = String(parseFloat(extracted[key]));
+          next[key] = String(extracted[key]);
         }
         return next;
       });
       setSavedState(false);
 
-      // Open every group that received a value
       setOpenGroups((prev) => {
         const next = { ...prev };
         for (const key of validKeys) {
@@ -171,7 +110,7 @@ export default function LabResultsSection() {
 
       setPdfMsg(`Found ${validKeys.length} value${validKeys.length !== 1 ? 's' : ''} — review them below, then hit Save.`);
     } catch (err) {
-      setPdfMsg(`Couldn't read the PDF: ${err.message}`);
+      setPdfMsg(err.message);
     } finally {
       setPdfImporting(false);
     }
@@ -245,13 +184,13 @@ export default function LabResultsSection() {
       {pdfMsg && (
         <div
           style={{
-            background: pdfMsg.startsWith('Couldn') ? '#ef444415' : '#00c9a715',
-            border: `1px solid ${pdfMsg.startsWith('Couldn') ? '#ef444440' : '#00c9a740'}`,
-            color: pdfMsg.startsWith('Couldn') ? '#ef4444' : '#00c9a7',
+            background: pdfMsg.startsWith('Found') ? '#00c9a715' : '#ef444415',
+            border: `1px solid ${pdfMsg.startsWith('Found') ? '#00c9a740' : '#ef444440'}`,
+            color: pdfMsg.startsWith('Found') ? '#00c9a7' : '#ef4444',
           }}
           className="rounded-xl px-4 py-3 text-sm flex items-start gap-2"
         >
-          <span className="mt-px">{pdfMsg.startsWith('Couldn') ? '⚠' : '✓'}</span>
+          <span className="mt-px">{pdfMsg.startsWith('Found') ? '✓' : '⚠'}</span>
           <span>{pdfMsg}</span>
         </div>
       )}
