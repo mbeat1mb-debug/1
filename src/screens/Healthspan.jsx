@@ -78,7 +78,8 @@ function getActionTip(label) {
   const l = label.toLowerCase()
   if (l.includes('vo2') || l.includes('cardio')) return 'Zone 2 cardio 3×/week'
   if (l.includes('bmi') || l.includes('body fat') || l.includes('waist') || l.includes('visceral')) return 'Resistance training + caloric deficit'
-  if (l.includes('grip') || l.includes('strength')) return 'Progressive grip & compound lifts'
+  if (l.includes('grip') || l.includes('strength') || l.includes('muscle mass') || l.includes('ffmi') || l.includes('skeletal')) return 'Progressive grip & compound lifts'
+  if (l.includes('insulin') || l.includes('homa') || l.includes('tyg')) return 'Reduce refined carbs, increase fiber and resistance training'
   if (l.includes('rhr') || l.includes('resting heart')) return 'Consistent cardio, sleep quality'
   if (l.includes('hrv')) return 'Sleep consistency, stress management'
   if (l.includes('blood pressure') || l.includes('bp')) return 'DASH diet, cardio, reduce sodium'

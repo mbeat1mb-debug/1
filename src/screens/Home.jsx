@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { haptic } from '../lib/haptics'
 import {
   DndContext, closestCenter, TouchSensor, MouseSensor,
@@ -387,11 +387,9 @@ function SetupCard({ onNav }) {
     () => !!localStorage.getItem('setup_dismissed')
   )
 
-  const missing = useMemo(() => {
-    return SETUP_ROWS.filter(row =>
-      row.keys.every(k => !localStorage.getItem(k))
-    )
-  }, [])
+  const [missing] = useState(() =>
+    SETUP_ROWS.filter(row => row.keys.every(k => !localStorage.getItem(k)))
+  )
 
   if (dismissed || missing.length === 0) return null
 
@@ -415,7 +413,7 @@ function SetupCard({ onNav }) {
       </div>
       <div className="space-y-2 mb-3">
         {SETUP_ROWS.map(row => {
-          const present = row.keys.some(k => !!localStorage.getItem(k))
+          const present = row.keys.every(k => !!localStorage.getItem(k))
           return (
             <div key={row.label} className="flex items-center gap-2">
               <span

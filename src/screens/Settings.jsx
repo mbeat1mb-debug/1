@@ -674,6 +674,7 @@ export default function Settings({ onBack }) {
   const [weightKg, setWeightKg] = useState(() => storedWKg ? String(Math.round(storedWKg * 10) / 10) : '')
   const [bodyFatPct, setBodyFatPct] = useState(() => localStorage.getItem('user_body_fat_pct') || '')
   const [vo2MaxVal, setVo2MaxVal] = useState(() => localStorage.getItem('user_vo2_max') || '')
+  const [vo2MaxError, setVo2MaxError] = useState('')
 
   // Waist circumference — stored in cm, displayed per units preference
   const storedWaistCm = parseFloat(localStorage.getItem('user_waist_cm') || '0') || 0
@@ -759,9 +760,15 @@ export default function Settings({ onBack }) {
 
       if (vo2MaxVal.trim() === '') {
         localStorage.removeItem('user_vo2_max')
+        setVo2MaxError('')
       } else {
         const vo2 = parseFloat(vo2MaxVal)
-        if (!isNaN(vo2) && vo2 >= 10 && vo2 <= 90) localStorage.setItem('user_vo2_max', String(vo2))
+        if (!isNaN(vo2) && vo2 >= 10 && vo2 <= 90) {
+          localStorage.setItem('user_vo2_max', String(vo2))
+          setVo2MaxError('')
+        } else {
+          setVo2MaxError('Enter a value between 10 and 90')
+        }
       }
 
       localStorage.setItem('user_smoking', smoking)
@@ -867,16 +874,17 @@ export default function Settings({ onBack }) {
       if (p.bodyWaterPct != null) humeExtras.bodyWaterPct = p.bodyWaterPct
       if (p.bmrCal != null) humeExtras.bmrCal = p.bmrCal
       if (lbsToKg(p.bodyCellMassLbs)) humeExtras.bodyCellMassKg = lbsToKg(p.bodyCellMassLbs)
-      const yr = new Date().getFullYear()
       let date = new Date().toISOString().slice(0, 10)
       if (p.endDate) {
-        const d = new Date(`${p.endDate} ${yr}`)
+        const now = new Date()
+        let d = new Date(`${p.endDate} ${now.getFullYear()}`)
+        // Guard cross-year edge case: if parsed date is more than 7 days in the future, try previous year
+        if (!isNaN(d) && d - now > 7 * 86400000) d = new Date(`${p.endDate} ${now.getFullYear() - 1}`)
         if (!isNaN(d)) date = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
       }
       saveBodyWeightEntry(date, weightKg, fatPct, 'hume', Object.keys(humeExtras).length ? humeExtras : null)
       if (fatPct) { setBodyFatPct(String(fatPct)); localStorage.setItem('user_body_fat_pct', String(fatPct)) }
       if (weightKg) {
-        localStorage.setItem('user_weight_kg', String(weightKg))
         if (units === 'imperial') setWeightLbs(String(Math.round(weightKg * 2.2046 * 10) / 10))
         else setWeightKg(String(weightKg))
       }
@@ -1214,13 +1222,15 @@ export default function Settings({ onBack }) {
           <div className="flex gap-2 items-center">
             <input
               type="number" min={10} max={90} step={1}
-              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              className="w-20 bg-[#1a1a1a] border rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              style={{ borderColor: vo2MaxError ? '#ef4444' : '#333' }}
               placeholder="e.g. 46"
               value={vo2MaxVal}
-              onChange={e => setVo2MaxVal(e.target.value)}
+              onChange={e => { setVo2MaxVal(e.target.value); setVo2MaxError('') }}
             />
             <span className="text-xs text-gray-600">mL/kg/min</span>
           </div>
+          {vo2MaxError && <p className="text-[11px] mt-1" style={{ color: '#ef4444' }}>{vo2MaxError}</p>}
         </div>
       </div>
 
