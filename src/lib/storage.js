@@ -18,6 +18,11 @@ export const DEFAULT_TAGS = [
   { id: 'sick', label: 'Feeling Sick', emoji: '🤒', category: 'health' },
   { id: 'social', label: 'Social Evening', emoji: '🎉', category: 'mental' },
   { id: 'cold_shower', label: 'Cold Shower', emoji: '🚿', category: 'recovery' },
+  { id: 'sauna', label: 'Sauna', emoji: '🧖', category: 'recovery' },
+  { id: 'zone2', label: 'Zone 2 Cardio', emoji: '🚴', category: 'activity' },
+  { id: 'morning_sun', label: 'Morning Sunlight', emoji: '☀️', category: 'health' },
+  { id: 'fasting', label: 'Intermittent Fast', emoji: '⏱️', category: 'intake' },
+  { id: 'high_protein', label: 'High Protein', emoji: '🥩', category: 'intake' },
 ]
 
 export function getJournalEntries() {
@@ -62,35 +67,79 @@ export function getAllTags() {
   return [...DEFAULT_TAGS, ...getCustomTags()]
 }
 
-// Analyze how a tag correlates with recovery scores
+// Analyze how a tag correlates with recovery, HRV, RHR, and sleep
 export function analyzeTagCorrelation(tagId, healthHistory) {
   const entries = getJournalEntries()
   const tagDays = new Set(entries.filter(e => e.tagIds.includes(tagId)).map(e => e.date))
   const noTagDays = new Set(entries.filter(e => !e.tagIds.includes(tagId)).map(e => e.date))
 
-  const withTag = []
-  const withoutTag = []
-
+  const withTag = [], withoutTag = []
   for (const day of healthHistory) {
-    if (tagDays.has(day.date)) withTag.push(day.recovery)
-    else if (noTagDays.has(day.date)) withoutTag.push(day.recovery)
+    if (tagDays.has(day.date)) withTag.push(day)
+    else if (noTagDays.has(day.date)) withoutTag.push(day)
   }
 
   if (withTag.length < 3 || withoutTag.length < 3) return null
 
-  const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length
-  const withAvg = Math.round(avg(withTag))
-  const withoutAvg = Math.round(avg(withoutTag))
-  const diff = withAvg - withoutAvg
+  const avgField = (arr, field) => {
+    const vals = arr.map(d => d[field]).filter(v => v != null && !isNaN(v) && v > 0)
+    return vals.length >= 2 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+  }
+
+  const withRecovery = avgField(withTag, 'recovery')
+  const withoutRecovery = avgField(withoutTag, 'recovery')
+  if (withRecovery === null || withoutRecovery === null) return null
+
+  const diff = Math.round(withRecovery - withoutRecovery)
+  const withHRV = avgField(withTag, 'hrv')
+  const withoutHRV = avgField(withoutTag, 'hrv')
+  const withRHR = avgField(withTag, 'rhr')
+  const withoutRHR = avgField(withoutTag, 'rhr')
+  const withSleep = avgField(withTag, 'sleep')
+  const withoutSleep = avgField(withoutTag, 'sleep')
 
   return {
     tagId,
-    withAvg,
-    withoutAvg,
+    withAvg: Math.round(withRecovery),
+    withoutAvg: Math.round(withoutRecovery),
     diff,
+    hrvDiff: withHRV !== null && withoutHRV !== null ? Math.round((withHRV - withoutHRV) * 10) / 10 : null,
+    rhrDiff: withRHR !== null && withoutRHR !== null ? Math.round((withRHR - withoutRHR) * 10) / 10 : null,
+    sleepDiff: withSleep !== null && withoutSleep !== null ? Math.round(withSleep - withoutSleep) : null,
     sampleSize: withTag.length,
     trend: diff > 5 ? 'positive' : diff < -5 ? 'negative' : 'neutral',
   }
+}
+
+
+// How many consecutive days (ending today) has this tag been logged
+export function getTagStreak(tagId) {
+  const entryMap = {}
+  for (const e of getJournalEntries()) entryMap[e.date] = e.tagIds || []
+  let streak = 0
+  const d = new Date()
+  for (let i = 0; i < 90; i++) {
+    const dateStr = d.toISOString().slice(0, 10)
+    if (!(entryMap[dateStr] || []).includes(tagId)) break
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
+// Last numDays of journal entries with their tag lists
+export function getRecentTagActivity(numDays = 7) {
+  const entryMap = {}
+  for (const e of getJournalEntries()) entryMap[e.date] = e.tagIds || []
+  const result = []
+  const d = new Date()
+  for (let i = numDays - 1; i >= 0; i--) {
+    const dt = new Date(d)
+    dt.setDate(dt.getDate() - i)
+    const dateStr = dt.toISOString().slice(0, 10)
+    result.push({ date: dateStr, tagIds: entryMap[dateStr] || [] })
+  }
+  return result
 }
 
 // ── Substance & Timing Log ──────────────────────────────────────────────────
