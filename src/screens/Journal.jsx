@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity } from '../lib/storage'
 import { getBPReadings, saveBPReading } from '../lib/calculations'
+import { haptic } from '../lib/haptics'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -102,6 +103,7 @@ export default function Journal({ data, onNav }) {
   useEffect(() => () => clearTimeout(savedTimerRef.current), [])
 
   const toggle = (id) => {
+    haptic('light')
     setSelectedTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
     setSaved(false)
   }
@@ -116,6 +118,7 @@ export default function Journal({ data, onNav }) {
   }
 
   const handleAddTiming = () => {
+    haptic('light')
     if (!timingTime) return
     addTimingEntry(today(), timingSubstance, timingTime)
     setTimingEntries(getTimingForDate(today()))

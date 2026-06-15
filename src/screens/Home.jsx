@@ -457,7 +457,7 @@ const SECTION_CONTENT = {
 
 // ── Sortable card ────────────────────────────────────────────────────────────
 
-function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }) {
+function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimized }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const Content = SECTION_CONTENT[id]
   const meta = SECTION_META[id]
@@ -470,7 +470,12 @@ function SortableCard({ id, editing, onNav, data, minimized, onToggleMinimized }
     zIndex: isDragging ? 10 : 'auto',
   }
 
-  const cardStyle = { background: '#111', border: '1px solid #222', borderStyle: id === 'journal' ? 'dashed' : 'solid' }
+  const cardStyle = {
+    background: '#111',
+    border: '1px solid #222',
+    borderStyle: id === 'journal' ? 'dashed' : 'solid',
+    animation: !editing ? `cardIn 0.38s cubic-bezier(0.33, 1, 0.68, 1) ${(idx ?? 0) * 50}ms both` : undefined,
+  }
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -531,8 +536,18 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const [minimized, setMinimized] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cards_minimized') || '{}') } catch { return {} }
   })
+  const [showCompactHeader, setShowCompactHeader] = useState(false)
   const timeOfDay = getTimeOfDay()
   const daysOfData = data.hrvHistory?.filter(Boolean).length || 0
+
+  // Compact sticky header — appears once the main header scrolls out of view
+  useEffect(() => {
+    const root = document.getElementById('root')
+    if (!root) return
+    const onScroll = () => setShowCompactHeader(root.scrollTop > 90)
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => root.removeEventListener('scroll', onScroll)
+  }, [])
 
   const [pullY, setPullY] = useState(0)
   const isPullingRef = useRef(false)
@@ -588,6 +603,8 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
   const finishEditing = () => setEditing(false)
   const ActiveContent = activeId ? SECTION_CONTENT[activeId] : null
 
+  const recoveryColor = getRecoveryColor(data.recoveryScore || 0)
+
   return (
     <div
       className="pt-safe pb-28"
@@ -596,6 +613,29 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       onTouchEnd={handleTouchEnd}
       style={{ transform: pullY > 0 ? `translateY(${pullY}px)` : undefined, transition: pullY === 0 ? 'transform 0.2s ease' : undefined }}
     >
+      {/* Compact sticky header — slides in when main header scrolls away */}
+      {showCompactHeader && (
+        <div
+          className="fixed left-0 right-0 z-40 flex items-center justify-between px-4 screen-fade"
+          style={{
+            top: 0,
+            paddingTop: 'max(10px, env(safe-area-inset-top))',
+            paddingBottom: 10,
+            background: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: '1px solid #1a1a1a',
+          }}
+        >
+          <span style={{ fontFamily: 'Georgia, serif', color: '#C9A84C', fontWeight: 700, fontSize: 18 }}>Σ</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{ background: recoveryColor }} />
+            <span className="text-sm font-bold text-white tabular">{data.recoveryScore || '--'}%</span>
+            <span className="text-xs text-gray-500">Recovery</span>
+          </div>
+          <span className="text-[10px] text-gray-600">{lastSyncedAt || ''}</span>
+        </div>
+      )}
       {(pullY > 0 || isSyncing) && (
         <div
           className="flex justify-center items-center pb-2"
@@ -618,7 +658,13 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           </p>
           <h1 className="text-xl font-bold" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</h1>
           {!editing && (
-            <p className="text-[10px] mt-0.5" style={{ color: syncFailed ? '#f59e0b' : '#444' }}>
+            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: syncFailed ? '#f59e0b' : '#444' }}>
+              {isSyncing && (
+                <span
+                  className="animate-pulse-ring inline-block rounded-full flex-shrink-0"
+                  style={{ width: 6, height: 6, background: '#00c9a7' }}
+                />
+              )}
               {isSyncing
                 ? 'Syncing…'
                 : syncFailed
@@ -696,10 +742,11 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           <div className="space-y-3 px-4 mt-2">
-            {order.map(id => (
+            {order.map((id, idx) => (
               <SortableCard
                 key={id}
                 id={id}
+                idx={idx}
                 editing={editing}
                 onNav={onNav}
                 data={data}
