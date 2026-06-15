@@ -736,9 +736,11 @@ export default function Settings({ onBack }) {
       else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
       // Write a manual-source history entry so Fitbit sync can't overwrite this weight
-      const savedKg = parseFloat(localStorage.getItem('user_weight_kg') || '0')
-      const savedFat = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
-      if (savedKg > 0) saveBodyWeightEntry(today, savedKg, savedFat > 0 ? savedFat : null, 'manual')
+      const enteredKg = units === 'imperial'
+        ? (() => { const lbs = parseFloat(weightLbs); return !isNaN(lbs) && lbs > 0 ? Math.round(lbs / 2.2046 * 10) / 10 : 0 })()
+        : (() => { const kg = parseFloat(weightKg); return !isNaN(kg) && kg > 0 ? kg : 0 })()
+      const enteredFat = parseFloat(bodyFatPct)
+      if (enteredKg > 0) saveBodyWeightEntry(today, enteredKg, !isNaN(enteredFat) && enteredFat > 0 ? enteredFat : null, 'manual')
       if (units === 'imperial') {
         const wIn = parseFloat(waistIn)
         if (!isNaN(wIn) && wIn > 0) saveWaistEntry(today, Math.round(wIn * 2.54 * 10) / 10)
@@ -819,7 +821,7 @@ export default function Settings({ onBack }) {
         for (const date of dates) {
           const { kg, fatPct } = byDate[date]
           if (kg || fatPct) {
-            saveBodyWeightEntry(date, kg ?? null, fatPct ?? null)
+            saveBodyWeightEntry(date, kg ?? null, fatPct ?? null, 'apple_health')
             if (kg) weightCount++
             if (fatPct) fatCount++
           }

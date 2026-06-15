@@ -727,13 +727,14 @@ export function getBodyWeightHistory() {
 }
 
 export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual') {
-  if (!kg || kg < 20 || kg > 300) return
+  const validKg = kg != null && kg >= 20 && kg <= 300
+  if (!validKg && !fatPct) return
   try {
     const history = getBodyWeightHistory()
     const idx = history.findIndex(e => e.date === date)
     // Manual entries win over Fitbit — don't let a sync overwrite what the user typed
     if (source === 'fitbit' && idx >= 0 && history[idx].source === 'manual') return
-    const entry = { date, kg: Math.round(kg * 10) / 10, fatPct: fatPct || null, source }
+    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct || null, source }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)
     history.sort((a, b) => a.date.localeCompare(b.date))

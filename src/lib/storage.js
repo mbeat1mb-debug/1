@@ -154,7 +154,7 @@ export function analyzeTimingCorrelation(substanceId, healthHistory) {
     const rec = recoveryByDate[nextDate]
     withNextDay.push(rec)
     if (times.some(t => t >= '14:00')) lateDay.push(rec)
-    if (times.some(t => t < '14:00')) earlyOnly.push(rec)
+    if (times.every(t => t < '14:00')) earlyOnly.push(rec)
   }
   if (withNextDay.length < 2) return null
 

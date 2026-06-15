@@ -315,7 +315,7 @@ export default function Healthspan({ data, onNav }) {
       label: 'Insulin Resistance (HOMA-IR)',
       value: homaIR,
       unit: '',
-      contribution: homaIR < 1.0 ? -1 : homaIR < 2.0 ? 0 : homaIR < 3.0 ? 2 : homaIR < 5.0 ? 4 : 6,
+      contribution: homaIR < 1.0 ? -1 : homaIR < 2.0 ? 0 : homaIR < 3.0 ? 2 : homaIR < 5.0 ? 4 : 5,
       sublabel: (homaIR < 1.0 ? 'Excellent sensitivity' : homaIR < 2.0 ? 'Normal' : homaIR < 3.0 ? 'Insulin Resistant' : homaIR < 5.0 ? 'Significant IR' : 'Severe IR') + ' · fasting values only',
     }] : []),
     ...(homaIR === 0 && tygIndex !== null ? [{
@@ -614,7 +614,7 @@ export default function Healthspan({ data, onNav }) {
                 <p className="text-xs text-gray-600">biological ÷ calendar age</p>
               </div>
             </div>
-            <p className="text-xs text-gray-600">Longitudinal pace calculates after 14+ days of tracking.</p>
+            <p className="text-xs text-gray-600">Longitudinal pace calculates after 30+ days of tracking.</p>
           </div>
         )}
         <p className="text-xs text-gray-600 mt-3">
