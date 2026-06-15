@@ -447,7 +447,7 @@ export default function App() {
     }
     const onVisible = () => { if (document.visibilityState === 'visible') maybeSync() }
     document.addEventListener('visibilitychange', onVisible)
-    const interval = setInterval(() => { if (document.visibilityState === 'visible') doSync(false) }, 15 * 60 * 1000)
+    const interval = setInterval(() => { if (document.visibilityState === 'visible') maybeSync() }, 15 * 60 * 1000)
     return () => { document.removeEventListener('visibilitychange', onVisible); clearInterval(interval) }
   }, [connected, demo, doSync])
 

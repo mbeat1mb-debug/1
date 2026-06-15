@@ -593,7 +593,7 @@ export function parseSleepArchitecture(todaySleep) {
     }
     if (seg.level === 'rem') inREM = true
   }
-  if (cycleStart !== null && hasNREM && hypnogram.length) {
+  if (cycleStart !== null && hasNREM && inREM && hypnogram.length) {
     const last = hypnogram[hypnogram.length - 1]
     cycles.push({ startMs: cycleStart, endMs: last.endMs, durationMins: Math.round((last.endMs - cycleStart) / 60000) })
   }
@@ -703,8 +703,11 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
         const pts = []
         for (const [tStr, hr] of Object.entries(hrMap)) {
           const [hh, mm] = tStr.split(':').map(Number)
-          const tMs = new Date(a.startTime)
-          tMs.setHours(hh, mm, 0, 0)
+          const d = new Date(startMs)
+          d.setHours(hh, mm, 0, 0)
+          let tMs = d.getTime()
+          // If the result is more than 12h before workout start, the entry is post-midnight (next calendar day)
+          if (tMs < startMs - 12 * 3600000) tMs += 86400000
           if (tMs >= startMs && tMs <= endMs) pts.push(hr)
         }
         if (pts.length >= 9) {

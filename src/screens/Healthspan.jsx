@@ -285,7 +285,7 @@ export default function Healthspan({ data, onNav }) {
       label: 'Sleep Quality',
       value: `${Math.round(avgDeepPct * 100)}% deep / ${Math.round(avgRemPct * 100)}% REM`,
       unit: '',
-      contribution: (avgDeepPct >= 0.18 ? -1 : avgDeepPct < 0.10 ? 2 : 0) + (avgRemPct >= 0.22 ? -1 : avgRemPct < 0.15 ? 1 : 0),
+      contribution: (avgDeepPct >= 0.20 ? -1 : avgDeepPct < 0.10 ? 2 : 0) + (avgRemPct >= 0.22 ? -1 : avgRemPct < 0.15 ? 1 : 0),
     }] : []),
     {
       label: 'Daily Steps',

@@ -161,9 +161,9 @@ export default function Sleep({ data, onNav }) {
             </div>
           </div>
 
-          {(() => {
+          {todaySleep?.levels?.data?.length > 0 && (() => {
             const arch = parseSleepArchitecture(todaySleep)
-            if (!arch) return null
+            if (!arch?.hypnogram?.length) return null
             const latColor  = arch.sleepLatency <= 20 ? '#00c9a7' : arch.sleepLatency <= 30 ? '#f59e0b' : '#ef4444'
             const wakeColor = arch.minutesAwake  <= 30 ? '#00c9a7' : arch.minutesAwake  <= 45 ? '#f59e0b' : '#ef4444'
             return (
@@ -182,9 +182,9 @@ export default function Sleep({ data, onNav }) {
             )
           })()}
 
-          {(() => {
+          {todaySleep?.levels?.data?.length > 0 && (() => {
             const arch  = parseSleepArchitecture(todaySleep)
-            if (!arch) return null
+            if (!arch?.hypnogram?.length) return null
             const age   = getUserAge()
             const norms = getSleepStageNorms(age)
             const totalMinsN = todaySleep.minutesAsleep || 0

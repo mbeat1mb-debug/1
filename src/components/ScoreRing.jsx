@@ -21,7 +21,7 @@ export default function ScoreRing({
   // Number count-up (easeOutCubic, 750ms)
   const [display, setDisplay] = useState(0)
   useEffect(() => {
-    if (!score) { setDisplay(0); return }
+    if (score == null || isNaN(score)) { setDisplay(0); return }
     const isFloat = score !== Math.round(score)
     const duration = 750
     const startTs = Date.now()
