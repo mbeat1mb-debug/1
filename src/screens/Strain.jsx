@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance } from '../lib/calculations'
+import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance, getTrainingStatus } from '../lib/calculations'
 
 const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444']
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
@@ -137,8 +137,73 @@ export default function Strain({ data, onNav }) {
             {trainingLoad.form === 'Loaded' && 'ATL > CTL — accumulated fatigue. Consider an easy day.'}
             {trainingLoad.form === 'Overreached' && 'High fatigue relative to fitness. Rest is essential now.'}
           </p>
+          {(() => {
+            const ts = getTrainingStatus(trainingLoad, data.strainVelocity)
+            if (!ts) return null
+            const { status, color, desc } = ts
+            return (
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs text-gray-500">{desc}</span>
+                <span className="text-xs font-bold px-3 py-1 rounded-full ml-2 flex-shrink-0" style={{ background: color + '22', color }}>
+                  {status}
+                </span>
+              </div>
+            )
+          })()}
         </div>
       )}
+
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Strain Coach</p>
+        {(() => {
+          const remaining = Math.max(0, Math.round((optimalStrain - strainScore) * 10) / 10)
+          const pct = Math.min(100, (strainScore / optimalStrain) * 100)
+          return (
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-gray-500">Today's capacity used</span>
+                <span className="font-semibold text-white">{strainScore} / {optimalStrain}</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, background: pct >= 100 ? '#ef4444' : `linear-gradient(90deg, #3b82f688, #3b82f6)` }} />
+              </div>
+              <p className="text-xs text-gray-600 mt-1.5">
+                {remaining > 0
+                  ? `${remaining} strain units remaining before exceeding target`
+                  : 'Target reached — prioritize recovery now'}
+              </p>
+            </div>
+          )
+        })()}
+        {data.weeklyAZM != null && (() => {
+          const azm = data.weeklyAZM
+          const target = 150
+          const excellent = 300
+          const pct = Math.min(100, (azm / excellent) * 100)
+          const color = azm >= excellent ? '#00c9a7' : azm >= target ? '#f59e0b' : '#ef4444'
+          return (
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-gray-500">Weekly Active Zone Minutes</span>
+                <span className="font-semibold" style={{ color }}>{azm} AZM</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-600 mt-1">
+                <span>0</span>
+                <span style={{ color: azm >= target ? '#f59e0b' : '#555' }}>150 WHO</span>
+                <span style={{ color: azm >= excellent ? '#00c9a7' : '#555' }}>300 Excellent</span>
+              </div>
+              {data.weeklyZone2 > 0 && (
+                <p className="text-xs text-gray-600 mt-1.5">Zone 2 this week: <span className="text-white font-medium">{data.weeklyZone2} min</span></p>
+              )}
+            </div>
+          )
+        })()}
+      </div>
 
       {/* Activity stats */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>

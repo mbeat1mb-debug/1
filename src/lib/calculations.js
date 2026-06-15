@@ -1377,6 +1377,53 @@ export function getHealthspanDeltas({ vo2Max, steps, weeklyAZM, avgHRV, avgSleep
   return deltas.sort((a, b) => b.gain - a.gain)
 }
 
+// Training Status — Garmin-style from ATL/CTL/TSB + load direction
+// Banister 1991 impulse-response model; Coggan/Allen TSB performance zones
+export function getTrainingStatus(trainingLoad, strainVelocity) {
+  if (!trainingLoad) return null
+  const { tsb, atl, ctl } = trainingLoad
+  const trending = strainVelocity ?? 0
+  if (tsb < -25) return { status: 'Overreaching', color: '#ef4444', desc: 'Excessive fatigue — reduce load now.' }
+  if (tsb < -10 && trending > 0) return { status: 'Productive', color: '#3b82f6', desc: 'Adapting to load — fitness building.' }
+  if (tsb >= 5 && atl < ctl && trending < 0) return { status: 'Detraining', color: '#f59e0b', desc: 'Load too low — fitness may decline.' }
+  if (tsb >= 5 && trending > 0) return { status: 'Peaking', color: '#00c9a7', desc: 'Fresh and building — peak performance window.' }
+  if (tsb >= 5) return { status: 'Recovery', color: '#00c9a7', desc: 'Well rested — ready to train hard.' }
+  return { status: 'Maintaining', color: '#8b5cf6', desc: 'Balanced — sustaining current fitness.' }
+}
+
+// Chronotype from average sleep midpoint — Roenneberg MCTQ 2004
+export function calculateChronotype(sleepHistory) {
+  const valid = sleepHistory.filter(s => s.startTime && s.endTime).slice(-30)
+  if (valid.length < 7) return null
+  const midpoints = valid.map(s => {
+    const midnight = new Date(s.date + 'T00:00:00')
+    let startM = Math.round((new Date(s.startTime) - midnight) / 60000)
+    if (startM > 1200) startM -= 1440
+    const endM = Math.round((new Date(s.endTime) - midnight) / 60000)
+    return (startM + endM) / 2
+  })
+  const avg = midpoints.reduce((a, b) => a + b, 0) / midpoints.length
+  const absMin = ((avg % 1440) + 1440) % 1440
+  const h = Math.floor(absMin / 60) % 24
+  const m = Math.floor(absMin) % 60
+  const period = h >= 12 ? 'PM' : 'AM'
+  const timeStr = `${h % 12 || 12}:${String(m).padStart(2, '0')} ${period}`
+  const type = avg < 150 ? 'Morning' : avg < 270 ? 'Neutral' : 'Evening'
+  return { midpointMins: Math.round(avg), timeStr, type }
+}
+
+// Sleep debt payback projection — days to clear current debt at current nightly surplus
+export function calculateSleepDebtPayback(sleepDebt, sleepHistory) {
+  if (!sleepDebt || sleepDebt <= 0 || !sleepHistory.length) return null
+  const optimalMins = computeOptimalSleepHours(sleepHistory) * 60
+  const last7 = sleepHistory.slice(-7).filter(s => s.minutes > 0)
+  if (last7.length < 3) return null
+  const avgMins = last7.reduce((a, s) => a + s.minutes, 0) / last7.length
+  const surplusPerNight = avgMins - optimalMins
+  if (surplusPerNight <= 0) return null
+  return Math.ceil((sleepDebt * 60) / surplusPerNight)
+}
+
 export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
   const points = hrIntradayData?.['activities-heart-intraday']?.dataset
   if (!points?.length || !rhr) return null

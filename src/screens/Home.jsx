@@ -250,6 +250,38 @@ function JournalContent() {
   )
 }
 
+function TrendsContent({ data }) {
+  const { recoveryHistory = [], calendarDays = [] } = data
+  const last7Rec = recoveryHistory.filter(Boolean).slice(-7)
+  const avgRec7 = last7Rec.length
+    ? Math.round(last7Rec.reduce((a, b) => a + b, 0) / last7Rec.length)
+    : null
+  const scatterCount = calendarDays.filter(d => d.recovery != null && d.strain > 0).slice(-30).length
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Trends</span>
+        <div className="flex items-center gap-3 mt-2">
+          {avgRec7 != null && (
+            <div>
+              <span className="text-[10px] text-gray-600 uppercase tracking-wider block">7d Avg Recovery</span>
+              <span className="text-xl font-bold" style={{ color: getRecoveryColor(avgRec7) }}>{avgRec7}%</span>
+            </div>
+          )}
+          {scatterCount > 0 && (
+            <div>
+              <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Days Tracked</span>
+              <span className="text-xl font-bold text-white">{scatterCount}</span>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-gray-600 mt-1">HRV, RHR, VO₂, Recovery × Strain</p>
+      </div>
+      <span className="text-2xl">📈</span>
+    </div>
+  )
+}
+
 function InsightsContent() {
   const [correlations, setCorrelations] = useState(null)
 
@@ -306,11 +338,11 @@ function InsightsContent() {
 }
 
 function WeeklySummary({ data }) {
-  const { calendarDays = [] } = data
+  const { calendarDays = [], weeklyAZM } = data
   const today = new Date()
-  const dow = today.getDay() // 0=Sun
+  const dow = today.getDay()
   const weekStart = new Date(today)
-  weekStart.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1)) // Monday
+  weekStart.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
   weekStart.setHours(0, 0, 0, 0)
 
   const thisWeek = calendarDays.filter(d => {
@@ -326,7 +358,9 @@ function WeeklySummary({ data }) {
     thisWeek.filter(d => d.sleep > 0).reduce((a, d) => a + d.sleep, 0) /
     (thisWeek.filter(d => d.sleep > 0).length || 1) / 60 * 10
   ) / 10
+  const totalStrain = thisWeek.filter(d => d.strain > 0).reduce((a, d) => a + d.strain, 0)
   const color = getRecoveryColor(avgRecovery)
+  const azmColor = weeklyAZM >= 300 ? '#00c9a7' : weeklyAZM >= 150 ? '#f59e0b' : '#ef4444'
 
   return (
     <div className="mx-4 mb-1 rounded-2xl p-4" style={{ background: color + '08', border: `1px solid ${color}25` }}>
@@ -334,7 +368,7 @@ function WeeklySummary({ data }) {
         <span className="text-xs font-bold tracking-widest uppercase" style={{ color }}>This Week</span>
         <span className="text-xs text-gray-600">{thisWeek.length} days</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <div>
           <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Recovery</span>
           <span className="text-xl font-bold" style={{ color }}>{avgRecovery}%</span>
@@ -346,6 +380,12 @@ function WeeklySummary({ data }) {
         <div>
           <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Sleep</span>
           <span className="text-xl font-bold text-white">{avgSleepH > 0 ? `${avgSleepH}h` : '--'}</span>
+        </div>
+        <div>
+          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">AZM</span>
+          <span className="text-xl font-bold" style={{ color: weeklyAZM > 0 ? azmColor : '#555' }}>
+            {weeklyAZM > 0 ? weeklyAZM : '--'}
+          </span>
         </div>
       </div>
     </div>
@@ -453,6 +493,7 @@ const SECTION_CONTENT = {
   weeklypattern: WeeklyPatternContent,
   journal: JournalContent,
   insights: InsightsContent,
+  trends: TrendsContent,
 }
 
 // ── Sortable card ────────────────────────────────────────────────────────────
@@ -470,6 +511,7 @@ function getCardGlowColor(id, data) {
     case 'journal':    return '#C9A84C'
     case 'healthspan': return '#00c9a7'
     case 'records':    return '#C9A84C'
+    case 'trends':     return '#3b82f6'
     default:           return null
   }
 }
