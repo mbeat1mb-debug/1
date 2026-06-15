@@ -10,12 +10,19 @@ function SleepStageBar({ label, minutes, total, color }) {
   const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`
   return (
     <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-400">{label}</span>
-        <span className="text-white font-medium">{timeStr}</span>
+      <div className="flex justify-between text-xs mb-1.5">
+        <span style={{ color: '#666' }}>{label}</span>
+        <span className="font-semibold text-white">{timeStr}</span>
       </div>
-      <div className="h-2 rounded-full bg-[#222] overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${color}88, ${color})`,
+            boxShadow: pct > 0 ? `0 0 8px ${color}55` : undefined,
+          }}
+        />
       </div>
     </div>
   )
@@ -211,8 +218,8 @@ export default function Sleep({ data, onNav }) {
                           <span className="text-gray-600"> / norm {norm}{unit}</span>
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${Math.min(100, (yours / (norm * 1.5)) * 100)}%`, background: color }} />
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.min(100, (yours / (norm * 1.5)) * 100)}%`, background: `linear-gradient(90deg, ${color}77, ${color})`, boxShadow: `0 0 6px ${color}44` }} />
                       </div>
                     </div>
                   ))}

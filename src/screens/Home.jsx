@@ -22,9 +22,9 @@ import { getTopCorrelations } from '../lib/correlations'
 function Pill({ label, value, unit = '' }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</span>
-      <span className="text-sm font-semibold text-white">
-        {value}<span className="text-gray-500 text-xs ml-0.5">{unit}</span>
+      <span className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: '#4a4a4a' }}>{label}</span>
+      <span className="font-bold leading-tight tabular" style={{ fontSize: 15, color: '#e8e8e8' }}>
+        {value}{unit && <span className="font-normal ml-0.5" style={{ fontSize: 11, color: '#444' }}>{unit}</span>}
       </span>
     </div>
   )
@@ -457,6 +457,22 @@ const SECTION_CONTENT = {
 
 // ── Sortable card ────────────────────────────────────────────────────────────
 
+function getCardGlowColor(id, data) {
+  switch (id) {
+    case 'recovery':   return getRecoveryColor(data.recoveryScore || 0)
+    case 'strain':     return '#3b82f6'
+    case 'sleep': {
+      const s = data.sleepScore || 0
+      return s >= 75 ? '#8b5cf6' : s >= 50 ? '#f59e0b' : '#ef4444'
+    }
+    case 'stress':     return getStressColor(data.stressScore || 0)
+    case 'journal':    return '#C9A84C'
+    case 'healthspan': return '#00c9a7'
+    case 'records':    return '#C9A84C'
+    default:           return null
+  }
+}
+
 function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimized }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const Content = SECTION_CONTENT[id]
@@ -470,10 +486,12 @@ function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimi
     zIndex: isDragging ? 10 : 'auto',
   }
 
+  const glowColor = !editing ? getCardGlowColor(id, data) : null
   const cardStyle = {
-    background: '#111',
-    border: '1px solid #222',
+    background: 'linear-gradient(160deg, #141414, #0f0f0f)',
+    border: glowColor ? `1px solid ${glowColor}28` : '1px solid #1e1e1e',
     borderStyle: id === 'journal' ? 'dashed' : 'solid',
+    boxShadow: glowColor ? `0 0 24px ${glowColor}0e, 0 1px 0 ${glowColor}18 inset` : undefined,
     animation: !editing ? `cardIn 0.38s cubic-bezier(0.33, 1, 0.68, 1) ${(idx ?? 0) * 50}ms both` : undefined,
   }
 
@@ -611,7 +629,11 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ transform: pullY > 0 ? `translateY(${pullY}px)` : undefined, transition: pullY === 0 ? 'transform 0.2s ease' : undefined }}
+      style={{
+        transform: pullY > 0 ? `translateY(${pullY}px)` : undefined,
+        transition: pullY === 0 ? 'transform 0.2s ease' : undefined,
+        background: `radial-gradient(ellipse 80% 25% at 50% 0%, ${recoveryColor}07 0%, transparent 70%)`,
+      }}
     >
       {/* Compact sticky header — slides in when main header scrolls away */}
       {showCompactHeader && (

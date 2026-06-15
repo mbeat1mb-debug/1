@@ -180,10 +180,14 @@ export default function Strain({ data, onNav }) {
                   <span className="text-gray-400">{zone} <span className="text-gray-600">({ZONE_DESCS[i]})</span></span>
                   <span className="text-white font-medium">{mins} min</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
                   <div
                     className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, background: ZONE_COLORS[i + 1] }}
+                    style={{
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, ${ZONE_COLORS[i + 1]}88, ${ZONE_COLORS[i + 1]})`,
+                      boxShadow: pct > 0 ? `0 0 8px ${ZONE_COLORS[i + 1]}55` : undefined,
+                    }}
                   />
                 </div>
               </div>
