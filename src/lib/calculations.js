@@ -322,8 +322,8 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
       const rAvg = recent7.reduce((a, b) => a + b, 0) / recent7.length
       const pAvg = prior7.reduce((a, b) => a + b, 0) / prior7.length
       const trend = (rAvg - pAvg) / pAvg
-      if (trend > 0.06) base = Math.max(base - 1, -3)
-      else if (trend < -0.08) base = Math.min(base + 1, 4)
+      if (trend > 0.10) base = Math.max(base - 1, -3)
+      else if (trend < -0.12) base = Math.min(base + 1, 4)
     }
     cardio += base
   }
@@ -373,17 +373,15 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   }
 
   // Visceral fat — VFI from Hume bioimpedance preferred over waist (more direct measure)
-  // Amato et al. 2010 Diabetes Care: VFI validated against CT-measured visceral fat area
-  // Standard male range 1–12; each tier above 12 carries compounding cardiometabolic risk
+  // Amato 2010 Diabetes Care: VAI=1 anchors a lean healthy reference; risk increases continuously above normal
+  // No evidence of longevity benefit below mid-normal (VFI ≤7 vs ≤12); upper tiers carry compounding risk
   if (visceralFatIndex !== null) {
-    if (visceralFatIndex <= 7)        composition -= 1
-    else if (visceralFatIndex <= 12)  composition += 0
+    if (visceralFatIndex <= 12)       composition += 0
     else if (visceralFatIndex <= 17)  composition += 1
     else if (visceralFatIndex <= 24)  composition += 2
     else                              composition += 3
   } else if (waistCm > 0) {
-    if (waistCm < 90)       composition -= 1
-    else if (waistCm < 94)  composition += 0
+    if (waistCm < 94)       composition += 0
     else if (waistCm < 102) composition += 2
     else                    composition += 4
   }
@@ -462,7 +460,7 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     if (avgRemPct >= 0.22)                        sleepD -= 1
     else if (avgRemPct > 0 && avgRemPct < 0.15)   sleepD += 1
 
-    if (avgDeepPct >= 0.18)                       sleepD -= 1
+    if (avgDeepPct >= 0.20)                       sleepD -= 1
     else if (avgDeepPct > 0 && avgDeepPct < 0.10) sleepD += 1
   }
 
