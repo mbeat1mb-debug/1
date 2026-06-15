@@ -732,6 +732,10 @@ export function getUserHeightCm() {
 
 export function getUserWeightKg() {
   try {
+    const history = getBodyWeightHistory()
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].kg != null && history[i].kg > 0) return history[i].kg
+    }
     const v = parseFloat(localStorage.getItem('user_weight_kg') || '0')
     return isNaN(v) ? 0 : v
   } catch { return 0 }
@@ -739,6 +743,10 @@ export function getUserWeightKg() {
 
 export function getUserBodyFatPct() {
   try {
+    const history = getBodyWeightHistory()
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].fatPct != null && history[i].fatPct > 0) return history[i].fatPct
+    }
     const v = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
     return isNaN(v) || v <= 0 ? null : v
   } catch { return null }

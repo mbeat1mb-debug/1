@@ -3,22 +3,26 @@ import { getTokens, isTokenExpired, refreshAccessToken, disconnect } from './aut
 const BASE = 'https://api.fitbit.com'
 
 async function fitbitFetch(path, retried = false) {
-  if (isTokenExpired()) {
-    const ok = await refreshAccessToken()
-    if (!ok) { disconnect(); window.location.reload(); return null }
+  try {
+    if (isTokenExpired()) {
+      const ok = await refreshAccessToken()
+      if (!ok) { disconnect(); window.location.reload(); return null }
+    }
+    const { access_token } = getTokens()
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { Authorization: `Bearer ${access_token}` },
+    })
+    if (res.status === 401) {
+      // Token rejected despite looking valid locally (clock skew / early revoke).
+      // Refresh once and retry before tearing down the session.
+      if (!retried && await refreshAccessToken()) return fitbitFetch(path, true)
+      disconnect(); window.location.reload(); return null
+    }
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
   }
-  const { access_token } = getTokens()
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { Authorization: `Bearer ${access_token}` },
-  })
-  if (res.status === 401) {
-    // Token rejected despite looking valid locally (clock skew / early revoke).
-    // Refresh once and retry before tearing down the session.
-    if (!retried && await refreshAccessToken()) return fitbitFetch(path, true)
-    disconnect(); window.location.reload(); return null
-  }
-  if (!res.ok) return null
-  return res.json()
 }
 
 function today() {

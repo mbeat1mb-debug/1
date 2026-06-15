@@ -194,6 +194,14 @@ export default function Journal({ data, onNav }) {
     return negCorrs.length >= 2 ? negCorrs : null
   }, [selectedTagCorrs, healthHistory])
 
+  // Selected tags with no correlation yet (logged <3 days)
+  const buildingTagsToday = useMemo(() => {
+    return selectedTagCorrs
+      .filter(x => !x.corr)
+      .map(x => tags.find(t => t.id === x.id))
+      .filter(Boolean)
+  }, [selectedTagCorrs, tags])
+
   // Recent 7-day behavior grid
   const recentActivity = useMemo(() => getRecentTagActivity(7), [])
   const recentRecovery = useMemo(() => {
@@ -515,6 +523,16 @@ export default function Journal({ data, onNav }) {
         <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Behavior Impact</p>
           <p className="text-sm text-gray-600">{10 - healthHistory.length} more days of data needed to unlock behavior correlations.</p>
+        </div>
+      )}
+
+      {/* Building data — selected tags that don't have enough history yet */}
+      {buildingTagsToday.length > 0 && healthHistory.length >= 10 && (
+        <div className="rounded-2xl p-3" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5">Building data</p>
+          <p className="text-xs text-gray-600">
+            {buildingTagsToday.map(t => `${t.emoji} ${t.label}`).join(' · ')} — log a few more days to unlock impact
+          </p>
         </div>
       )}
 
