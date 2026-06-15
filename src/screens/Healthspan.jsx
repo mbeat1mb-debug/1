@@ -526,7 +526,7 @@ export default function Healthspan({ data, onNav }) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Heart Rate Recovery</p>
           <div className="grid grid-cols-2 gap-3 mb-2">
             <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">1-min Drop</p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Post-Exercise Drop</p>
               <p className="text-2xl font-bold" style={{ color: data.hrr.hrr60 >= 18 ? '#00c9a7' : data.hrr.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
                 -{data.hrr.hrr60}<span className="text-sm font-normal text-gray-500"> bpm</span>
               </p>
@@ -536,7 +536,7 @@ export default function Healthspan({ data, onNav }) {
             </div>
             {data.hrr.hrr120 !== null && (
               <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">2-min Drop</p>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Early Recovery Drop</p>
                 <p className="text-2xl font-bold" style={{ color: data.hrr.hrr120 >= 42 ? '#00c9a7' : data.hrr.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
                   -{data.hrr.hrr120}<span className="text-sm font-normal text-gray-500"> bpm</span>
                 </p>
@@ -715,11 +715,11 @@ export default function Healthspan({ data, onNav }) {
             <div className="pb-1">
               <p className="text-sm text-gray-400">min variability</p>
               <p className="text-xs text-gray-600">
-                {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate social jet lag' : 'High social jet lag — metabolic risk'}
+                {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate timing variability' : 'High variability — circadian disruption risk'}
               </p>
             </div>
           </div>
-          <p className="text-[10px] text-gray-600">Standard deviation of your sleep midpoint timing across last 30 nights. &lt;20 min = elite consistency. Adapted from Roenneberg 2012.</p>
+          <p className="text-[10px] text-gray-600">SD of sleep midpoint timing across last 30 nights. Measures sleep schedule consistency (not classic Roenneberg SJL). &lt;20 min = elite consistency.</p>
         </div>
       )}
 
@@ -743,7 +743,7 @@ export default function Healthspan({ data, onNav }) {
           </div>
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase mb-1">Est. ODI</p>
+              <p className="text-[10px] text-gray-600 uppercase mb-1">Desat. Events/hr</p>
               <p className="text-base font-bold text-white">{sleepApneaRisk.odi}<span className="text-xs text-gray-600"> /hr</span></p>
             </div>
             <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
@@ -757,7 +757,7 @@ export default function Healthspan({ data, onNav }) {
           {sleepApneaRisk.riskLevel >= 2 && (
             <p className="text-xs text-red-400 mt-1">Consider a sleep study (polysomnography). Untreated apnea raises CVD and cognitive decline risk.</p>
           )}
-          <p className="text-[10px] text-gray-600 mt-2">ODI = estimated oxygen desaturation events/hour using 5-min SpO₂ intervals during sleep. Not a medical diagnosis.</p>
+          <p className="text-[10px] text-gray-600 mt-2">Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
         </div>
       )}
     </div>
