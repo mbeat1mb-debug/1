@@ -673,6 +673,7 @@ export default function Settings({ onBack }) {
   const [heightCm, setHeightCm] = useState(() => storedHCm ? String(Math.round(storedHCm)) : '')
   const [weightKg, setWeightKg] = useState(() => storedWKg ? String(Math.round(storedWKg * 10) / 10) : '')
   const [bodyFatPct, setBodyFatPct] = useState(() => localStorage.getItem('user_body_fat_pct') || '')
+  const [vo2MaxVal, setVo2MaxVal] = useState(() => localStorage.getItem('user_vo2_max') || '')
 
   // Waist circumference — stored in cm, displayed per units preference
   const storedWaistCm = parseFloat(localStorage.getItem('user_waist_cm') || '0') || 0
@@ -754,6 +755,13 @@ export default function Settings({ onBack }) {
         if (!isNaN(wCm) && wCm > 0) saveWaistEntry(today, wCm)
         const gKg = parseFloat(gripKgVal)
         if (!isNaN(gKg) && gKg > 0) saveGripEntry(today, gKg)
+      }
+
+      if (vo2MaxVal.trim() === '') {
+        localStorage.removeItem('user_vo2_max')
+      } else {
+        const vo2 = parseFloat(vo2MaxVal)
+        if (!isNaN(vo2) && vo2 >= 10 && vo2 <= 90) localStorage.setItem('user_vo2_max', String(vo2))
       }
 
       localStorage.setItem('user_smoking', smoking)
@@ -1196,6 +1204,22 @@ export default function Settings({ onBack }) {
                 <span className="text-xs text-gray-600">kg</span>
               </>
             )}
+          </div>
+        </div>
+
+        {/* VO2 Max */}
+        <div>
+          <p className="text-xs text-gray-500 mb-0.5">VO2 Max (mL/kg/min)</p>
+          <p className="text-[11px] text-gray-600 mb-1.5">From Google Health app, Garmin, or lab test</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number" min={10} max={90} step={1}
+              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              placeholder="e.g. 46"
+              value={vo2MaxVal}
+              onChange={e => setVo2MaxVal(e.target.value)}
+            />
+            <span className="text-xs text-gray-600">mL/kg/min</span>
           </div>
         </div>
       </div>

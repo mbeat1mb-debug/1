@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { haptic } from '../lib/haptics'
 import {
   DndContext, closestCenter, TouchSensor, MouseSensor,
@@ -375,6 +375,76 @@ function CalibrationBanner({ daysOfData }) {
   )
 }
 
+const SETUP_ROWS = [
+  { keys: ['user_age'],          label: 'Age' },
+  { keys: ['user_height_cm'],    label: 'Height' },
+  { keys: ['user_weight_kg', 'user_body_fat_pct'], label: 'Weight & Body Fat (Hume or manual)' },
+  { keys: ['user_vo2_max'],      label: 'VO2 Max' },
+]
+
+function SetupCard({ onNav }) {
+  const [dismissed, setDismissed] = useState(
+    () => !!localStorage.getItem('setup_dismissed')
+  )
+
+  const missing = useMemo(() => {
+    return SETUP_ROWS.filter(row =>
+      row.keys.every(k => !localStorage.getItem(k))
+    )
+  }, [])
+
+  if (dismissed || missing.length === 0) return null
+
+  const handleDismiss = () => {
+    localStorage.setItem('setup_dismissed', '1')
+    setDismissed(true)
+  }
+
+  return (
+    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Finish Setup</span>
+        <button
+          onClick={handleDismiss}
+          className="text-gray-600 text-lg leading-none px-1 transition-opacity active:opacity-50"
+          aria-label="Dismiss setup card"
+          style={{ lineHeight: 1 }}
+        >
+          ×
+        </button>
+      </div>
+      <div className="space-y-2 mb-3">
+        {SETUP_ROWS.map(row => {
+          const present = row.keys.some(k => !!localStorage.getItem(k))
+          return (
+            <div key={row.label} className="flex items-center gap-2">
+              <span
+                className="text-sm font-bold w-4 text-center flex-shrink-0"
+                style={{ color: present ? '#00c9a7' : '#444' }}
+              >
+                {present ? '✓' : '○'}
+              </span>
+              <span
+                className="text-sm"
+                style={{ color: present ? '#555' : '#ccc' }}
+              >
+                {row.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <button
+        onClick={() => onNav('settings')}
+        className="text-xs font-semibold transition-opacity active:opacity-60"
+        style={{ color: '#00c9a7' }}
+      >
+        Open Settings →
+      </button>
+    </div>
+  )
+}
+
 const SECTION_CONTENT = {
   recovery: RecoveryContent,
   strain: StrainContent,
@@ -604,6 +674,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       </div>
 
       {!editing && <CalibrationBanner daysOfData={daysOfData} />}
+      {!editing && <SetupCard onNav={onNav} />}
 
       {editing && (
         <p className="text-center text-xs text-gray-600 pb-2">Hold grip to reorder · Chevron to minimize</p>

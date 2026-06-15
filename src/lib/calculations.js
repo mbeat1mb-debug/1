@@ -565,13 +565,14 @@ export function parseFitbitData(raw) {
 
   // VO2 Max from Fitbit Cardio Fitness Score (value is string like "47-51" — use midpoint)
   const vo2MaxRaw = cardioFitness?.cardioScore?.[0]?.value?.vo2Max ?? null
-  const vo2Max = (() => {
+  const fitbitVO2 = (() => {
     if (!vo2MaxRaw) return 0
     const parts = String(vo2MaxRaw).split('-')
     const lo = parseInt(parts[0], 10) || 0
     const hi = parts.length > 1 ? (parseInt(parts[1], 10) || lo) : lo
     return Math.round((lo + hi) / 2) || 0
   })()
+  const vo2Max = fitbitVO2 || getUserVO2Max()
   const vo2MaxRange = vo2MaxRaw ? String(vo2MaxRaw) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
@@ -750,6 +751,13 @@ export function getUserBodyFatPct() {
     const v = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
     return isNaN(v) || v <= 0 ? null : v
   } catch { return null }
+}
+
+export function getUserVO2Max() {
+  try {
+    const v = parseFloat(localStorage.getItem('user_vo2_max') || '0')
+    return isNaN(v) || v <= 0 ? 0 : v
+  } catch { return 0 }
 }
 
 export function getBodyWeightHistory() {

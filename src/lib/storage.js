@@ -171,6 +171,21 @@ export function addTimingEntry(date, substance, time) {
   const entry = { id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, date, substance, time }
   log.push(entry)
   localStorage.setItem(TIMING_KEY, JSON.stringify(log.slice(-500)))
+
+  // Auto-populate journal tags based on the substance logged
+  const tagsToAdd = []
+  if (substance === 'caffeine' && time >= '14:00') tagsToAdd.push('caffeine_late')
+  if (substance === 'alcohol') tagsToAdd.push('alcohol')
+
+  if (tagsToAdd.length > 0) {
+    const journalEntry = getEntryForDate(date)
+    const existingTags = journalEntry.tagIds || []
+    const newTags = tagsToAdd.filter(t => !existingTags.includes(t))
+    if (newTags.length > 0) {
+      saveJournalEntry(date, [...existingTags, ...newTags], journalEntry.notes, journalEntry.energy)
+    }
+  }
+
   return entry
 }
 

@@ -74,6 +74,47 @@ function AgeMeter({ physAge, chronAge, phenoAge, phenoProgress }) {
   )
 }
 
+function getActionTip(label) {
+  const l = label.toLowerCase()
+  if (l.includes('vo2') || l.includes('cardio')) return 'Zone 2 cardio 3×/week'
+  if (l.includes('bmi') || l.includes('body fat') || l.includes('waist') || l.includes('visceral')) return 'Resistance training + caloric deficit'
+  if (l.includes('grip') || l.includes('strength')) return 'Progressive grip & compound lifts'
+  if (l.includes('rhr') || l.includes('resting heart')) return 'Consistent cardio, sleep quality'
+  if (l.includes('hrv')) return 'Sleep consistency, stress management'
+  if (l.includes('blood pressure') || l.includes('bp')) return 'DASH diet, cardio, reduce sodium'
+  if (l.includes('sleep')) return 'Consistent sleep/wake schedule'
+  if (l.includes('smoking')) return 'Quit smoking — largest single modifiable risk'
+  if (l.includes('alcohol')) return 'Reduce to ≤1 drink/day'
+  return 'Review your habits for this factor'
+}
+
+function TopPriorities({ opportunities }) {
+  if (!opportunities || opportunities.length === 0) return null
+  const top3 = opportunities.slice(0, 3)
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Priorities</p>
+      <div className="space-y-0">
+        {top3.map((c, i) => (
+          <div
+            key={c.label}
+            className="flex items-start gap-3 py-3"
+            style={i < top3.length - 1 ? { borderBottom: '1px solid #1a1a1a' } : {}}
+          >
+            <span className="text-base font-bold flex-shrink-0 w-14 text-right" style={{ color: '#ef4444' }}>
+              +{c.contribution}y
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white leading-tight">{c.label}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{getActionTip(c.label)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function MetricContribution({ label, value, unit, contribution, color, sublabel }) {
   return (
     <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #1a1a1a' }}>
@@ -571,6 +612,9 @@ export default function Healthspan({ data, onNav }) {
           <p className="text-[10px] text-gray-600">Peak HR {data.hrr.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>
         </div>
       )}
+
+      {/* Top Priorities — only shown when biologically older than calendar age */}
+      {diff > 0 && <TopPriorities opportunities={allOpportunities} />}
 
       {/* What's moving the needle */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
