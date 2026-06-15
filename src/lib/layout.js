@@ -10,9 +10,10 @@ export const SECTION_META = {
   weeklypattern: { label: 'Weekly Pattern',    emoji: '📊' },
   journal:       { label: 'Journal',           emoji: '📓' },
   insights:      { label: 'Insights',          emoji: '🔬', noNav: true },
+  trends:        { label: 'Trends',             emoji: '📈' },
 }
 
-export const DEFAULT_ORDER = ['recovery', 'strain', 'sleep', 'stress', 'records', 'healthspan', 'weeklypattern', 'journal', 'insights']
+export const DEFAULT_ORDER = ['recovery', 'strain', 'sleep', 'stress', 'records', 'healthspan', 'weeklypattern', 'journal', 'insights', 'trends']
 
 export function getHomeLayout() {
   try {

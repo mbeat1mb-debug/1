@@ -31,6 +31,7 @@ const Coach = lazy(() => import('./screens/Coach'))
 const Healthspan = lazy(() => import('./screens/Healthspan'))
 const Records = lazy(() => import('./screens/Records'))
 const Settings = lazy(() => import('./screens/Settings'))
+const Trends = lazy(() => import('./screens/Trends'))
 
 function makeCalendarDays() {
   return Array.from({ length: 90 }, (_, i) => {
@@ -41,6 +42,12 @@ function makeCalendarDays() {
       recovery: Math.round(30 + Math.random() * 65),
       strain: Math.round(5 + Math.random() * 12),
       sleep: Math.round(360 + Math.random() * 120),
+      sleepEfficiency: Math.round(78 + Math.random() * 18),
+      hrv: Math.round(42 + Math.random() * 25),
+      rhr: Math.round(50 + Math.random() * 12),
+      skinTempDev: Math.round((Math.random() - 0.4) * 0.6 * 100) / 100,
+      br: 12 + Math.round(Math.random() * 4),
+      activeMinutes: Math.round(20 + Math.random() * 60),
     }
   })
 }
@@ -165,7 +172,7 @@ function ConnectScreen({ onNav }) {
   )
 }
 
-const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'stress', 'healthspan', 'journal', 'records', 'coach', 'settings']
+const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'stress', 'healthspan', 'journal', 'records', 'coach', 'settings', 'trends']
 
 export default function App() {
   const [pinUnlocked, setPinUnlocked] = useState(() => !isPinSet())
@@ -496,6 +503,7 @@ export default function App() {
         {tab === 'healthspan' && <div key="healthspan" className={screenCls}><Healthspan data={data} onNav={handleNav} /></div>}
         {tab === 'records'    && <div key="records"    className={screenCls}><Records    data={data} onNav={handleNav} /></div>}
         {tab === 'settings'   && <div key="settings"   className="screen-fade"><Settings onBack={() => handleNav('home')} /></div>}
+        {tab === 'trends'     && <div key="trends"     className={screenCls}><Trends     data={data} onNav={handleNav} /></div>}
       </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (

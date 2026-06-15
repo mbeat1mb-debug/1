@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
-import { BarGraph } from '../components/TrendChart'
+import { BarGraph, LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge } from '../lib/calculations'
+import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge, calculateChronotype, calculateSleepDebtPayback } from '../lib/calculations'
 
 function SleepStageBar({ label, minutes, total, color }) {
   const pct = total > 0 ? (minutes / total) * 100 : 0
@@ -82,6 +82,10 @@ export default function Sleep({ data, onNav }) {
 
   const hours = Math.floor(totalMins / 60)
   const mins = totalMins % 60
+
+  const sleepDebt = calculateSleepDebt(sleepHistory)
+  const chronotype = calculateChronotype(sleepHistory)
+  const sleepDebtPayback = calculateSleepDebtPayback(sleepDebt, sleepHistory)
 
   const todayStr = new Date().toISOString().split('T')[0]
   const sleepChartData = sleepHistory.slice(-14).map(s => ({
@@ -286,7 +290,7 @@ export default function Sleep({ data, onNav }) {
       {/* Guidance */}
       {/* Sleep Debt */}
       {(() => {
-        const debt = calculateSleepDebt(sleepHistory)
+        const debt = sleepDebt
         const debtColor = debt >= 5 ? '#ef4444' : debt >= 2 ? '#f59e0b' : '#00c9a7'
         return (
           <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
@@ -295,6 +299,11 @@ export default function Sleep({ data, onNav }) {
               <span className="text-3xl font-bold" style={{ color: debtColor }}>{debt}h</span>
               <span className="text-gray-500 text-sm">{debt === 0 ? 'fully caught up' : 'owed this week'}</span>
             </div>
+            {sleepDebtPayback != null && (
+              <p className="text-xs text-gray-500 mt-1">
+                At current pace, clear in <span className="text-white font-semibold">{sleepDebtPayback} {sleepDebtPayback === 1 ? 'night' : 'nights'}</span>
+              </p>
+            )}
             <div className="h-2 rounded-full bg-[#222] overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${Math.min(100, (debt / 10) * 100)}%`, background: debtColor }} />
@@ -343,6 +352,46 @@ export default function Sleep({ data, onNav }) {
                 ? 'Great consistency. Your body has a stable rhythm — protect it.'
                 : 'Irregular sleep schedule detected. Staying within 30 min of your target adds ~20% recovery quality.'}
             </p>
+          </div>
+        )
+      })()}
+
+      {chronotype && (
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Chronotype</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-white">{chronotype.type}</p>
+              <p className="text-sm text-gray-500 mt-0.5">Sleep midpoint: {chronotype.timeStr}</p>
+              <p className="text-xs text-gray-600 mt-1">
+                {chronotype.type === 'Morning' && 'Natural early riser — align wake time with light exposure'}
+                {chronotype.type === 'Neutral' && 'Intermediate chronotype — flexible sleep timing'}
+                {chronotype.type === 'Evening' && 'Natural night owl — avoid early morning hard training'}
+              </p>
+            </div>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-3"
+              style={{ background: '#ffffff10', border: '1px solid #333' }}>
+              <span className="text-2xl">{chronotype.type === 'Morning' ? '🌅' : chronotype.type === 'Evening' ? '🌙' : '🌤'}</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">Based on average sleep midpoint over last 30 nights (Roenneberg MCTQ)</p>
+        </div>
+      )}
+
+      {(() => {
+        const scorePts = (data.calendarDays || [])
+          .filter(d => d.sleep > 0 && d.sleepEfficiency > 0)
+          .slice(-30)
+          .map((d, i, arr) => {
+            const score = Math.round(Math.min(100, (d.sleep / 480) * 70 + (d.sleepEfficiency / 100) * 30))
+            const daysAgo = Math.round((new Date() - new Date(d.date + 'T12:00:00')) / 86400000)
+            return { label: daysAgo === 0 ? 'Today' : `${daysAgo}d`, score }
+          })
+        if (scorePts.length < 5) return null
+        return (
+          <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Score Trend</p>
+            <LineGraph data={scorePts} dataKey="score" color="#8b5cf6" unit="%" height={90} />
           </div>
         )
       })()}
