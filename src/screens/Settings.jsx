@@ -861,7 +861,10 @@ export default function Settings({ onBack }) {
       if (lbsToKg(p.bodyCellMassLbs)) humeExtras.bodyCellMassKg = lbsToKg(p.bodyCellMassLbs)
       const yr = new Date().getFullYear()
       let date = new Date().toISOString().slice(0, 10)
-      if (p.endDate) { const d = new Date(`${p.endDate} ${yr}`); if (!isNaN(d)) date = d.toISOString().slice(0, 10) }
+      if (p.endDate) {
+        const d = new Date(`${p.endDate} ${yr}`)
+        if (!isNaN(d)) date = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+      }
       saveBodyWeightEntry(date, weightKg, fatPct, 'hume', Object.keys(humeExtras).length ? humeExtras : null)
       if (fatPct) { setBodyFatPct(String(fatPct)); localStorage.setItem('user_body_fat_pct', String(fatPct)) }
       if (weightKg) {

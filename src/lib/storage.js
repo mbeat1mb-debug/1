@@ -82,7 +82,7 @@ export function analyzeTagCorrelation(tagId, healthHistory) {
   if (withTag.length < 3 || withoutTag.length < 3) return null
 
   const avgField = (arr, field) => {
-    const vals = arr.map(d => d[field]).filter(v => v != null && !isNaN(v) && v > 0)
+    const vals = arr.map(d => d[field]).filter(v => v != null && !isNaN(v))
     return vals.length >= 2 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
   }
 

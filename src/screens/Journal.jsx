@@ -170,27 +170,29 @@ export default function Journal({ data, onNav }) {
 
   const maxAbsDiff = useMemo(() => Math.max(15, ...correlations.map(x => Math.abs(x.corr.diff))), [correlations])
 
+  // Per-selected-tag correlations (single compute shared by prediction + warning)
+  const selectedTagCorrs = useMemo(() => {
+    if (healthHistory.length < 7 || selectedTags.length === 0) return []
+    return selectedTags.map(id => ({ id, corr: analyzeTagCorrelation(id, healthHistory) }))
+  }, [selectedTags, healthHistory])
+
   // Predictive tomorrow: baseline avg + sum of today's tag impacts
   const predictedRecovery = useMemo(() => {
-    if (healthHistory.length < 7 || selectedTags.length === 0) return null
+    if (selectedTagCorrs.length === 0) return null
     const recent = healthHistory.slice(-14)
     const baseline = Math.round(recent.reduce((a, b) => a + b.recovery, 0) / recent.length)
-    const tagCorrs = selectedTags
-      .map(id => analyzeTagCorrelation(id, healthHistory))
-      .filter(c => c && Math.abs(c.diff) >= 5)
+    const tagCorrs = selectedTagCorrs.map(x => x.corr).filter(c => c && Math.abs(c.diff) >= 5)
     if (tagCorrs.length === 0) return null
     const totalDiff = tagCorrs.reduce((sum, c) => sum + c.diff, 0)
     return { baseline, totalDiff, predicted: Math.max(0, Math.min(100, baseline + totalDiff)), tagCorrs }
-  }, [selectedTags, healthHistory])
+  }, [selectedTagCorrs, healthHistory])
 
   // Compound warning: 2+ negative-correlation tags selected
   const negativeStackWarning = useMemo(() => {
-    if (healthHistory.length < 10) return null
-    const negCorrs = selectedTags
-      .map(id => ({ id, corr: analyzeTagCorrelation(id, healthHistory) }))
-      .filter(x => x.corr && x.corr.diff <= -8)
+    if (healthHistory.length < 10 || selectedTagCorrs.length === 0) return null
+    const negCorrs = selectedTagCorrs.filter(x => x.corr && x.corr.diff <= -8)
     return negCorrs.length >= 2 ? negCorrs : null
-  }, [selectedTags, healthHistory])
+  }, [selectedTagCorrs, healthHistory])
 
   // Recent 7-day behavior grid
   const recentActivity = useMemo(() => getRecentTagActivity(7), [])

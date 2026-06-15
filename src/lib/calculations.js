@@ -290,7 +290,7 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
 
   // FFMI (Fat-Free Mass Index) — uses Hume lean mass when available, else derived
   const humeData = getLatestHumeData()
-  const leanMassKg = (humeData?.leanMassKg) || (weightKg > 0 && bodyFatPct ? weightKg * (1 - bodyFatPct / 100) : 0)
+  const leanMassKg = (humeData?.leanMassKg) ?? (weightKg > 0 && bodyFatPct ? weightKg * (1 - bodyFatPct / 100) : 0)
   const hM = heightCm > 0 ? heightCm / 100 : 0
   const ffmi = leanMassKg > 0 && hM > 0 ? leanMassKg / (hM * hM) : 0
   const visceralFatIndex = humeData?.visceralFatIndex ?? null
@@ -762,7 +762,7 @@ export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual', humeExt
     history.sort((a, b) => a.date.localeCompare(b.date))
     localStorage.setItem('weight_history', JSON.stringify(history.slice(-365)))
     // Keep latest as quick-access value
-    localStorage.setItem('user_weight_kg', String(entry.kg))
+    if (entry.kg != null) localStorage.setItem('user_weight_kg', String(entry.kg))
     if (fatPct) localStorage.setItem('user_body_fat_pct', String(fatPct))
   } catch {}
 }
