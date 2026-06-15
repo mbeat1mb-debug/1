@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -169,6 +169,9 @@ export default function Healthspan({ data, onNav }) {
   const waistCm = getUserWaistCm()
   const gripKg = getUserGripStrengthKg()
   const homaIR = getHOMAIR()
+  const humeData = getLatestHumeData()
+  const visceralFatIndex = humeData?.visceralFatIndex ?? null
+  const skelMuscleKg = humeData?.skelMuscleKg ?? null
   const tygIndex = getTyGIndex()
   const sleepApneaRisk = data.sleepApneaRisk ?? null
   const socialJetLag = data.socialJetLag ?? null

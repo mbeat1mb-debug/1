@@ -658,8 +658,11 @@ export default function Settings({ onBack }) {
   const [lastBackup, setLastBackup] = useState(getLastBackupAt)
   const [ahImporting, setAhImporting] = useState(false)
   const [ahMsg, setAhMsg] = useState('')
+  const [humeImporting, setHumeImporting] = useState(false)
+  const [humeMsg, setHumeMsg] = useState('')
   const csvInputRef = useRef(null)
   const ahInputRef = useRef(null)
+  const humeInputRef = useRef(null)
 
   // Height/weight stored in metric; displayed per unit preference
   const storedHCm = parseFloat(localStorage.getItem('user_height_cm') || '0') || 0
@@ -801,6 +804,84 @@ export default function Settings({ onBack }) {
     disconnect()
     localStorage.removeItem('fitbit_client_id')
     setConnected(false)
+  }
+
+  const handleHumeImport = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    e.target.value = ''
+    const apiKey = localStorage.getItem('claude_api_key')
+    if (!apiKey) {
+      setHumeMsg('Claude API key required — add it in the API Keys section')
+      setTimeout(() => setHumeMsg(''), 5000)
+      return
+    }
+    setHumeImporting(true)
+    setHumeMsg('Analyzing screenshots…')
+    try {
+      const imageContents = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const parts = reader.result.split(',')
+          const mimeType = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+          resolve({ type: 'image', source: { type: 'base64', media_type: mimeType, data: parts[1] } })
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })))
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: [
+            ...imageContents,
+            { type: 'text', text: `These are Hume Health scale app screenshots. Extract all visible metrics. Return ONLY valid JSON with these keys (null for any not visible):
+{"endDate":"visible end date like Jun 14","weightLbs":null,"bodyFatPct":null,"leanMassLbs":null,"subcutaneousFatLbs":null,"visceralFatIndex":null,"skelMuscleMassLbs":null,"skeletalMassLbs":null,"bodyWaterPct":null,"bmrCal":null,"bodyCellMassLbs":null}` }
+          ]}]
+        })
+      })
+      if (!resp.ok) throw new Error(`API ${resp.status}`)
+      const respData = await resp.json()
+      const text = respData.content?.[0]?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('No data extracted')
+      const p = JSON.parse(match[0])
+      const lbsToKg = lbs => (lbs != null && lbs > 0) ? Math.round(lbs / 2.2046 * 10) / 10 : null
+      const weightKg = lbsToKg(p.weightLbs)
+      const fatPct = (p.bodyFatPct != null && p.bodyFatPct > 0) ? p.bodyFatPct : null
+      const humeExtras = {}
+      if (lbsToKg(p.leanMassLbs)) humeExtras.leanMassKg = lbsToKg(p.leanMassLbs)
+      if (lbsToKg(p.skelMuscleMassLbs)) humeExtras.skelMuscleKg = lbsToKg(p.skelMuscleMassLbs)
+      if (lbsToKg(p.subcutaneousFatLbs)) humeExtras.subcutFatKg = lbsToKg(p.subcutaneousFatLbs)
+      if (p.visceralFatIndex != null) humeExtras.visceralFatIndex = p.visceralFatIndex
+      if (p.bodyWaterPct != null) humeExtras.bodyWaterPct = p.bodyWaterPct
+      if (p.bmrCal != null) humeExtras.bmrCal = p.bmrCal
+      if (lbsToKg(p.bodyCellMassLbs)) humeExtras.bodyCellMassKg = lbsToKg(p.bodyCellMassLbs)
+      const yr = new Date().getFullYear()
+      let date = new Date().toISOString().slice(0, 10)
+      if (p.endDate) { const d = new Date(`${p.endDate} ${yr}`); if (!isNaN(d)) date = d.toISOString().slice(0, 10) }
+      saveBodyWeightEntry(date, weightKg, fatPct, 'hume', Object.keys(humeExtras).length ? humeExtras : null)
+      if (fatPct) { setBodyFatPct(String(fatPct)); localStorage.setItem('user_body_fat_pct', String(fatPct)) }
+      if (weightKg) {
+        localStorage.setItem('user_weight_kg', String(weightKg))
+        if (units === 'imperial') setWeightLbs(String(Math.round(weightKg * 2.2046 * 10) / 10))
+        else setWeightKg(String(weightKg))
+      }
+      const parts = [
+        weightKg ? `${Math.round(weightKg * 2.2046)} lbs` : null,
+        fatPct ? `${fatPct}% fat` : null,
+        humeExtras.visceralFatIndex != null ? `VFI ${humeExtras.visceralFatIndex}` : null,
+        humeExtras.skelMuscleKg ? `${Math.round(humeExtras.skelMuscleKg * 2.2046)} lbs muscle` : null,
+      ].filter(Boolean)
+      setHumeMsg(`Saved to ${date}: ${parts.join(' · ')}`)
+    } catch (err) {
+      setHumeMsg(`Error: ${err.message}`)
+    } finally {
+      setHumeImporting(false)
+      setTimeout(() => setHumeMsg(''), 12000)
+    }
   }
 
   const handleAppleHealthImport = (e) => {
@@ -1245,9 +1326,59 @@ export default function Settings({ onBack }) {
 
         <div className="rounded-xl p-3" style={{ background: '#0d1a0d', border: '1px solid #1a2e1a' }}>
           <p className="text-[11px] text-gray-500">
-            <span className="text-green-500 font-semibold">Ongoing sync:</span> In the Fitbit app, enable Settings → Health Metrics → Apple Health to let Fitbit read Hume's data automatically on each daily sync.
+            <span className="text-green-500 font-semibold">Note:</span> This imports weight and body fat % only. For full body composition data (VFI, skeletal muscle, etc.) use the Hume Health import below.
           </p>
         </div>
+      </div>
+
+      {/* Hume Health Import */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">Hume Health — Full Body Composition</p>
+          <p className="text-xs text-gray-500">Screenshot your Hume progress report and import all body composition metrics directly into Soma's biological age algorithm.</p>
+        </div>
+
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">What gets imported</p>
+          {[
+            'Weight, Body Fat %, Lean Mass → BMI / FFMI scoring',
+            'Visceral Fat Index → replaces waist circumference in algorithm',
+            'Skeletal Muscle Mass → anti-sarcopenia scoring (Janssen JAMA 2000)',
+            'Body Water %, BMR → stored for reference',
+          ].map((s, i) => (
+            <p key={i} className="text-[11px] text-gray-600">· {s}</p>
+          ))}
+        </div>
+
+        <div className="rounded-xl p-3 space-y-1" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">How to import</p>
+          <p className="text-[11px] text-gray-600">1. In Hume app → Progress Report → scroll through all screens</p>
+          <p className="text-[11px] text-gray-600">2. Screenshot each screen (4 screenshots covers everything)</p>
+          <p className="text-[11px] text-gray-600">3. Select all screenshots below — Claude reads them all at once</p>
+          <p className="text-[11px] text-gray-600 mt-1">Requires a Claude API key (set above in API Keys section)</p>
+        </div>
+
+        <input
+          ref={humeInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleHumeImport}
+        />
+        <button
+          onClick={() => humeInputRef.current?.click()}
+          disabled={humeImporting}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
+          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+        >
+          {humeImporting ? 'Reading screenshots…' : '↑ Select Hume Screenshots (select all at once)'}
+        </button>
+        {humeMsg && (
+          <p className="text-xs text-center" style={{ color: humeMsg.startsWith('Error') ? '#f59e0b' : '#00c9a7' }}>
+            {humeMsg}
+          </p>
+        )}
       </div>
 
       {/* Data import / export */}

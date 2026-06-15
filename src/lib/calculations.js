@@ -288,10 +288,13 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   const alcohol = getUserAlcohol()
   const bp = getAverageBP()
 
-  // FFMI (Fat-Free Mass Index) from Hume scale lean mass
-  const leanMassKg = weightKg > 0 && bodyFatPct ? weightKg * (1 - bodyFatPct / 100) : 0
+  // FFMI (Fat-Free Mass Index) — uses Hume lean mass when available, else derived
+  const humeData = getLatestHumeData()
+  const leanMassKg = (humeData?.leanMassKg) || (weightKg > 0 && bodyFatPct ? weightKg * (1 - bodyFatPct / 100) : 0)
   const hM = heightCm > 0 ? heightCm / 100 : 0
   const ffmi = leanMassKg > 0 && hM > 0 ? leanMassKg / (hM * hM) : 0
+  const visceralFatIndex = humeData?.visceralFatIndex ?? null
+  const skelMuscleKg = humeData?.skelMuscleKg ?? null
 
   // ── Domain 1: Cardiorespiratory Fitness ──────────────────────────────────
   // Mandsager JAMA 2018: elite fitness = 5x lower all-cause mortality vs sedentary.
@@ -369,12 +372,31 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else                  composition += 3
   }
 
-  // Waist circumference — visceral fat; WHO/IDF thresholds for men
-  if (waistCm > 0) {
+  // Visceral fat — VFI from Hume bioimpedance preferred over waist (more direct measure)
+  // Amato et al. 2010 Diabetes Care: VFI validated against CT-measured visceral fat area
+  // Standard male range 1–12; each tier above 12 carries compounding cardiometabolic risk
+  if (visceralFatIndex !== null) {
+    if (visceralFatIndex <= 7)        composition -= 1
+    else if (visceralFatIndex <= 12)  composition += 0
+    else if (visceralFatIndex <= 17)  composition += 1
+    else if (visceralFatIndex <= 24)  composition += 2
+    else                              composition += 3
+  } else if (waistCm > 0) {
     if (waistCm < 90)       composition -= 1
     else if (waistCm < 94)  composition += 0
     else if (waistCm < 102) composition += 2
     else                    composition += 4
+  }
+
+  // Skeletal muscle mass % — Janssen JAMA 2000: low muscle mass predicts disability/mortality
+  // Direct bioimpedance measurement from Hume scale; % of total body weight
+  // Male reference: avg 38–42% age 30–39; >45% = highly trained; <32% = sarcopenia risk
+  if (weightKg > 0 && skelMuscleKg !== null) {
+    const skelMusclePct = (skelMuscleKg / weightKg) * 100
+    if (skelMusclePct > 45)       composition -= 1
+    else if (skelMusclePct >= 38) composition += 0
+    else if (skelMusclePct >= 32) composition += 1
+    else                          composition += 2
   }
 
   // Grip strength — Leong Lancet 2015: each 5 kg lower = 16% higher mortality
@@ -726,7 +748,7 @@ export function getBodyWeightHistory() {
   try { return JSON.parse(localStorage.getItem('weight_history') || '[]') } catch { return [] }
 }
 
-export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual') {
+export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual', humeExtras = null) {
   const validKg = kg != null && kg >= 20 && kg <= 300
   if (!validKg && !fatPct) return
   try {
@@ -734,7 +756,7 @@ export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual') {
     const idx = history.findIndex(e => e.date === date)
     // Manual entries win over Fitbit — don't let a sync overwrite what the user typed
     if (source === 'fitbit' && idx >= 0 && history[idx].source === 'manual') return
-    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct || null, source }
+    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct || null, source, ...(humeExtras || {}) }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)
     history.sort((a, b) => a.date.localeCompare(b.date))
@@ -743,6 +765,14 @@ export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual') {
     localStorage.setItem('user_weight_kg', String(entry.kg))
     if (fatPct) localStorage.setItem('user_body_fat_pct', String(fatPct))
   } catch {}
+}
+
+export function getLatestHumeData() {
+  try {
+    const history = getBodyWeightHistory()
+    const entries = history.filter(e => e.source === 'hume' && (e.visceralFatIndex != null || e.skelMuscleKg != null))
+    return entries.length ? entries[entries.length - 1] : null
+  } catch { return null }
 }
 
 export function calculateLeanMass(weightKg, fatPct) {
