@@ -219,7 +219,9 @@ export default function Sleep({ data, onNav }) {
                         </span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
-                        <div className="h-full rounded-full" style={{ width: `${Math.min(100, (yours / (norm * 1.5)) * 100)}%`, background: `linear-gradient(90deg, ${color}77, ${color})`, boxShadow: `0 0 6px ${color}44` }} />
+                        {(() => { const w = Math.min(100, (yours / (norm * 1.5)) * 100); return (
+                          <div className="h-full rounded-full" style={{ width: `${w}%`, background: `linear-gradient(90deg, ${color}77, ${color})`, boxShadow: w > 0 ? `0 0 6px ${color}44` : undefined }} />
+                        ) })()}
                       </div>
                     </div>
                   ))}

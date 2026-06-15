@@ -459,13 +459,14 @@ const SECTION_CONTENT = {
 
 function getCardGlowColor(id, data) {
   switch (id) {
-    case 'recovery':   return getRecoveryColor(data.recoveryScore || 0)
+    case 'recovery':   return data.recoveryScore != null ? getRecoveryColor(data.recoveryScore) : null
     case 'strain':     return '#3b82f6'
     case 'sleep': {
-      const s = data.sleepScore || 0
+      const s = data.sleepScore
+      if (s == null) return null
       return s >= 75 ? '#8b5cf6' : s >= 50 ? '#f59e0b' : '#ef4444'
     }
-    case 'stress':     return getStressColor(data.stressScore || 0)
+    case 'stress':     return data.stressScore != null ? getStressColor(data.stressScore) : null
     case 'journal':    return '#C9A84C'
     case 'healthspan': return '#00c9a7'
     case 'records':    return '#C9A84C'
@@ -623,6 +624,14 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
   const recoveryColor = getRecoveryColor(data.recoveryScore || 0)
 
+  // Apply ambient tint to #root so it stays fixed during pull-to-refresh
+  useEffect(() => {
+    const root = document.getElementById('root')
+    if (!root) return
+    root.style.background = `radial-gradient(ellipse 80% 25% at 50% 0%, ${recoveryColor}07 0%, transparent 70%)`
+    return () => { root.style.background = '' }
+  }, [recoveryColor])
+
   return (
     <div
       className="pt-safe pb-28"
@@ -632,7 +641,6 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       style={{
         transform: pullY > 0 ? `translateY(${pullY}px)` : undefined,
         transition: pullY === 0 ? 'transform 0.2s ease' : undefined,
-        background: `radial-gradient(ellipse 80% 25% at 50% 0%, ${recoveryColor}07 0%, transparent 70%)`,
       }}
     >
       {/* Compact sticky header — slides in when main header scrolls away */}
