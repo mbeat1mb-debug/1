@@ -292,12 +292,31 @@ export default function Healthspan({ data, onNav }) {
       contribution: ffmi > 24 ? -2 : ffmi > 21 ? -1 : ffmi >= 18 ? 0 : ffmi >= 16 ? 2 : 3,
       sublabel: ffmi > 24 ? 'Athletic' : ffmi > 21 ? 'Above Average' : ffmi >= 18 ? 'Average' : ffmi >= 16 ? 'Below Average' : 'Low',
     }] : []),
-    ...(waistCm > 0 ? [{
+    ...(visceralFatIndex !== null ? [{
+      label: 'Visceral Fat Index',
+      value: visceralFatIndex,
+      unit: '',
+      contribution: visceralFatIndex <= 7 ? -1 : visceralFatIndex <= 12 ? 0 : visceralFatIndex <= 17 ? 1 : visceralFatIndex <= 24 ? 2 : 3,
+      sublabel: visceralFatIndex <= 7 ? 'Low — protective' : visceralFatIndex <= 12 ? 'Standard' : visceralFatIndex <= 17 ? 'Elevated' : visceralFatIndex <= 24 ? 'High' : 'Very High',
+    }] : waistCm > 0 ? [{
       label: 'Waist Circumference',
       value: units === 'imperial' ? Math.round(waistCm / 2.54) : waistCm,
       unit: units === 'imperial' ? ' in' : ' cm',
       contribution: waistCm < 90 ? -1 : waistCm < 94 ? 0 : waistCm < 102 ? 2 : 4,
       sublabel: waistCm < 90 ? 'Optimal' : waistCm < 94 ? 'Acceptable' : waistCm < 102 ? 'Elevated Risk' : 'High Risk',
+    }] : []),
+    ...(skelMuscleKg !== null && weightKg > 0 ? [{
+      label: 'Skeletal Muscle Mass',
+      value: units === 'imperial' ? Math.round(skelMuscleKg * 2.2046) : skelMuscleKg,
+      unit: units === 'imperial' ? ' lbs' : ' kg',
+      contribution: (() => {
+        const pct = (skelMuscleKg / weightKg) * 100
+        return pct > 45 ? -1 : pct >= 38 ? 0 : pct >= 32 ? 1 : 2
+      })(),
+      sublabel: (() => {
+        const pct = Math.round((skelMuscleKg / weightKg) * 100)
+        return `${pct}% of body weight · ${pct > 45 ? 'Excellent' : pct >= 38 ? 'Normal' : pct >= 32 ? 'Below Average' : 'Low — sarcopenia risk'}`
+      })(),
     }] : []),
     ...(gripKg > 0 ? [{
       label: 'Grip Strength',
