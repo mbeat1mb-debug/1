@@ -7,6 +7,59 @@ const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
 const ZONE_DESCS = ['Warm-Up', 'Fat Burn', 'Cardio', 'Threshold', 'Max']
 
+const CATEGORY_COLOR = { aerobic: '#3b82f6', strength: '#f59e0b', recovery: '#00c9a7' }
+
+function WorkoutRow({ workout, units }) {
+  const catColor = CATEGORY_COLOR[workout.category] || '#888'
+  const dateLabel = (() => {
+    const today = new Date().toISOString().split('T')[0]
+    if (workout.date === today) return 'Today'
+    const diff = Math.round((new Date(today) - new Date(workout.date)) / 86400000)
+    return diff === 1 ? 'Yesterday' : `${diff}d ago`
+  })()
+  const distStr = workout.distance != null
+    ? units === 'imperial'
+      ? `${Math.round(workout.distance * 0.6214 * 10) / 10} mi`
+      : `${Math.round(workout.distance * 10) / 10} km`
+    : null
+
+  return (
+    <div className="py-3 border-b border-[#1a1a1a] last:border-0">
+      <div className="flex items-start justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: catColor + '20', color: catColor }}>
+            {workout.name}
+          </span>
+          <span className="text-xs text-gray-600">{dateLabel}</span>
+        </div>
+        <span className="text-xs text-gray-500">{workout.durationMins}m</span>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        {workout.avgHR   != null && <span className="text-gray-400">Avg HR <span className="text-white font-medium">{workout.avgHR} bpm</span></span>}
+        {workout.calories != null && <span className="text-gray-400">Cal <span className="text-white font-medium">{workout.calories}</span></span>}
+        {distStr && <span className="text-gray-400">Dist <span className="text-white font-medium">{distStr}</span></span>}
+        {workout.strainContribution != null && <span className="text-gray-400">Strain <span className="font-medium" style={{ color: '#3b82f6' }}>{workout.strainContribution}</span></span>}
+      </div>
+      {(workout.epoc || workout.cardiacDrift != null) && (
+        <div className="flex gap-3 mt-1.5 text-[11px]">
+          {workout.epoc?.kcal > 0 && (
+            <span className="text-gray-600">
+              EPOC <span className="text-white font-medium">{workout.epoc.kcal} kcal</span>
+              <span className="text-gray-600"> · {workout.epoc.durationMins}m elevated</span>
+            </span>
+          )}
+          {workout.cardiacDrift != null && (
+            <span className={workout.cardiacDrift > 5 ? 'text-amber-400' : 'text-gray-600'}>
+              HR drift <span className="font-medium">{workout.cardiacDrift > 0 ? '+' : ''}{workout.cardiacDrift}%</span>
+              {workout.cardiacDrift > 5 && <span className="text-amber-400"> — hydrate</span>}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BackButton({ onNav }) {
   return (
     <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
@@ -19,7 +72,7 @@ function BackButton({ onNav }) {
 
 export default function Strain({ data, onNav }) {
   const { strainScore = 0, steps = 0, calories = 0, activeMinutes = 0,
-    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad, trainingEffect } = data
+    zoneMinutes = [0, 0, 0, 0, 0], recoveryScore = 0, trainingLoad, trainingEffect, activityLogs = [] } = data
 
   const maxHR = getMaxHR()
   const strainColor = '#3b82f6'
@@ -98,6 +151,19 @@ export default function Strain({ data, onNav }) {
           <StatRow label="Calories Burned" value={calories.toLocaleString()} unit="kcal" />
           <StatRow label="Active Minutes" value={activeMinutes} unit="min" />
           <StatRow label="Max HR Target" value={maxHR} unit="bpm" color="#f59e0b" />
+          {(() => {
+            const todayStr = new Date().toISOString().split('T')[0]
+            const todayWorkouts = activityLogs.filter(w => w.date === todayStr && w.epoc)
+            if (!todayWorkouts.length) return null
+            const totalEpoc = todayWorkouts.reduce((s, w) => s + (w.epoc?.kcal || 0), 0)
+            const totalDur  = todayWorkouts.reduce((s, w) => s + (w.epoc?.durationMins || 0), 0)
+            return (
+              <>
+                <StatRow label="EPOC (after-burn)" value={totalEpoc} unit="kcal" color="#f97316" />
+                <StatRow label="Elevated metabolism" value={totalDur} unit="min" color="#f97316" />
+              </>
+            )
+          })()}
         </div>
       </div>
 
@@ -146,6 +212,21 @@ export default function Strain({ data, onNav }) {
             ))}
           </div>
           <p className="text-[11px] text-gray-600 mt-3">Aerobic = Z2+Z3 time. Anaerobic = Z4+Z5 time. Scale 0–5.</p>
+        </div>
+      )}
+
+      {/* Recent Workouts */}
+      {activityLogs.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recent Workouts</span>
+            <span className="text-xs text-gray-600">{activityLogs.length} sessions (30d)</span>
+          </div>
+          <div className="px-4">
+            {activityLogs.slice(0, 10).map(w => (
+              <WorkoutRow key={w.activityId} workout={w} units={units} />
+            ))}
+          </div>
         </div>
       )}
 

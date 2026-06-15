@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { calculateSleepDebt, calculateOptimalSleepWindow } from '../lib/calculations'
+import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge } from '../lib/calculations'
 
 function SleepStageBar({ label, minutes, total, color }) {
   const pct = total > 0 ? (minutes / total) * 100 : 0
@@ -18,6 +18,34 @@ function SleepStageBar({ label, minutes, total, color }) {
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
+  )
+}
+
+function Hypnogram({ hypnogram }) {
+  if (!hypnogram?.length) return null
+  const minMs = hypnogram[0].startMs
+  const maxMs = hypnogram[hypnogram.length - 1].endMs
+  const spanMs = maxMs - minMs
+  if (spanMs <= 0) return null
+
+  const STAGE_Y  = { wake: 0, rem: 20, light: 40, deep: 60 }
+  const COLORS   = { deep: '#4f46e5', rem: '#8b5cf6', light: '#a78bfa', wake: '#374151' }
+  const W = 980
+
+  return (
+    <svg viewBox={`0 0 1000 80`} width="100%" style={{ display: 'block' }}>
+      {[['W', 0], ['R', 20], ['L', 40], ['D', 60]].map(([l, y]) => (
+        <text key={l} x={2} y={y + 15} fontSize={9} fill="#555" fontFamily="monospace">{l}</text>
+      ))}
+      {hypnogram.map((seg, i) => {
+        const x = 20 + ((seg.startMs - minMs) / spanMs) * W
+        const w = Math.max(1, (seg.seconds * 1000 / spanMs) * W)
+        return (
+          <rect key={i} x={x} y={STAGE_Y[seg.level] ?? 40} width={w} height={20}
+            fill={COLORS[seg.level] || '#555'} opacity={0.9} />
+        )
+      })}
+    </svg>
   )
 }
 
@@ -102,6 +130,25 @@ export default function Sleep({ data, onNav }) {
             </div>
           </div>
 
+          {todaySleep?.levels?.data?.length > 0 && (() => {
+            const arch = parseSleepArchitecture(todaySleep)
+            if (!arch?.hypnogram?.length) return null
+            return (
+              <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Hypnogram</p>
+                <div className="flex gap-3 text-[10px] text-gray-600 mb-2 justify-end">
+                  {[['Deep', '#4f46e5'], ['REM', '#8b5cf6'], ['Light', '#a78bfa'], ['Wake', '#374151']].map(([l, c]) => (
+                    <span key={l} className="flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-sm" style={{ background: c }} />{l}
+                    </span>
+                  ))}
+                </div>
+                <Hypnogram hypnogram={arch.hypnogram} />
+                <p className="text-[10px] text-gray-600 mt-2">W=Wake · R=REM · L=Light · D=Deep</p>
+              </div>
+            )
+          })()}
+
           <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
             <div className="px-4 pt-4 pb-2">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Metrics</span>
@@ -113,6 +160,110 @@ export default function Sleep({ data, onNav }) {
               <StatRow label="Wakeups" value={todaySleep.levels?.data?.filter(d => d.level === 'wake' && d.seconds >= 60).length ?? '--'} />
             </div>
           </div>
+
+          {(() => {
+            const arch = parseSleepArchitecture(todaySleep)
+            if (!arch) return null
+            const latColor  = arch.sleepLatency <= 20 ? '#00c9a7' : arch.sleepLatency <= 30 ? '#f59e0b' : '#ef4444'
+            const wakeColor = arch.minutesAwake  <= 30 ? '#00c9a7' : arch.minutesAwake  <= 45 ? '#f59e0b' : '#ef4444'
+            return (
+              <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+                <div className="px-4 pt-4 pb-2">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Sleep Architecture</span>
+                </div>
+                <div className="px-4 pb-3">
+                  <StatRow label="Sleep Onset Latency" value={arch.sleepLatency} unit="min" color={latColor} />
+                  <StatRow label="Time Awake"          value={arch.minutesAwake} unit="min" color={wakeColor} />
+                  <StatRow label="Sleep Cycles"        value={arch.cycleCount > 0 ? arch.cycleCount : '--'} color="#a78bfa" />
+                  <StatRow label="Full Awakenings"     value={arch.fullAwakenings} />
+                  <StatRow label="Brief Awakenings"    value={arch.briefAwakenings} />
+                </div>
+              </div>
+            )
+          })()}
+
+          {(() => {
+            const arch  = parseSleepArchitecture(todaySleep)
+            if (!arch) return null
+            const age   = getUserAge()
+            const norms = getSleepStageNorms(age)
+            const totalMinsN = todaySleep.minutesAsleep || 0
+            const deepMins  = todaySleep.levels?.summary?.deep?.minutes || 0
+            const remMins   = todaySleep.levels?.summary?.rem?.minutes  || 0
+            const deepPct   = totalMinsN > 0 ? Math.round(deepMins / totalMinsN * 100) : 0
+            const remPct    = totalMinsN > 0 ? Math.round(remMins  / totalMinsN * 100) : 0
+            const deepColor = deepPct >= norms.deepPct ? '#00c9a7' : deepPct >= norms.deepPct * 0.7 ? '#f59e0b' : '#ef4444'
+            const remColor  = remPct  >= norms.remPct  ? '#00c9a7' : remPct  >= norms.remPct  * 0.7 ? '#f59e0b' : '#ef4444'
+            return (
+              <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">vs Age-Adjusted Norms</p>
+                <p className="text-[10px] text-gray-600 mb-3">Ohayon 2004 meta-analysis · males age {age}</p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Deep Sleep', yours: deepPct, norm: norms.deepPct, color: deepColor, unit: '%' },
+                    { label: 'REM Sleep',  yours: remPct,  norm: norms.remPct,  color: remColor,  unit: '%' },
+                  ].map(({ label, yours, norm, color, unit }) => (
+                    <div key={label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400">{label}</span>
+                        <span>
+                          <span className="font-semibold" style={{ color }}>{yours}{unit}</span>
+                          <span className="text-gray-600"> / norm {norm}{unit}</span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${Math.min(100, (yours / (norm * 1.5)) * 100)}%`, background: color }} />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div className="rounded-xl p-2" style={{ background: '#1a1a1a' }}>
+                      <p className="text-[10px] text-gray-600 mb-0.5">Sleep Onset Latency</p>
+                      <p className="text-sm font-bold text-white">{arch.sleepLatency}<span className="text-xs text-gray-500"> min</span></p>
+                      <p className="text-[10px] text-gray-600">Norm &lt;{norms.solMins} min</p>
+                    </div>
+                    <div className="rounded-xl p-2" style={{ background: '#1a1a1a' }}>
+                      <p className="text-[10px] text-gray-600 mb-0.5">Time Awake</p>
+                      <p className="text-sm font-bold text-white">{arch.minutesAwake}<span className="text-xs text-gray-500"> min</span></p>
+                      <p className="text-[10px] text-gray-600">Norm &lt;{norms.wasoMins} min</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {(() => {
+            const arch = parseSleepArchitecture(todaySleep)
+            if (!arch || arch.cycleCount === 0) return null
+            return (
+              <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Sleep Architecture Split</p>
+                <p className="text-[10px] text-gray-600 mb-3">Borbely two-process model — deep front-loads, REM back-loads</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl p-3" style={{ background: '#0d0d1f', border: '1px solid #2a2a4a' }}>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">First half</p>
+                    <p className="text-xs text-white"><span className="font-bold" style={{ color: '#4f46e5' }}>{arch.firstHalfDeepMins}m</span> deep</p>
+                    <p className="text-xs text-white"><span className="font-bold" style={{ color: '#8b5cf6' }}>{arch.firstHalfRemMins}m</span> REM</p>
+                    {arch.deepFrontLoaded && <p className="text-[10px] text-green-500 mt-1">Deep front-loaded ✓</p>}
+                  </div>
+                  <div className="rounded-xl p-3" style={{ background: '#0d0d1f', border: '1px solid #2a2a4a' }}>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Second half</p>
+                    <p className="text-xs text-white"><span className="font-bold" style={{ color: '#4f46e5' }}>{arch.secondHalfDeepMins}m</span> deep</p>
+                    <p className="text-xs text-white"><span className="font-bold" style={{ color: '#8b5cf6' }}>{arch.secondHalfRemMins}m</span> REM</p>
+                    {arch.remBackLoaded && <p className="text-[10px] text-green-500 mt-1">REM back-loaded ✓</p>}
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-600 mt-3">
+                  {arch.deepFrontLoaded && arch.remBackLoaded
+                    ? 'Healthy architecture. Deep sleep concentrating early, REM enriching the back half.'
+                    : !arch.deepFrontLoaded
+                    ? 'Deep sleep not concentrating in first half — alcohol, late eating, or stress can shift SWS later.'
+                    : 'REM not concentrating in second half — consistent sleep times strengthen circadian REM drive.'}
+                </p>
+              </div>
+            )
+          })()}
         </>
       )}
 

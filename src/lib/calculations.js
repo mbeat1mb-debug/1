@@ -534,6 +534,215 @@ export function calculatePaceOfAging() {
   } catch { return null }
 }
 
+// ── Sleep Architecture ───────────────────────────────────────────────────────
+// Ohayon MM et al. (2004) Sleep 27(7):1255-73 — meta-analysis of healthy adults.
+// Males only. [maxAge, deepPct, remPct, solMins, wasoMins]
+const SLEEP_STAGE_NORMS_MEN = [
+  [29, 21, 22, 12, 20],
+  [39, 19, 22, 14, 24],
+  [49, 16, 21, 15, 30],
+  [59, 11, 20, 16, 35],
+  [69,  8, 19, 18, 42],
+  [99,  5, 19, 22, 52],
+]
+
+export function getSleepStageNorms(age) {
+  const row = SLEEP_STAGE_NORMS_MEN.find(([mx]) => age <= mx) ?? SLEEP_STAGE_NORMS_MEN[SLEEP_STAGE_NORMS_MEN.length - 1]
+  return { deepPct: row[1], remPct: row[2], solMins: row[3], wasoMins: row[4] }
+}
+
+// Parse Fitbit minute-level sleep stage data into clinical architecture metrics.
+// Borbely two-process model: deep (SWS) front-loads in first half, REM back-loads.
+export function parseSleepArchitecture(todaySleep) {
+  if (!todaySleep) return null
+  const levelsData = todaySleep.levels?.data ?? []
+  const shortData  = todaySleep.levels?.shortData ?? []
+
+  const sleepLatency  = todaySleep.minutesToFallAsleep ?? 0
+  const minutesAwake  = todaySleep.minutesAwake ?? 0
+  const awakenings    = todaySleep.numberOfAwakenings ?? 0
+  const briefAwakenings = shortData.filter(d => d.level === 'wake').length
+  const fullAwakenings  = levelsData.filter(d => d.level === 'wake' && d.seconds >= 90).length
+
+  // Build hypnogram segments (millisecond-resolution)
+  const hypnogram = levelsData.map(e => ({
+    startMs: new Date(e.dateTime).getTime(),
+    endMs:   new Date(e.dateTime).getTime() + e.seconds * 1000,
+    level:   e.level,
+    seconds: e.seconds,
+  }))
+
+  // Detect NREM→REM cycles (Borbely: each cycle ~90 min, deep peaks early, REM peaks late)
+  const cycles = []
+  let cycleStart = null, inREM = false, hasNREM = false
+  for (const seg of hypnogram) {
+    if (seg.level === 'wake') {
+      if (inREM && hasNREM && cycleStart !== null) {
+        cycles.push({ startMs: cycleStart, endMs: seg.startMs, durationMins: Math.round((seg.startMs - cycleStart) / 60000) })
+        cycleStart = null; inREM = false; hasNREM = false
+      }
+      continue
+    }
+    if (cycleStart === null) cycleStart = seg.startMs
+    if (seg.level === 'deep' || seg.level === 'light') {
+      if (inREM) {
+        cycles.push({ startMs: cycleStart, endMs: seg.startMs, durationMins: Math.round((seg.startMs - cycleStart) / 60000) })
+        cycleStart = seg.startMs; inREM = false
+      }
+      hasNREM = true
+    }
+    if (seg.level === 'rem') inREM = true
+  }
+  if (cycleStart !== null && hasNREM && hypnogram.length) {
+    const last = hypnogram[hypnogram.length - 1]
+    cycles.push({ startMs: cycleStart, endMs: last.endMs, durationMins: Math.round((last.endMs - cycleStart) / 60000) })
+  }
+
+  // First vs second half deep/REM split
+  const sleepOnsetMs = todaySleep.startTime ? new Date(todaySleep.startTime).getTime() + sleepLatency * 60000 : null
+  const sleepEndMs   = todaySleep.endTime   ? new Date(todaySleep.endTime).getTime()   : null
+  let firstHalfDeepMins = 0, firstHalfRemMins = 0
+  let secondHalfDeepMins = 0, secondHalfRemMins = 0
+  if (sleepOnsetMs && sleepEndMs) {
+    const midMs = (sleepOnsetMs + sleepEndMs) / 2
+    for (const seg of hypnogram) {
+      if (seg.level !== 'deep' && seg.level !== 'rem') continue
+      const mins = seg.seconds / 60
+      const mid  = (seg.startMs + seg.endMs) / 2
+      if (mid < midMs) { seg.level === 'deep' ? (firstHalfDeepMins += mins) : (firstHalfRemMins += mins) }
+      else              { seg.level === 'deep' ? (secondHalfDeepMins += mins) : (secondHalfRemMins += mins) }
+    }
+  }
+
+  return {
+    sleepLatency, minutesAwake, awakenings, briefAwakenings, fullAwakenings,
+    hypnogram, cycles, cycleCount: cycles.length,
+    firstHalfDeepMins: Math.round(firstHalfDeepMins),
+    firstHalfRemMins:  Math.round(firstHalfRemMins),
+    secondHalfDeepMins: Math.round(secondHalfDeepMins),
+    secondHalfRemMins:  Math.round(secondHalfRemMins),
+    deepFrontLoaded: firstHalfDeepMins >= secondHalfDeepMins,
+    remBackLoaded:   secondHalfRemMins >= firstHalfRemMins,
+  }
+}
+
+// ── EPOC & Workout Analytics ─────────────────────────────────────────────────
+// Borsheim E & Bahr R (2003) Sports Med 33(14):1037-60 — EPOC from exercise intensity.
+// Fitbit activity logs use 4-zone format: [outOfRange, fatBurn, cardio, peak]
+export function calculateEPOC(zoneMinutes, weightKg = 70) {
+  // Zone indices for Fitbit 4-zone: [0]=low, [1]=fatBurn, [2]=cardio, [3]=peak
+  const z3 = zoneMinutes[2] || 0  // Cardio: ~65-80% HRmax
+  const z4 = (zoneMinutes[3] || 0) + (zoneMinutes[4] || 0)  // Peak: >80% HRmax
+  // EPOC kcal: empirical rates from Borsheim & Bahr 2003 and Sedlock 1989
+  // High-intensity: 0.08-0.15 L O2/min × 5 kcal/L O2
+  const kcal = Math.round(z4 * 0.75 + z3 * 0.15)
+  // EPOC duration: Z4 elevates metabolism ~5× workout duration; Z3 ~1.5×
+  const durationMins = Math.round(z4 * 5 + z3 * 1.5)
+  return { kcal, durationMins }
+}
+
+const SPORT_MAP = {
+  90009: { label: 'Run',       category: 'aerobic' },
+  90024: { label: 'Walk',      category: 'aerobic' },
+  55001: { label: 'Bike',      category: 'aerobic' },
+  91032: { label: 'Bike',      category: 'aerobic' },
+  3013:  { label: 'Elliptical', category: 'aerobic' },
+  3000:  { label: 'Treadmill', category: 'aerobic' },
+  20:    { label: 'Swim',      category: 'aerobic' },
+  15000: { label: 'Hike',      category: 'aerobic' },
+  90013: { label: 'Weights',   category: 'strength' },
+  2071:  { label: 'Yoga',      category: 'recovery' },
+  15635: { label: 'HIIT',      category: 'aerobic' },
+  63:    { label: 'Row',       category: 'aerobic' },
+  110:   { label: 'Jump Rope', category: 'aerobic' },
+}
+
+export function classifyWorkoutSport(activityTypeId, activityName) {
+  return SPORT_MAP[activityTypeId] ?? { label: activityName ?? 'Workout', category: 'aerobic' }
+}
+
+// Parses Fitbit activity log response + today's intraday HR into workout objects.
+// Cardiac drift (Coyle 1992 J Appl Physiol): HR rise at constant effort signals dehydration/fatigue.
+export function parseActivityLogs(rawActivityLogs, hrIntraday) {
+  const activities = rawActivityLogs?.activities ?? []
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  // Build minute → HR map for today's cardiac drift computation
+  const hrMap = {}
+  const hrDataset = hrIntraday?.['activities-heart-intraday']?.dataset ?? []
+  for (const p of hrDataset) if (p.value > 0) hrMap[p.time] = p.value
+
+  return activities
+    .filter(a => a.startTime && a.activeDuration > 0)
+    .map(a => {
+      const startDate = a.startTime.split('T')[0]
+      const isToday   = startDate === todayStr
+      const durationMins = Math.round(a.activeDuration / 60000)
+      const sport = classifyWorkoutSport(a.activityTypeId, a.activityName)
+
+      // Map Fitbit 4-zone format to our zone array
+      let zoneMinutes = null
+      if (a.heartRateZones?.length) {
+        zoneMinutes = [0, 0, 0, 0, 0]
+        for (const z of a.heartRateZones) {
+          const n = (z.name ?? '').toLowerCase()
+          if (n.includes('out'))     zoneMinutes[0] = z.minutes
+          else if (n.includes('fat')) zoneMinutes[1] = z.minutes
+          else if (n.includes('cardio')) zoneMinutes[2] = z.minutes
+          else if (n.includes('peak'))   zoneMinutes[3] = z.minutes
+        }
+      }
+
+      const epoc = zoneMinutes ? calculateEPOC(zoneMinutes, getUserWeightKg() || 70) : null
+
+      // Cardiac drift — only computable for today's workouts via intraday HR
+      let cardiacDrift = null
+      if (isToday && Object.keys(hrMap).length > 0 && durationMins >= 20) {
+        const startMs = new Date(a.startTime).getTime()
+        const endMs   = startMs + a.activeDuration
+        const pts = []
+        for (const [tStr, hr] of Object.entries(hrMap)) {
+          const [hh, mm] = tStr.split(':').map(Number)
+          const tMs = new Date(a.startTime)
+          tMs.setHours(hh, mm, 0, 0)
+          if (tMs >= startMs && tMs <= endMs) pts.push(hr)
+        }
+        if (pts.length >= 9) {
+          const third = Math.floor(pts.length / 3)
+          const fAvg  = pts.slice(0, third).reduce((s, v) => s + v, 0) / third
+          const lAvg  = pts.slice(-third).reduce((s, v) => s + v, 0) / third
+          cardiacDrift = Math.round((lAvg - fAvg) / fAvg * 100 * 10) / 10
+        }
+      }
+
+      // Strain contribution estimate from zone minutes
+      let strainContribution = null
+      if (zoneMinutes) {
+        const raw = zoneMinutes.reduce((s, m, i) => s + m * ZONE_WEIGHTS[i], 0)
+        strainContribution = Math.round((raw / 900) * 16 * 10) / 10
+      }
+
+      return {
+        activityId: a.activityId,
+        name: sport.label,
+        category: sport.category,
+        date: startDate,
+        startTime: a.startTime,
+        durationMins,
+        avgHR: a.averageHeartRate ?? null,
+        calories: a.calories ?? null,
+        steps: a.steps ?? null,
+        distance: a.distance ?? null,
+        distanceUnit: a.distanceUnit ?? null,
+        zoneMinutes,
+        epoc,
+        cardiacDrift,
+        strainContribution,
+      }
+    })
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+}
+
 export function parseFitbitData(raw) {
   const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat } = raw
 
@@ -605,6 +814,8 @@ export function parseFitbitData(raw) {
     if (w.date && w.weight) saveBodyWeightEntry(w.date, w.weight, fatByDate[w.date] ?? null, 'fitbit')
   }
 
+  const activityLogs = parseActivityLogs(raw.activityLogs, hrIntraday)
+
   return {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
     steps, calories, activeMinutes,
@@ -612,6 +823,7 @@ export function parseFitbitData(raw) {
     hrvByDate, rhrByDate,
     hrIntradayData: hrIntraday,
     vo2Max, vo2MaxRange, skinTempDev, sleepEndHour,
+    activityLogs,
   }
 }
 

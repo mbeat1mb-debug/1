@@ -92,6 +92,16 @@ const DEMO = {
   streaks: { recovery: 3, sleep: 2, lowStress: 5 },
   unlockedAchievements: ['first_green', 'step_king'],
   alerts: [],
+  activityLogs: (() => {
+    const now = new Date()
+    return [
+      { activityId: 1, name: 'Run', category: 'aerobic', date: now.toISOString().split('T')[0], startTime: new Date(now - 2 * 3600000).toISOString(), durationMins: 42, avgHR: 148, calories: 420, steps: 5800, distance: 6.2, distanceUnit: 'Kilometer', zoneMinutes: [5, 12, 18, 7, 0], epoc: { kcal: 7, durationMins: 62 }, cardiacDrift: 3.2, strainContribution: 8.4 },
+      { activityId: 2, name: 'Weights', category: 'strength', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 2); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 2 * 86400000).toISOString(), durationMins: 55, avgHR: 122, calories: 310, steps: null, distance: null, distanceUnit: null, zoneMinutes: [10, 20, 18, 7, 0], epoc: { kcal: 6, durationMins: 62 }, cardiacDrift: null, strainContribution: 6.8 },
+      { activityId: 3, name: 'Run', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 4); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 4 * 86400000).toISOString(), durationMins: 35, avgHR: 155, calories: 370, steps: 4900, distance: 5.1, distanceUnit: 'Kilometer', zoneMinutes: [3, 8, 14, 10, 0], epoc: { kcal: 9, durationMins: 71 }, cardiacDrift: null, strainContribution: 9.1 },
+      { activityId: 4, name: 'Bike', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 6 * 86400000).toISOString(), durationMins: 60, avgHR: 138, calories: 480, steps: null, distance: 22, distanceUnit: 'Kilometer', zoneMinutes: [8, 18, 24, 10, 0], epoc: { kcal: 11, durationMins: 86 }, cardiacDrift: null, strainContribution: 10.2 },
+      { activityId: 5, name: 'Walk', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 7 * 86400000).toISOString(), durationMins: 45, avgHR: 105, calories: 210, steps: 5200, distance: 3.8, distanceUnit: 'Kilometer', zoneMinutes: [20, 20, 5, 0, 0], epoc: { kcal: 1, durationMins: 8 }, cardiacDrift: null, strainContribution: 3.2 },
+    ]
+  })(),
   trainingLoad: { atl: 9.2, ctl: 10.5, tsb: 1.3, form: 'Neutral' },
   trainingEffect: { aerobic: 2.9, anaerobic: 2.3, aerobicLabel: 'Maintaining', anaerobicLabel: 'Maintaining' },
   daytimeStress: { score: 32, avgHR: 72, delta: 4.2 },
@@ -425,6 +435,21 @@ export default function App() {
     }
     init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-sync: fire when tab regains focus (Page Visibility API) and every 15 min while open.
+  // Fitbit cloud refresh cadence is ~15 min, so polling faster has no benefit.
+  useEffect(() => {
+    if (!connected || demo) return
+    const STALE_MS = 5 * 60 * 1000  // don't re-sync within 5 min of last sync
+    const maybeSync = () => {
+      const last = Number(localStorage.getItem('last_synced_at') || '0')
+      if (Date.now() - last > STALE_MS) doSync(false)
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') maybeSync() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(() => { if (document.visibilityState === 'visible') doSync(false) }, 15 * 60 * 1000)
+    return () => { document.removeEventListener('visibilitychange', onVisible); clearInterval(interval) }
+  }, [connected, demo, doSync])
 
   const handleNav = (id) => {
     if (id === 'demo') { setDemo(true); setTab('home'); return }

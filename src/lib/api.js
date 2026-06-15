@@ -95,6 +95,10 @@ export async function getBodyFat() {
   return fitbitFetch(`/1/user/-/body/log/fat/date/${today()}/1m.json`)
 }
 
+export async function getActivityLogs(afterDate) {
+  return fitbitFetch(`/1/user/-/activities/list.json?afterDate=${afterDate}&sort=asc&limit=100&offset=0`)
+}
+
 export async function loadDashboardData() {
   const date = today()
   const [
@@ -112,6 +116,7 @@ export async function loadDashboardData() {
     bodyWeight,
     bodyFat,
     spo2Intraday,
+    activityLogs,
   ] = await Promise.all([
     getDailySummary(date),
     getHeartRateIntraday(date),
@@ -127,7 +132,8 @@ export async function loadDashboardData() {
     getBodyWeight(),
     getBodyFat(),
     getSpO2Intraday(date),
+    getActivityLogs(daysAgo(30)),
   ])
 
-  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, date }
+  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, date }
 }
