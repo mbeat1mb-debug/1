@@ -148,7 +148,7 @@ export default function Sleep({ data, onNav }) {
         <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-2xl mb-3">😴</p>
           <p className="text-gray-300 text-sm font-medium">No sleep data yet</p>
-          <p className="text-xs text-gray-600 mt-1">Make sure your Fitbit synced after waking up.</p>
+          <p className="text-xs text-gray-600 mt-1">Make sure Google Health synced after waking up.</p>
         </div>
       )}
 
@@ -161,7 +161,7 @@ export default function Sleep({ data, onNav }) {
               <p className="text-2xl font-bold text-white">{displayHours}h {displayMinRemainder}m</p>
               <p className="text-gray-500 text-sm">Time asleep</p>
               {correctedMins !== null && (
-                <p className="text-[10px] mt-1" style={{ color: '#f59e0b' }}>Fitbit: {hours}h {mins}m · edited</p>
+                <p className="text-[10px] mt-1" style={{ color: '#f59e0b' }}>Synced: {hours}h {mins}m · edited</p>
               )}
               <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
                 <span className="text-xs font-bold" style={{ color: sleepColor }}>
@@ -230,7 +230,7 @@ export default function Sleep({ data, onNav }) {
               onClick={() => { clearSleepTimeOverride(sleepDate); setOverride(null) }}
               className="mt-2 text-[10px] text-gray-600 underline"
             >
-              Reset to Fitbit times
+              Reset to synced times
             </button>
           )}
         </div>

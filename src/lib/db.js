@@ -63,7 +63,7 @@ export async function saveDay(result) {
       skinTempDev: result.skinTempDev ?? null,
     })
   } catch {
-    // IndexedDB write failures are non-fatal; history reconstructs from Fitbit API on next sync
+    // IndexedDB write failures are non-fatal; history reconstructs from the Google Health API on next sync
   }
 }
 

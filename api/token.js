@@ -4,21 +4,18 @@ export default async function handler(req, res) {
   const { code, redirect_uri } = req.body
   if (!code || !redirect_uri) return res.status(400).json({ error: 'Missing code or redirect_uri' })
 
-  const clientId = process.env.FITBIT_CLIENT_ID
-  const clientSecret = process.env.FITBIT_CLIENT_SECRET
+  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   if (!clientId || !clientSecret) return res.status(500).json({ error: 'Server not configured' })
 
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-
   try {
-    const response = await fetch('https://api.fitbit.com/oauth2/token', {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
+        client_id: clientId,
+        client_secret: clientSecret,
         grant_type: 'authorization_code',
         redirect_uri,
       }).toString(),

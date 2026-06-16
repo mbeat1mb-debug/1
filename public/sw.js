@@ -13,7 +13,7 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('/api/') || e.request.url.includes('fitbit.com') || e.request.url.includes('googleapis.com')) return
+  if (e.request.url.includes('/api/') || e.request.url.includes('googleapis.com')) return
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request).then(r => r || caches.match('/')))
   )

@@ -663,35 +663,42 @@ export function classifyWorkoutSport(activityTypeId, activityName) {
   return SPORT_MAP[activityTypeId] ?? { label: activityName ?? 'Workout', category: 'aerobic' }
 }
 
-// Parses Fitbit activity log response + today's intraday HR into workout objects.
-// Cardiac drift (Coyle 1992 J Appl Physiol): HR rise at constant effort signals dehydration/fatigue.
+// Parses Google Health activitySession data points + today's intraday HR into
+// workout objects. Cardiac drift (Coyle 1992 J Appl Physiol): HR rise at
+// constant effort signals dehydration/fatigue.
 export function parseActivityLogs(rawActivityLogs, hrIntraday) {
-  const activities = rawActivityLogs?.activities ?? []
+  const activities = rawActivityLogs?.dataPoints ?? []
   const todayStr = new Date().toISOString().split('T')[0]
 
   // Build minute → HR map for today's cardiac drift computation
   const hrMap = {}
-  const hrDataset = hrIntraday?.['activities-heart-intraday']?.dataset ?? []
-  for (const p of hrDataset) if (p.value > 0) hrMap[p.time] = p.value
+  const hrPoints = hrIntraday?.dataPoints ?? []
+  for (const p of hrPoints) {
+    const bpm = p.heartRate?.bpm
+    const t = p.effectiveTime
+    if (bpm > 0 && t) hrMap[t] = bpm
+  }
 
   return activities
-    .filter(a => a.startTime && a.activeDuration > 0)
+    .filter(a => a.interval?.startTime && a.interval?.endTime)
     .map(a => {
-      const startDate = a.startTime.split('T')[0]
+      const startTime = a.interval.startTime
+      const startDate = startTime.split('T')[0]
       const isToday   = startDate === todayStr
-      const durationMins = Math.round(a.activeDuration / 60000)
-      const sport = classifyWorkoutSport(a.activityTypeId, a.activityName)
+      const durationMins = Math.round((new Date(a.interval.endTime) - new Date(startTime)) / 60000)
+      const session = a.activitySession ?? {}
+      const sport = classifyWorkoutSport(session.activityType, session.name)
 
-      // Map Fitbit 4-zone format to our zone array
+      // Map zone minutes (if the API reports them) to our 4-zone array
       let zoneMinutes = null
-      if (a.heartRateZones?.length) {
+      if (session.heartRateZones?.length) {
         zoneMinutes = [0, 0, 0, 0, 0]
-        for (const z of a.heartRateZones) {
+        for (const z of session.heartRateZones) {
           const n = (z.name ?? '').toLowerCase()
-          if (n.includes('out'))     zoneMinutes[0] = z.minutes
-          else if (n.includes('fat')) zoneMinutes[1] = z.minutes
-          else if (n.includes('cardio')) zoneMinutes[2] = z.minutes
-          else if (n.includes('peak'))   zoneMinutes[3] = z.minutes
+          if (n.includes('out'))     zoneMinutes[0] = z.durationMinutes
+          else if (n.includes('fat')) zoneMinutes[1] = z.durationMinutes
+          else if (n.includes('cardio')) zoneMinutes[2] = z.durationMinutes
+          else if (n.includes('peak'))   zoneMinutes[3] = z.durationMinutes
         }
       }
 
@@ -700,16 +707,11 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
       // Cardiac drift — only computable for today's workouts via intraday HR
       let cardiacDrift = null
       if (isToday && Object.keys(hrMap).length > 0 && durationMins >= 20) {
-        const startMs = new Date(a.startTime).getTime()
-        const endMs   = startMs + a.activeDuration
+        const startMs = new Date(startTime).getTime()
+        const endMs   = new Date(a.interval.endTime).getTime()
         const pts = []
         for (const [tStr, hr] of Object.entries(hrMap)) {
-          const [hh, mm] = tStr.split(':').map(Number)
-          const d = new Date(startMs)
-          d.setHours(hh, mm, 0, 0)
-          let tMs = d.getTime()
-          // If the result is more than 12h before workout start, the entry is post-midnight (next calendar day)
-          if (tMs < startMs - 12 * 3600000) tMs += 86400000
+          const tMs = new Date(tStr).getTime()
           if (tMs >= startMs && tMs <= endMs) pts.push(hr)
         }
         if (pts.length >= 9) {
@@ -728,17 +730,17 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
       }
 
       return {
-        activityId: a.activityId,
+        activityId: a.name,
         name: sport.label,
         category: sport.category,
         date: startDate,
-        startTime: a.startTime,
+        startTime,
         durationMins,
-        avgHR: a.averageHeartRate ?? null,
-        calories: a.calories ?? null,
-        steps: a.steps ?? null,
-        distance: a.distance ?? null,
-        distanceUnit: a.distanceUnit ?? null,
+        avgHR: session.averageHeartRate ?? null,
+        calories: session.calories ?? null,
+        steps: session.steps ?? null,
+        distance: session.distance ?? null,
+        distanceUnit: session.distanceUnit ?? null,
         zoneMinutes,
         epoc,
         cardiacDrift,
@@ -748,75 +750,92 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
     .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
 }
 
-export function parseFitbitData(raw) {
+// Google Health API dataPoints carry a civil date on either the point itself
+// (effective_time/civilStartTime) or, for session types like sleep, on the
+// interval. This pulls whichever is present down to a YYYY-MM-DD string.
+function pointDate(point) {
+  const t = point?.civilStartTime ?? point?.effectiveTime ?? point?.interval?.startTime ?? point?.startTime
+  return t ? String(t).split('T')[0] : null
+}
+
+function rollupValue(rollupResponse, dataTypeKey, sumKey) {
+  const points = rollupResponse?.rollupDataPoints ?? []
+  return points.reduce((sum, p) => sum + (Number(p?.[dataTypeKey]?.[sumKey]) || 0), 0)
+}
+
+export function parseGoogleHealthData(raw) {
   const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat } = raw
 
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
-  for (const d of (hrvRange?.hrv ?? [])) {
-    const val = d.value?.dailyRmssd ?? d.value?.deepRmssd
-    if (d.dateTime && val) hrvByDate[d.dateTime] = val
+  for (const d of (hrvRange?.dataPoints ?? [])) {
+    const val = d.dailyHeartRateVariability?.rmssd ?? d.dailyHeartRateVariability?.value
+    const date = pointDate(d)
+    if (date && val) hrvByDate[date] = val
   }
   const rhrByDate = {}
-  for (const d of (hrRange?.['activities-heart'] ?? [])) {
-    if (d.dateTime && d.value?.restingHeartRate) rhrByDate[d.dateTime] = d.value.restingHeartRate
+  for (const d of (hrRange?.rollupDataPoints ?? [])) {
+    const val = d.dailyRestingHeartRate?.bpm ?? d.dailyRestingHeartRate?.avg
+    const date = pointDate(d)
+    if (date && val) rhrByDate[date] = val
   }
   const historyDates = Object.keys(hrvByDate).sort()
   const hrvHistory = historyDates.map(date => hrvByDate[date])
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
-  const todayHRV = hrv?.hrv?.[0]?.value?.dailyRmssd ?? hrv?.hrv?.[0]?.value?.deepRmssd ?? 0
-  const todayRHR = hrIntraday?.['activities-heart']?.[0]?.value?.restingHeartRate ??
-    hrRange?.['activities-heart']?.slice(-1)[0]?.value?.restingHeartRate ?? 0
-  const todaySleep = sleep?.sleep?.find(s => s.isMainSleep) ?? sleep?.sleep?.[0]
-  const todaySpO2 = spo2?.value?.avg ?? spo2?.value ?? 97
-  const todayBR = br?.br?.[0]?.value?.breathingRate ?? 14
-  const steps = summary?.summary?.steps ?? 0
-  const calories = summary?.summary?.caloriesOut ?? 0
-  const activeMinutes = (summary?.summary?.fairlyActiveMinutes ?? 0) + (summary?.summary?.veryActiveMinutes ?? 0)
+  const todayHRV = hrv?.dataPoints?.[0]?.dailyHeartRateVariability?.rmssd ?? 0
+  const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
+  const sleepPoints = sleep?.dataPoints ?? []
+  const todaySleep = sleepPoints.find(s => s.metadata?.main) ?? sleepPoints[0]
+  const todaySpO2 = spo2?.dataPoints?.[0]?.oxygenSaturation?.percentage ?? 97
+  const todayBR = br?.dataPoints?.[0]?.respiratoryRate?.bpm ?? 14
+  const steps = rollupValue(summary?.steps, 'steps', 'countSum')
+  const calories = rollupValue(summary?.calories, 'caloriesBurned', 'kcalSum')
+  const activeMinutes = rollupValue(summary?.activeZoneMinutes, 'activeZoneMinutes', 'durationMinutesSum')
 
-  // VO2 Max from Fitbit Cardio Fitness Score (value is string like "47-51" — use midpoint)
-  const vo2MaxRaw = cardioFitness?.cardioScore?.[0]?.value?.vo2Max ?? null
-  const fitbitVO2 = (() => {
-    if (!vo2MaxRaw) return 0
-    const parts = String(vo2MaxRaw).split('-')
-    const lo = parseInt(parts[0], 10) || 0
-    const hi = parts.length > 1 ? (parseInt(parts[1], 10) || lo) : lo
-    return Math.round((lo + hi) / 2) || 0
-  })()
-  const vo2Max = fitbitVO2 || getUserVO2Max()
-  const vo2MaxRange = vo2MaxRaw ? String(vo2MaxRaw) : null
+  // VO2 Max from Google Health's vo2Max data type
+  const vo2MaxRaw = cardioFitness?.dataPoints?.at(-1)?.vo2Max?.value ?? null
+  const vo2Max = (vo2MaxRaw ? Math.round(vo2MaxRaw) : 0) || getUserVO2Max()
+  const vo2MaxRange = vo2MaxRaw ? String(Math.round(vo2MaxRaw)) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
-  const skinTempDev = skinTemp?.tempSkin?.[0]?.value?.nightlyRelative ?? null
+  const skinTempDev = skinTemp?.dataPoints?.[0]?.skinTemperature?.nightlyRelative ?? null
 
-  const sleepHistory = (sleepRange?.sleep ?? [])
-    .filter(s => s.isMainSleep)
-    .map(s => ({
-      date: s.dateOfSleep,
-      minutes: s.minutesAsleep,
-      efficiency: s.efficiency,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      deepMinutes: s.levels?.summary?.deep?.minutes ?? 0,
-      remMinutes: s.levels?.summary?.rem?.minutes ?? 0,
-    }))
+  const sleepHistory = (sleepRange?.dataPoints ?? [])
+    .filter(s => s.metadata?.main)
+    .map(s => {
+      const stages = s.sleep?.stages ?? []
+      const stageMins = type => stages.filter(st => st.type === type)
+        .reduce((sum, st) => sum + (new Date(st.endTime) - new Date(st.startTime)) / 60000, 0)
+      return {
+        date: pointDate(s),
+        minutes: Math.round((new Date(s.interval?.endTime) - new Date(s.interval?.startTime)) / 60000) - Math.round(stageMins('AWAKE')),
+        efficiency: s.sleep?.efficiency ?? 0,
+        startTime: s.interval?.startTime,
+        endTime: s.interval?.endTime,
+        deepMinutes: Math.round(stageMins('DEEP')),
+        remMinutes: Math.round(stageMins('REM')),
+      }
+    })
 
   // Sleep end hour for daytime stress calculation
-  const sleepEndHour = todaySleep?.endTime
-    ? new Date(todaySleep.endTime).getHours()
+  const sleepEndHour = todaySleep?.interval?.endTime
+    ? new Date(todaySleep.interval.endTime).getHours()
     : null
 
-  // Sync Fitbit-logged body weight/fat into local history if available.
+  // Sync Google Health-logged body weight/fat into local history if available.
   // Sort ascending so the most recent entry is written last and wins as the
   // quick-access user_weight_kg value, regardless of API return order.
-  // Fitbit returns metric (kg / %) when no Accept-Language header is sent.
-  const weightLogs = [...(bodyWeight?.weight ?? [])].sort((a, b) => String(a.date).localeCompare(String(b.date)))
-  const fatLogs = bodyFat?.fat ?? []
+  const weightPoints = [...(bodyWeight?.rollupDataPoints ?? [])].sort((a, b) => String(pointDate(a)).localeCompare(String(pointDate(b))))
   const fatByDate = {}
-  for (const f of fatLogs) fatByDate[f.date] = f.fat
-  for (const w of weightLogs) {
-    if (w.date && w.weight) saveBodyWeightEntry(w.date, w.weight, fatByDate[w.date] ?? null, 'fitbit')
+  for (const f of (bodyFat?.rollupDataPoints ?? [])) {
+    const date = pointDate(f)
+    if (date) fatByDate[date] = f.bodyFatPercentage?.avg ?? f.bodyFatPercentage?.value
+  }
+  for (const w of weightPoints) {
+    const date = pointDate(w)
+    const kg = w.weight?.avg ?? w.weight?.value
+    if (date && kg) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
   }
 
   const activityLogs = parseActivityLogs(raw.activityLogs, hrIntraday)
@@ -985,8 +1004,8 @@ export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual', humeExt
   try {
     const history = getBodyWeightHistory()
     const idx = history.findIndex(e => e.date === date)
-    // Manual entries win over Fitbit — don't let a sync overwrite what the user typed
-    if (source === 'fitbit' && idx >= 0 && history[idx].source === 'manual') return
+    // Manual entries win over a synced source — don't let a sync overwrite what the user typed
+    if (source === 'google_health' && idx >= 0 && history[idx].source === 'manual') return
     const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct || null, source, ...(humeExtras || {}) }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)

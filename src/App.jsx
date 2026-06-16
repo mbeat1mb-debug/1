@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
 import { loadDashboardData } from './lib/api'
 import {
-  parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
+  parseGoogleHealthData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR, saveLastKnownHRR,
@@ -163,9 +163,9 @@ function ConnectScreen({ onNav }) {
         <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</h1>
         <p className="text-gray-600 text-xs uppercase tracking-widest mt-1">σῶμα · body</p>
       </div>
-      <p className="text-gray-500 text-sm">Connect your Fitbit to begin tracking recovery, strain, sleep, and longevity.</p>
+      <p className="text-gray-500 text-sm">Connect Google Health to begin tracking recovery, strain, sleep, and longevity.</p>
       <button onClick={() => onNav('settings')} className="w-full max-w-xs py-4 rounded-2xl font-bold text-black" style={{ background: '#00c9a7' }}>
-        Connect Fitbit
+        Connect Google Health
       </button>
       <button onClick={() => onNav('demo')} className="text-gray-500 text-sm underline">
         View demo first
@@ -194,7 +194,7 @@ export default function App() {
   const syncInFlight = useRef(false)
 
   const processData = useCallback((raw) => {
-    const parsed = parseFitbitData(raw)
+    const parsed = parseGoogleHealthData(raw)
 
     const optimalSleepHours = computeOptimalSleepHours(parsed.sleepHistory)
 
@@ -345,9 +345,9 @@ export default function App() {
           }))
         if (newRows.length) await saveDaysBatch(newRows)
       }
-      const fitbitDates = new Set(result.calendarDays.map(d => d.date))
+      const syncedDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory
-        .filter(d => !fitbitDates.has(d.date))
+        .filter(d => !syncedDates.has(d.date))
         .map(d => ({ date: d.date, recovery: d.recovery, strain: d.strain, sleep: d.sleep }))
       const mergedCalendar = [...olderDays, ...result.calendarDays]
         .sort((a, b) => a.date.localeCompare(b.date))
@@ -378,7 +378,7 @@ export default function App() {
         .filter(d => d.recovery > 0 && d.strain > 0 && d.date >= rsTrendCutoffStr)
         .map(d => ({ label: d.date.slice(5), ratio: Math.round(d.recovery / d.strain * 10) / 10 }))
 
-      // VO2 Max longitudinal history from IndexedDB (Fitbit updates infrequently)
+      // VO2 Max longitudinal history from IndexedDB (updates infrequently)
       // dbHistory is fetched before saveDay, so today's entry may not be present yet — append it
       const vo2MaxHistory = dbHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
       if (result.vo2Max > 0 && (vo2MaxHistory.length === 0 || vo2MaxHistory[vo2MaxHistory.length - 1].date !== result.date)) {
@@ -459,7 +459,7 @@ export default function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-sync: fire when tab regains focus (Page Visibility API) and every 15 min while open.
-  // Fitbit cloud refresh cadence is ~15 min, so polling faster has no benefit.
+  // Google Health cloud refresh cadence is ~15 min, so polling faster has no benefit.
   useEffect(() => {
     if (!connected || demo) return
     const STALE_MS = 5 * 60 * 1000  // don't re-sync within 5 min of last sync

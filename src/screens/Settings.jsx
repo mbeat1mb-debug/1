@@ -703,7 +703,7 @@ function DataFreshnessSection() {
 // ── Main Settings screen ──────────────────────────────────────────────────────
 
 export default function Settings({ onBack }) {
-  const [clientId, setClientId] = useState(() => localStorage.getItem('fitbit_client_id') || '')
+  const [clientId, setClientId] = useState(() => localStorage.getItem('google_client_id') || '')
   const [connected, setConnected] = useState(isConnected)
   const [claudeKey, setClaudeKey] = useState(() => localStorage.getItem('claude_api_key') || '')
   const [userAge, setUserAge] = useState(() => localStorage.getItem('user_age') || '39')
@@ -768,7 +768,7 @@ export default function Settings({ onBack }) {
   const saveAndConnect = () => {
     if (!clientId.trim()) return
     try {
-      localStorage.setItem('fitbit_client_id', clientId.trim())
+      localStorage.setItem('google_client_id', clientId.trim())
       if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim())
       const age = parseInt(userAge, 10)
       if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
@@ -804,7 +804,7 @@ export default function Settings({ onBack }) {
       if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
       else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
 
-      // Write a manual-source history entry so Fitbit sync can't overwrite this weight
+      // Write a manual-source history entry so a sync can't overwrite this weight
       const enteredKg = units === 'imperial'
         ? (() => { const lbs = parseFloat(weightLbs); return !isNaN(lbs) && lbs > 0 ? Math.round(lbs / 2.2046 * 10) / 10 : 0 })()
         : (() => { const kg = parseFloat(weightKg); return !isNaN(kg) && kg > 0 ? kg : 0 })()
@@ -881,7 +881,7 @@ export default function Settings({ onBack }) {
 
   const handleDisconnect = () => {
     disconnect()
-    localStorage.removeItem('fitbit_client_id')
+    localStorage.removeItem('google_client_id')
     setConnected(false)
   }
 
@@ -1045,7 +1045,7 @@ export default function Settings({ onBack }) {
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: connected ? '#00c9a7' : '#555' }} />
           <div>
-            <p className="text-sm font-semibold text-white">Fitbit Air</p>
+            <p className="text-sm font-semibold text-white">Google Health</p>
             <p className="text-xs text-gray-500">{connected ? 'Connected' : 'Not connected'}</p>
           </div>
         </div>
@@ -1056,26 +1056,26 @@ export default function Settings({ onBack }) {
         )}
       </div>
 
-      {/* Fitbit credentials */}
+      {/* Google Health credentials */}
       {!connected && (
         <div className="rounded-2xl p-4 space-y-4" style={{ background: '#111', border: '1px solid #222' }}>
           <div>
-            <p className="text-sm font-semibold text-white mb-1">Connect Fitbit Air</p>
-            <p className="text-xs text-gray-500">You'll need a free Fitbit Developer account</p>
+            <p className="text-sm font-semibold text-white mb-1">Connect Google Health</p>
+            <p className="text-xs text-gray-500">You'll need a Google Cloud project with the Health API enabled</p>
           </div>
           <div className="space-y-3">
             <div>
               <p className="text-xs text-gray-400 mb-1.5 uppercase tracking-wider">Steps to get your Client ID:</p>
               <ol className="space-y-1 text-xs text-gray-500">
-                <li>1. Go to <span className="text-white">dev.fitbit.com</span> → Log In</li>
-                <li>2. Register an App → set type to <span className="text-white">Personal</span></li>
-                <li>3. Set Callback URL to your Vercel app URL</li>
-                <li>4. Copy the <span className="text-white">OAuth 2.0 Client ID</span> below</li>
+                <li>1. Go to <span className="text-white">console.cloud.google.com</span> → create a project</li>
+                <li>2. Enable the <span className="text-white">Google Health API</span></li>
+                <li>3. Create an OAuth 2.0 Client ID, set the redirect URI to your Vercel app URL</li>
+                <li>4. Copy the <span className="text-white">Client ID</span> below</li>
               </ol>
             </div>
             <input
               className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
-              placeholder="Fitbit Client ID (e.g. 23ABCD)"
+              placeholder="Google Client ID (e.g. 1234-abc.apps.googleusercontent.com)"
               value={clientId}
               onChange={e => setClientId(e.target.value)}
             />
@@ -1085,7 +1085,7 @@ export default function Settings({ onBack }) {
               className="w-full py-3 rounded-xl font-bold text-sm transition-opacity disabled:opacity-40"
               style={{ background: '#00c9a7', color: '#000' }}
             >
-              Connect to Fitbit
+              Connect to Google Health
             </button>
           </div>
         </div>
@@ -1562,11 +1562,11 @@ Labs: marker,value,date`}</pre>
       {/* Data Freshness */}
       <DataFreshnessSection />
 
-      {/* Note on API migration */}
+      {/* Note on data source */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>
         <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wider mb-2">Note</p>
         <p className="text-xs text-gray-500">
-          This app uses the Fitbit Web API (deprecated September 2026). A one-time update will be needed when Google migrates to the new Health API. Your data and settings will not be affected.
+          This app syncs through the Google Health API. If a sync ever fails after reconnecting, check that your Google Cloud OAuth credentials are still valid — your data and settings will not be affected.
         </p>
       </div>
 

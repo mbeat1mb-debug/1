@@ -356,7 +356,7 @@ export default function Trends({ data, onNav }) {
         <p className={TITLE}>VO₂ Max Trend</p>
         {vo2ChartData.length < 2 ? (
           <div>
-            <p className={EMPTY}>Need at least 2 Fitbit cardio fitness updates to show a trend.</p>
+            <p className={EMPTY}>Need at least 2 cardio fitness updates to show a trend.</p>
             {vo2ChartData.length === 1 && (
               <p className="text-gray-300 text-sm mt-2">Current: {vo2ChartData[0].vo2Max} ml/kg/min</p>
             )}
@@ -396,7 +396,7 @@ export default function Trends({ data, onNav }) {
       <div className="rounded-2xl p-4" style={CARD}>
         <p className={TITLE}>Skin Temp Deviation</p>
         {skinTempData.length === 0 ? (
-          <p className={EMPTY}>No skin temperature data. Requires a Fitbit device with skin temp sensor.</p>
+          <p className={EMPTY}>No skin temperature data. Requires a device with a skin temp sensor.</p>
         ) : (
           <ResponsiveContainer width="100%" height={100}>
             <BarChart data={skinTempData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>

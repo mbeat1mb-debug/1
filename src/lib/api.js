@@ -1,8 +1,8 @@
 import { getTokens, isTokenExpired, refreshAccessToken, disconnect } from './auth'
 
-const BASE = 'https://api.fitbit.com'
+const BASE = 'https://health.googleapis.com/v4/users/me'
 
-async function fitbitFetch(path, retried = false) {
+async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
   try {
     if (isTokenExpired()) {
       const ok = await refreshAccessToken()
@@ -10,12 +10,17 @@ async function fitbitFetch(path, retried = false) {
     }
     const { access_token } = getTokens()
     const res = await fetch(`${BASE}${path}`, {
-      headers: { Authorization: `Bearer ${access_token}` },
+      method,
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
     })
     if (res.status === 401) {
       // Token rejected despite looking valid locally (clock skew / early revoke).
       // Refresh once and retry before tearing down the session.
-      if (!retried && await refreshAccessToken()) return fitbitFetch(path, true)
+      if (!retried && await refreshAccessToken()) return ghFetch(path, { method, body }, true)
       disconnect(); window.location.reload(); return null
     }
     if (!res.ok) return null
@@ -35,68 +40,94 @@ function daysAgo(n) {
   return d.toISOString().split('T')[0]
 }
 
-export async function getProfile() {
-  return fitbitFetch('/1/user/-/profile.json')
+function startOfDay(date) {
+  return `${date}T00:00:00Z`
+}
+
+function endOfDay(date) {
+  return `${date}T23:59:59Z`
+}
+
+// Time-range list query against a dataType's points. `timeField` differs by
+// data type: interval-based types (sleep) filter on interval.end_time,
+// instantaneous samples (heartRate, hrv, etc.) filter on effective_time.
+async function listDataPoints(dataType, startDate, endDate, timeField = 'effective_time') {
+  const filter = `${dataType}.${timeField} >= "${startOfDay(startDate)}" AND ${dataType}.${timeField} <= "${endOfDay(endDate)}"`
+  return ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams({ filter }).toString()}`)
+}
+
+// Daily aggregate via the dailyRollUp custom method, used for cumulative
+// metrics (steps, calories, active minutes, body weight/fat).
+async function dailyRollUp(dataType, startDate, endDate) {
+  return ghFetch(`/dataTypes/${dataType}/dataPoints:dailyRollUp`, {
+    method: 'POST',
+    body: { range: { startTime: startOfDay(startDate), endTime: endOfDay(endDate) } },
+  })
 }
 
 export async function getDailySummary(date = today()) {
-  return fitbitFetch(`/1/user/-/activities/date/${date}.json`)
+  const [steps, calories, activeZoneMinutes] = await Promise.all([
+    dailyRollUp('steps', date, date),
+    dailyRollUp('caloriesBurned', date, date),
+    dailyRollUp('activeZoneMinutes', date, date),
+  ])
+  return { steps, calories, activeZoneMinutes }
 }
 
 export async function getHeartRateIntraday(date = today()) {
-  return fitbitFetch(`/1/user/-/activities/heart/date/${date}/1d/1min.json`)
+  return listDataPoints('heartRate', date, date, 'effective_time')
 }
 
 export async function getHeartRateRange(startDate, endDate) {
-  return fitbitFetch(`/1/user/-/activities/heart/date/${startDate}/${endDate}.json`)
+  return dailyRollUp('dailyRestingHeartRate', startDate, endDate)
 }
 
 export async function getSleep(date = today()) {
-  return fitbitFetch(`/1.2/user/-/sleep/date/${date}.json`)
+  return listDataPoints('sleep', date, date, 'interval.end_time')
 }
 
 export async function getSleepRange(startDate, endDate) {
-  return fitbitFetch(`/1.2/user/-/sleep/date/${startDate}/${endDate}.json`)
+  return listDataPoints('sleep', startDate, endDate, 'interval.end_time')
 }
 
 export async function getHRV(date = today()) {
-  return fitbitFetch(`/1/user/-/hrv/date/${date}.json`)
+  return listDataPoints('dailyHeartRateVariability', date, date, 'effective_time')
 }
 
 export async function getHRVRange(startDate, endDate) {
-  return fitbitFetch(`/1/user/-/hrv/date/${startDate}/${endDate}.json`)
+  return listDataPoints('dailyHeartRateVariability', startDate, endDate, 'effective_time')
 }
 
 export async function getSpO2(date = today()) {
-  return fitbitFetch(`/1/user/-/spo2/date/${date}.json`)
+  return listDataPoints('oxygenSaturation', date, date, 'effective_time')
 }
 
 export async function getSpO2Intraday(date = today()) {
-  return fitbitFetch(`/1/user/-/spo2/date/${date}/all.json`)
+  return listDataPoints('oxygenSaturation', date, date, 'effective_time')
 }
 
 export async function getRespiratoryRate(date = today()) {
-  return fitbitFetch(`/1/user/-/br/date/${date}.json`)
+  return listDataPoints('respiratoryRate', date, date, 'effective_time')
 }
 
 export async function getCardioFitness() {
-  return fitbitFetch(`/1/user/-/cardioscore/date/${daysAgo(7)}/${today()}.json`)
+  return listDataPoints('vo2Max', daysAgo(7), today(), 'effective_time')
 }
 
 export async function getSkinTemp(date = today()) {
-  return fitbitFetch(`/1/user/-/temp/skin/date/${date}.json`)
+  return listDataPoints('skinTemperature', date, date, 'effective_time')
 }
 
 export async function getBodyWeight() {
-  return fitbitFetch(`/1/user/-/body/log/weight/date/${today()}/1m.json`)
+  return dailyRollUp('weight', daysAgo(30), today())
 }
 
 export async function getBodyFat() {
-  return fitbitFetch(`/1/user/-/body/log/fat/date/${today()}/1m.json`)
+  return dailyRollUp('bodyFatPercentage', daysAgo(30), today())
 }
 
 export async function getActivityLogs(afterDate) {
-  return fitbitFetch(`/1/user/-/activities/list.json?afterDate=${afterDate}&sort=asc&limit=100&offset=0`)
+  return listDataPoints('activitySession', afterDate, today(), 'interval.end_time')
 }
 
 export async function loadDashboardData() {

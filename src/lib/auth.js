@@ -1,5 +1,9 @@
-const FITBIT_AUTH_URL = 'https://www.fitbit.com/oauth2/authorize'
-const SCOPES = 'activity heartrate profile sleep settings oxygen_saturation respiratory_rate cardio_fitness weight'
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+const SCOPES = [
+  'https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly',
+  'https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly',
+  'https://www.googleapis.com/auth/googlehealth.sleep.readonly',
+].join(' ')
 const REDIRECT_PATH = '/'
 
 function getRedirectUri() {
@@ -15,16 +19,18 @@ function generateState() {
 export function startOAuth(clientId) {
   const state = generateState()
   sessionStorage.setItem('oauth_state', state)
-  // No `prompt` param: Fitbit shows login/consent only when needed, so
-  // reconnects with an active Fitbit session are silent (auto-connect UX)
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
     scope: SCOPES,
     redirect_uri: getRedirectUri(),
     state,
+    // Google only issues a refresh_token on first consent (or when re-prompted);
+    // access_type=offline + prompt=consent guarantee we get one every connect.
+    access_type: 'offline',
+    prompt: 'consent',
   })
-  window.location.href = `${FITBIT_AUTH_URL}?${params}`
+  window.location.href = `${GOOGLE_AUTH_URL}?${params}`
 }
 
 export async function handleOAuthCallback(clientId) {
@@ -59,7 +65,9 @@ export async function handleOAuthCallback(clientId) {
 export function saveTokens({ access_token, refresh_token, expires_in }) {
   const expiry = Date.now() + ((Number(expires_in) || 3600) - 60) * 1000
   localStorage.setItem('access_token', access_token)
-  localStorage.setItem('refresh_token', refresh_token)
+  // Google omits refresh_token on routine refreshes (no rotation) — keep the
+  // existing one rather than clobbering it with undefined.
+  if (refresh_token) localStorage.setItem('refresh_token', refresh_token)
   localStorage.setItem('token_expiry', String(expiry))
 }
 

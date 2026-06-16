@@ -304,7 +304,7 @@ export default function Strain({ data, onNav }) {
         <p className="text-sm text-gray-400">
           Based on time spent in each heart rate zone throughout the day. Higher zones count exponentially more.
           Your personal max HR is <span className="text-white font-semibold">{maxHR} bpm</span>
-          {parseInt(localStorage.getItem('observed_max_hr') || '0', 10) > 0 ? ' (from your Fitbit data)' : ' (Gellish formula)'}.
+          {parseInt(localStorage.getItem('observed_max_hr') || '0', 10) > 0 ? ' (from your synced data)' : ' (Gellish formula)'}.
         </p>
       </div>
     </div>
