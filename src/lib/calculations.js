@@ -1424,6 +1424,36 @@ export function calculateSleepDebtPayback(sleepDebt, sleepHistory) {
   return Math.ceil((sleepDebt * 60) / surplusPerNight)
 }
 
+// VO2 Max fitness category + all-cause mortality context
+// Threshold values are approximate age/sex-specific percentile cutoffs for males
+// Source: Mandsager et al. JAMA Network Open 2018
+export function getVO2MortalityContext(vo2max, age) {
+  if (!vo2max || vo2max <= 0 || !age || age <= 0) return null
+  const [l, ba, aa, h] =
+    age <= 29 ? [33, 40, 47, 53] :
+    age <= 39 ? [29, 36, 43, 51] :
+    age <= 49 ? [25, 32, 39, 46] :
+    age <= 59 ? [21, 27, 34, 42] :
+    age <= 69 ? [17, 23, 30, 37] :
+               [15, 20, 26, 33]
+  if (vo2max <= l)  return { category: 'Low Fitness',    note: 'Highest all-cause mortality risk',                color: '#ef4444', mult: null }
+  if (vo2max <= ba) return { category: 'Below Average',  note: '~2× lower all-cause mortality vs Low fitness',   color: '#f59e0b', mult: 2   }
+  if (vo2max <= aa) return { category: 'Above Average',  note: '~3× lower all-cause mortality vs Low fitness',   color: '#3b82f6', mult: 3   }
+  if (vo2max <= h)  return { category: 'High Fitness',   note: '~3.7× lower all-cause mortality vs Low fitness', color: '#00c9a7', mult: 3.7 }
+  return              { category: 'Elite Fitness',     note: '~5× lower all-cause mortality vs Low fitness',   color: '#00c9a7', mult: 5   }
+}
+
+// RHR mortality risk context
+// Source: HUNT study (Woodward et al.) and multiple large cohort meta-analyses
+export function getRHRMortalityContext(rhr) {
+  if (!rhr || rhr <= 0) return null
+  if (rhr < 60) return { label: 'Athletic', detail: 'Lowest all-cause mortality risk',                        color: '#00c9a7' }
+  if (rhr < 70) return { label: 'Optimal',  detail: 'Low mortality risk',                                     color: '#00c9a7' }
+  if (rhr < 80) return { label: 'Normal',   detail: 'Average mortality risk',                                 color: '#3b82f6' }
+  if (rhr < 90) return { label: 'Elevated', detail: '~1.5× higher all-cause mortality vs <60 bpm (HUNT)',     color: '#f59e0b' }
+  return              { label: 'High',      detail: '~2.8× higher all-cause mortality vs <60 bpm (HUNT)',     color: '#ef4444' }
+}
+
 export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
   const points = hrIntradayData?.['activities-heart-intraday']?.dataset
   if (!points?.length || !rhr) return null

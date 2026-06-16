@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import ScoreRing from '../components/ScoreRing'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings } from '../lib/calculations'
+import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings, getHRVNorm, getUserAge, getRHRMortalityContext } from '../lib/calculations'
 import { getHistory } from '../lib/db'
 import { getTimingForDate, TIMING_SUBSTANCES, analyzeTimingCorrelation } from '../lib/storage'
 
@@ -217,12 +217,39 @@ export default function Recovery({ data, onNav }) {
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">HRV — 14 Days</p>
         <LineGraph data={hrvChartData} dataKey="hrv" color="#00c9a7" unit="ms" reference={avgHRV} height={100} />
+        {todayHRV > 0 && (() => {
+          const age = getUserAge()
+          const norm = getHRVNorm(age)
+          const pct = Math.round((todayHRV / norm) * 100)
+          const color = todayHRV >= norm ? '#00c9a7' : todayHRV >= norm * 0.8 ? '#f59e0b' : '#ef4444'
+          const label = todayHRV >= norm * 1.1 ? 'Above age norm' : todayHRV >= norm ? 'At age norm' : todayHRV >= norm * 0.8 ? 'Near age norm' : 'Below age norm'
+          return (
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-[10px] text-gray-600">vs age-adjusted norm ({norm} ms) · Shaffer & Ginsberg 2017</p>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0" style={{ background: color + '20', color }}>
+                {pct}% · {label}
+              </span>
+            </div>
+          )
+        })()}
       </div>
 
       {/* RHR trend */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Resting HR — 14 Days</p>
         <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} />
+        {todayRHR > 0 && (() => {
+          const ctx = getRHRMortalityContext(todayRHR)
+          if (!ctx) return null
+          return (
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-[10px] text-gray-600">{ctx.detail}</p>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0" style={{ background: ctx.color + '20', color: ctx.color }}>
+                {ctx.label}
+              </span>
+            </div>
+          )
+        })()}
       </div>
 
       {spo2History.length >= 3 && (

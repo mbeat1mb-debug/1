@@ -13,16 +13,17 @@ export const DEFAULT_TAGS = [
   { id: 'hydrated', label: 'Well Hydrated', emoji: '💧', category: 'intake' },
   { id: 'ate_late', label: 'Ate Late', emoji: '🍽️', category: 'intake' },
   { id: 'travel', label: 'Traveled', emoji: '✈️', category: 'activity' },
-  { id: 'strength', label: 'Strength Training', emoji: '🏋️', category: 'activity' },
   { id: 'cardio', label: 'Cardio', emoji: '🏃', category: 'activity' },
   { id: 'sick', label: 'Feeling Sick', emoji: '🤒', category: 'health' },
   { id: 'social', label: 'Social Evening', emoji: '🎉', category: 'mental' },
-  { id: 'cold_shower', label: 'Cold Shower', emoji: '🚿', category: 'recovery' },
-  { id: 'sauna', label: 'Sauna', emoji: '🧖', category: 'recovery' },
-  { id: 'zone2', label: 'Zone 2 Cardio', emoji: '🚴', category: 'activity' },
-  { id: 'morning_sun', label: 'Morning Sunlight', emoji: '☀️', category: 'health' },
-  { id: 'fasting', label: 'Intermittent Fast', emoji: '⏱️', category: 'intake' },
-  { id: 'high_protein', label: 'High Protein', emoji: '🥩', category: 'intake' },
+  // Longevity-category behaviors — each backed by mortality outcome data
+  { id: 'strength', label: 'Strength Training', emoji: '🏋️', category: 'longevity' },
+  { id: 'zone2', label: 'Zone 2 Cardio', emoji: '🚴', category: 'longevity' },
+  { id: 'sauna', label: 'Sauna', emoji: '🧖', category: 'longevity' },
+  { id: 'cold_shower', label: 'Cold Exposure', emoji: '🧊', category: 'longevity' },
+  { id: 'high_protein', label: 'Hit Protein Target', emoji: '🥩', category: 'longevity' },
+  { id: 'fasting', label: 'Time-Restricted Eating', emoji: '⏱️', category: 'longevity' },
+  { id: 'morning_sun', label: 'Morning Sunlight', emoji: '☀️', category: 'longevity' },
 ]
 
 export function getJournalEntries() {

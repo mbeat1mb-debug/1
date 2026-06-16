@@ -88,7 +88,7 @@ export default function Journal({ data, onNav }) {
   const savedTimerRef = useRef(null)
   const tags = getAllTags()
 
-  const categories = ['all', 'intake', 'sleep', 'mental', 'activity', 'health', 'recovery', 'custom']
+  const categories = ['all', 'longevity', 'intake', 'sleep', 'mental', 'activity', 'health', 'recovery', 'custom']
 
   useEffect(() => {
     const entry = getEntryForDate(today())
@@ -315,6 +315,30 @@ export default function Journal({ data, onNav }) {
       {/* Tag grid */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">What happened today?</p>
+
+        {activeCategory === 'longevity' && (
+          <div className="mb-3 p-3 rounded-xl space-y-1.5" style={{ background: '#0d1a14', border: '1px solid #00c9a722' }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#00c9a7' }}>Evidence-backed longevity behaviors</p>
+            {[
+              ['🏋️', 'Strength 2×/wk',        '23% lower all-cause mortality',                            'Liu et al., BJSM 2019'],
+              ['🚴', 'Zone 2 cardio',           '3–5× lower mortality: high vs low fitness',                'Mandsager et al., JAMA 2018'],
+              ['🧖', 'Sauna 4×/wk',             '40% lower all-cause, 57% lower CVD mortality',            'Laukkanen et al., JAMA 2018'],
+              ['🧊', 'Cold exposure',            'Reduces inflammation, improves autonomic tone',           'Tipton et al., 2017'],
+              ['🥩', 'Protein ≥1.6 g/kg',       'Preserves muscle mass and prevents sarcopenia',           'Morton et al., BJSM 2018'],
+              ['⏱️', 'Time-restricted eating',   'Improves metabolic markers and circadian alignment',      'Wilkinson et al., Cell Metab 2020'],
+              ['☀️', 'Morning sunlight',         'Anchors circadian rhythm, improves sleep and mood',       'Panda, 2022'],
+            ].map(([emoji, label, effect, source]) => (
+              <div key={label} className="flex items-start gap-1.5">
+                <span className="text-xs mt-0.5 flex-shrink-0">{emoji}</span>
+                <p className="text-[10px] leading-relaxed">
+                  <span className="text-gray-200 font-medium">{label} </span>
+                  <span className="text-gray-500">— {effect} · <em>{source}</em></span>
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           {filteredTags.map(tag => (
             <TagButton

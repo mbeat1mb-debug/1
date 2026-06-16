@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData, getVO2MortalityContext } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -636,6 +636,24 @@ export default function Healthspan({ data, onNav }) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">VO2 Max Trend</p>
           <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
           <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#3b82f6" unit=" mL/kg/min" height={90} />
+          {vo2Max > 0 && (() => {
+            const ctx = getVO2MortalityContext(vo2Max, userAge)
+            if (!ctx) return null
+            return (
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold" style={{ color: ctx.color }}>{ctx.category}</p>
+                    <p className="text-[10px] text-gray-600 mt-0.5">{ctx.note}</p>
+                    <p className="text-[10px] text-gray-700 mt-0.5">Mandsager et al., JAMA Network Open 2018</p>
+                  </div>
+                  <span className="text-sm font-bold flex-shrink-0 px-2 py-1 rounded-lg" style={{ background: ctx.color + '20', color: ctx.color }}>
+                    {vo2Max} ml/kg/min
+                  </span>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 

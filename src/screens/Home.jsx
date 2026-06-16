@@ -15,6 +15,7 @@ import DailyReport, { getTimeOfDay } from '../components/DailyReport'
 import {
   getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
   getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
+  calculatePhysiologicalAge, getUserAge,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 import { getTopCorrelations } from '../lib/correlations'
@@ -179,12 +180,39 @@ function RecordsContent() {
   )
 }
 
-function HealthspanContent() {
+function HealthspanContent({ data }) {
+  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0, weeklyZone2 = 0 } = data
+  const userAge = getUserAge()
+  const physAge = userAge > 0 ? calculatePhysiologicalAge({
+    avgHRV: hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1),
+    avgRHR: rhrHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.filter(Boolean).length || 1),
+    avgSleep: sleepHistory.length ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60 : 7,
+    sleepConsistency: 0.8,
+    avgSteps: steps,
+    weeklyAZM: weeklyZone2,
+    vo2Max,
+    hrvHistory,
+  }) : null
+  const diff = physAge !== null ? physAge - userAge : null
+  const color = diff === null ? '#888' : diff <= -3 ? '#00c9a7' : diff <= 0 ? '#3b82f6' : diff <= 3 ? '#f59e0b' : '#ef4444'
+
   return (
     <div className="flex items-center justify-between">
       <div>
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Healthspan</span>
-        <p className="text-gray-300 text-sm mt-1">Biological age & pace of aging</p>
+        {physAge !== null ? (
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold" style={{ color }}>{physAge}</span>
+            <span className="text-sm text-gray-400">body age</span>
+            {diff !== null && (
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: color + '20', color }}>
+                {diff < 0 ? `${Math.abs(diff)}y younger` : diff > 0 ? `${diff}y older` : 'On track'}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-300 text-sm mt-1">Biological age & pace of aging</p>
+        )}
       </div>
       <span className="text-2xl">⏳</span>
     </div>
