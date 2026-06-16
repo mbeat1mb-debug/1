@@ -1,5 +1,4 @@
 import ScoreRing from '../components/ScoreRing'
-import { BarGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance, getTrainingStatus } from '../lib/calculations'
 

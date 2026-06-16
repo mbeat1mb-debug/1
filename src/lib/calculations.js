@@ -18,9 +18,6 @@ export function getMaxHR() {
   } catch { return formula }
 }
 
-// Kept for backwards compat (Strain.jsx)
-export const MAX_HR = Math.round(192 - 0.007 * 39 * 39)
-
 // Internal variant accepts a pre-computed maxHR to avoid repeated localStorage reads
 function hrZone(hr, maxHR) {
   const pct = hr / maxHR
@@ -30,10 +27,6 @@ function hrZone(hr, maxHR) {
   if (pct >= 0.60) return 2
   if (pct >= 0.50) return 1
   return 0
-}
-
-export function getHRZone(hr) {
-  return hrZone(hr, getMaxHR())
 }
 
 // Exponential zone weighting — mirrors Whoop's approach
