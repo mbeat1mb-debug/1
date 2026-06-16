@@ -281,3 +281,15 @@ export function analyzeEnergyCorrelation(healthHistory) {
   })
   return byEnergy.filter(e => e.count > 0)
 }
+
+export function getSleepTimeOverride(date) {
+  try { return JSON.parse(localStorage.getItem(`sleep_override_${date}`) || 'null') } catch { return null }
+}
+
+export function saveSleepTimeOverride(date, bed, wake) {
+  try { localStorage.setItem(`sleep_override_${date}`, JSON.stringify({ bed, wake })) } catch {}
+}
+
+export function clearSleepTimeOverride(date) {
+  try { localStorage.removeItem(`sleep_override_${date}`) } catch {}
+}

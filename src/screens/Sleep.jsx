@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph, LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge, calculateChronotype, calculateSleepDebtPayback } from '../lib/calculations'
+import { getSleepTimeOverride, saveSleepTimeOverride, clearSleepTimeOverride } from '../lib/storage'
 
 function SleepStageBar({ label, minutes, total, color }) {
   const pct = total > 0 ? (minutes / total) * 100 : 0
@@ -66,6 +68,12 @@ function BackButton({ onNav }) {
   )
 }
 
+// Format ISO datetime or HH:MM string → "h:mm AM/PM"
+function fmtSleepTime(iso) {
+  if (!iso) return '--'
+  try { return new Date(iso.includes('T') ? iso : `2000-01-01T${iso}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) } catch { return '--' }
+}
+
 export default function Sleep({ data, onNav }) {
   const { todaySleep, sleepHistory = [], todayBR = 0 } = data
 
@@ -82,6 +90,34 @@ export default function Sleep({ data, onNav }) {
 
   const hours = Math.floor(totalMins / 60)
   const mins = totalMins % 60
+
+  const sleepDate = todaySleep?.dateOfSleep ?? new Date().toISOString().split('T')[0]
+  const [override, setOverride] = useState(() => getSleepTimeOverride(sleepDate))
+  const [editingBed, setEditingBed] = useState(false)
+  const [editingWake, setEditingWake] = useState(false)
+
+  const displayBed = override?.bed
+    ? fmtSleepTime(override.bed)
+    : fmtSleepTime(todaySleep?.startTime)
+  const displayWake = override?.wake
+    ? fmtSleepTime(override.wake)
+    : fmtSleepTime(todaySleep?.endTime)
+
+  // If override exists, recalculate minutesAsleep from the corrected window
+  const correctedMins = override?.bed && override?.wake
+    ? (() => {
+        const bed = new Date(`2000-01-01T${override.bed}`)
+        const wake = new Date(`2000-01-01T${override.wake}`)
+        let mins = (wake - bed) / 60000
+        if (mins < 0) mins += 24 * 60  // crosses midnight
+        const awake = todaySleep?.timeInBed ? (todaySleep.timeInBed - (todaySleep.minutesAsleep || 0)) : 0
+        return Math.max(0, Math.round(mins - awake))
+      })()
+    : null
+
+  const displayMins = correctedMins ?? totalMins
+  const displayHours = Math.floor(displayMins / 60)
+  const displayMinRemainder = displayMins % 60
 
   const sleepDebt = calculateSleepDebt(sleepHistory)
   const chronotype = calculateChronotype(sleepHistory)
@@ -113,18 +149,85 @@ export default function Sleep({ data, onNav }) {
 
       {/* Main score */}
       {todaySleep && (
-        <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <ScoreRing score={sleepScore} color={sleepColor} size={130} strokeWidth={11} unit="%" />
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-white">{hours}h {mins}m</p>
-            <p className="text-gray-500 text-sm">Time asleep</p>
-            <p className="text-gray-600 text-xs mt-2">In bed: {Math.floor(totalInBed / 60)}h {totalInBed % 60}m</p>
-            <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
-              <span className="text-xs font-bold" style={{ color: sleepColor }}>
-                {sleepScore >= 75 ? 'GREAT' : sleepScore >= 50 ? 'FAIR' : 'POOR'}
-              </span>
+        <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+          <div className="flex items-center gap-6 mb-4">
+            <ScoreRing score={sleepScore} color={sleepColor} size={120} strokeWidth={11} unit="%" />
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-white">{displayHours}h {displayMinRemainder}m</p>
+              <p className="text-gray-500 text-sm">Time asleep</p>
+              {correctedMins !== null && (
+                <p className="text-[10px] mt-1" style={{ color: '#f59e0b' }}>Fitbit: {hours}h {mins}m · edited</p>
+              )}
+              <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
+                <span className="text-xs font-bold" style={{ color: sleepColor }}>
+                  {sleepScore >= 75 ? 'GREAT' : sleepScore >= 50 ? 'FAIR' : 'POOR'}
+                </span>
+              </div>
             </div>
           </div>
+          {/* Bed / Wake times with inline editing */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Bedtime</p>
+              {editingBed ? (
+                <input
+                  type="time"
+                  defaultValue={override?.bed ?? (todaySleep?.startTime ? todaySleep.startTime.slice(11, 16) : '')}
+                  autoFocus
+                  className="bg-transparent text-white text-base font-bold outline-none w-full"
+                  style={{ colorScheme: 'dark' }}
+                  onBlur={e => {
+                    const val = e.target.value
+                    if (val) {
+                      const next = { ...(override || {}), bed: val }
+                      saveSleepTimeOverride(sleepDate, next.bed, next.wake)
+                      setOverride(next)
+                    }
+                    setEditingBed(false)
+                  }}
+                />
+              ) : (
+                <button className="flex items-center gap-2 w-full text-left" onClick={() => setEditingBed(true)}>
+                  <span className="text-base font-bold text-white">{displayBed}</span>
+                  <svg viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth={1.5} className="w-3 h-3 flex-shrink-0"><path d="M11 2l3 3-9 9H2v-3L11 2z"/></svg>
+                </button>
+              )}
+            </div>
+            <div className="rounded-xl p-3" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Wake Time</p>
+              {editingWake ? (
+                <input
+                  type="time"
+                  defaultValue={override?.wake ?? (todaySleep?.endTime ? todaySleep.endTime.slice(11, 16) : '')}
+                  autoFocus
+                  className="bg-transparent text-white text-base font-bold outline-none w-full"
+                  style={{ colorScheme: 'dark' }}
+                  onBlur={e => {
+                    const val = e.target.value
+                    if (val) {
+                      const next = { ...(override || {}), wake: val }
+                      saveSleepTimeOverride(sleepDate, next.bed, next.wake)
+                      setOverride(next)
+                    }
+                    setEditingWake(false)
+                  }}
+                />
+              ) : (
+                <button className="flex items-center gap-2 w-full text-left" onClick={() => setEditingWake(true)}>
+                  <span className="text-base font-bold text-white">{displayWake}</span>
+                  <svg viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth={1.5} className="w-3 h-3 flex-shrink-0"><path d="M11 2l3 3-9 9H2v-3L11 2z"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
+          {override && (
+            <button
+              onClick={() => { clearSleepTimeOverride(sleepDate); setOverride(null) }}
+              className="mt-2 text-[10px] text-gray-600 underline"
+            >
+              Reset to Fitbit times
+            </button>
+          )}
         </div>
       )}
 
