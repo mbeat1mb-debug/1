@@ -305,9 +305,7 @@ function JournalContent() {
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Journal</span>
         <p className="text-gray-500 text-sm mt-1">Nothing logged today</p>
       </div>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00c9a715', border: '1px solid #00c9a740' }}>
-        <span className="text-xl font-light leading-none" style={{ color: '#00c9a7' }}>+</span>
-      </div>
+      <span className="text-sm font-medium flex-shrink-0" style={{ color: '#00c9a7' }}>+</span>
     </div>
   )
 }
