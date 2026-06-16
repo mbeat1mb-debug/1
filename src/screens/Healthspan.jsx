@@ -26,13 +26,13 @@ function BioAgeOrb({ physAge, chronAge }) {
       <div
         className="relative flex items-center justify-center"
         style={{
-          width: 210, height: 210, borderRadius: '50%',
-          background: `radial-gradient(circle at 38% 32%, ${color}55, ${color}20 45%, ${color}08 70%, transparent)`,
-          border: `1px solid ${color}30`,
-          boxShadow: `0 0 50px ${color}25, 0 0 100px ${color}12`,
+          width: 220, height: 220, borderRadius: '50%',
+          background: `radial-gradient(circle at 30% 28%, ${color}90 0%, ${color}50 22%, ${color}22 48%, ${color}08 68%, transparent)`,
+          border: `1px solid ${color}55`,
+          boxShadow: `0 0 45px ${color}50, 0 0 90px ${color}28, 0 0 180px ${color}12, inset 0 0 50px ${color}18`,
         }}
       >
-        <div style={{ position: 'absolute', width: 70, height: 70, borderRadius: '50%', background: `radial-gradient(circle, ${color}30, transparent)`, top: 38, left: 42 }} />
+        <div style={{ position: 'absolute', width: 95, height: 65, borderRadius: '50%', background: `radial-gradient(ellipse, ${color}70, transparent 70%)`, top: 32, left: 36, filter: 'blur(10px)' }} />
         <div className="text-center z-10">
           <p className="text-6xl font-bold text-white" style={{ lineHeight: 1 }}>{physAge}</p>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] mt-2" style={{ color }}>SOMA AGE</p>
@@ -53,7 +53,7 @@ function PaceSlider({ pace, physAge, chronAge }) {
   const minRate = 0.5, maxRate = 1.8
   const pct = Math.min(96, Math.max(4, ((rate - minRate) / (maxRate - minRate)) * 100))
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
       <div className="flex items-baseline justify-between mb-1">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Pace of Aging</p>
         <span className="text-2xl font-bold" style={{ color: paceColor }}>{rate.toFixed(1)}x</span>
@@ -126,7 +126,7 @@ function BioAgeTrendChart({ chronAge }) {
   }, [chronAge])
   if (data.length < 2) return null
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
       <div className="flex items-center justify-between mb-1">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Age Trend</p>
         <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ function MetricFactorCard({ label, value, displayValue, unit, contribution, min,
     : Math.min(96, Math.max(4, 100 - rawPct))
   const color = contribution < 0 ? '#00c9a7' : contribution === 0 ? '#3b82f6' : contribution <= 2 ? '#f59e0b' : '#ef4444'
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{label}</p>
       <div className="relative pt-2 mb-2 mx-1">
         <div className="h-2 rounded-full" style={{
@@ -200,7 +200,7 @@ function TopPriorities({ opportunities }) {
   if (!opportunities || opportunities.length === 0) return null
   const top3 = opportunities.slice(0, 3)
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Priorities</p>
       <div className="space-y-0">
         {top3.map((c, i) => (
@@ -560,7 +560,7 @@ export default function Healthspan({ data, onNav }) {
           <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
           <BioAgeTrendChart chronAge={userAge} />
           {phenoAge !== null ? (
-            <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge</p>
@@ -572,7 +572,7 @@ export default function Healthspan({ data, onNav }) {
               </div>
             </div>
           ) : phenoProgress ? (
-            <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge — bloodwork panel</p>
                 <span className="text-xs font-bold text-gray-400">{phenoProgress.present}/{phenoProgress.total} markers</span>
@@ -590,7 +590,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Body Composition</p>
 
           {/* Stats grid */}
@@ -678,7 +678,7 @@ export default function Healthspan({ data, onNav }) {
       )}
 
       {/* Zone 2 Training */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Zone 2 Cardio This Week</p>
         <div className="flex items-end gap-3 mb-3">
           <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#00c9a7' : weeklyZone2 >= 150 ? '#3b82f6' : '#f59e0b' }}>
@@ -702,7 +702,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Sleep Regularity Index */}
       {sri !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Regularity Index</p>
           <div className="flex items-end gap-3 mb-2">
             <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#00c9a7' : sri >= 0.80 ? '#3b82f6' : sri >= 0.70 ? '#f59e0b' : '#ef4444' }}>
@@ -724,7 +724,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Post-exercise Heart Rate Recovery */}
       {data.hrr && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Heart Rate Recovery</p>
           <div className="grid grid-cols-2 gap-3 mb-2">
             <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
@@ -781,7 +781,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* VO2 Max History */}
       {vo2ChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">VO2 Max Trend</p>
           <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
           <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#3b82f6" unit=" mL/kg/min" height={90} />
@@ -808,7 +808,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Lab results impact */}
       {labContributions.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <div className="px-4 pt-4 pb-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Bloodwork Impact</span>
             <p className="text-xs text-gray-600 mt-1">{labContributions.length} marker{labContributions.length !== 1 ? 's' : ''} entered</p>
@@ -824,7 +824,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Blood Pressure Trend */}
       {bpChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Blood Pressure Trend</p>
           <p className="text-[10px] text-gray-600 mb-3">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
           <DualLineGraph
@@ -842,7 +842,7 @@ export default function Healthspan({ data, onNav }) {
       )}
 
       {/* Mortality Driver Dashboard */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Longevity Profile</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -870,7 +870,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Healthspan Delta Engine */}
       {healthspanDeltas.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
           <p className="text-[10px] text-gray-600 mb-3">One-tier improvement on each factor</p>
           <div className="space-y-3">
@@ -890,7 +890,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Social Jet Lag */}
       {socialJetLag !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Circadian Alignment</p>
           <div className="flex items-end gap-3 mb-2">
             <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#00c9a7' : socialJetLag <= 45 ? '#3b82f6' : socialJetLag <= 75 ? '#f59e0b' : '#ef4444' }}>
@@ -909,7 +909,7 @@ export default function Healthspan({ data, onNav }) {
 
       {/* Sleep Apnea Risk */}
       {sleepApneaRisk !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Apnea Risk</p>
           <div className="flex items-center justify-between mb-3">
             <div>

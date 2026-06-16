@@ -98,7 +98,7 @@ export default function Strain({ data, onNav }) {
       </div>
 
       {/* Main score */}
-      <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <ScoreRing score={strainScore} max={21} color={strainColor} size={130} strokeWidth={11} sublabel="/ 21" />
         <div className="flex-1">
           <p className="text-gray-400 text-sm mb-2">Day Strain</p>
@@ -112,15 +112,15 @@ export default function Strain({ data, onNav }) {
 
       {/* Training Load (ATL/CTL/TSB) */}
       {trainingLoad && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Training Load</p>
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl p-3 text-center" style={{ background: '#1a1a1a' }}>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(145deg, #1c1c1c, #161616)' }}>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Fatigue (ATL)</p>
               <p className="text-xl font-bold text-white">{trainingLoad.atl}</p>
               <p className="text-[10px] text-gray-600">7-day avg</p>
             </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: '#1a1a1a' }}>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(145deg, #1c1c1c, #161616)' }}>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Fitness (CTL)</p>
               <p className="text-xl font-bold text-white">{trainingLoad.ctl}</p>
               <p className="text-[10px] text-gray-600">42-day avg</p>
@@ -153,7 +153,7 @@ export default function Strain({ data, onNav }) {
         </div>
       )}
 
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Strain Coach</p>
         {(() => {
           const remaining = Math.max(0, Math.round((optimalStrain - strainScore) * 10) / 10)
@@ -164,7 +164,7 @@ export default function Strain({ data, onNav }) {
                 <span className="text-gray-500">Today's capacity used</span>
                 <span className="font-semibold text-white">{strainScore} / {optimalStrain}</span>
               </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'linear-gradient(145deg, #1c1c1c, #161616)' }}>
                 <div className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${pct}%`, background: pct >= 100 ? '#ef4444' : `linear-gradient(90deg, #3b82f688, #3b82f6)` }} />
               </div>
@@ -188,7 +188,7 @@ export default function Strain({ data, onNav }) {
                 <span className="text-gray-500">Weekly Active Zone Minutes</span>
                 <span className="font-semibold" style={{ color }}>{azm} AZM</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'linear-gradient(145deg, #1c1c1c, #161616)' }}>
                 <div className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
               </div>
@@ -206,7 +206,7 @@ export default function Strain({ data, onNav }) {
       </div>
 
       {/* Activity stats */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <div className="px-4 pt-4 pb-2">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Activity</span>
         </div>
@@ -233,7 +233,7 @@ export default function Strain({ data, onNav }) {
       </div>
 
       {/* HR Zones breakdown */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Heart Rate Zones</p>
         <div className="space-y-3">
           {ZONE_LABELS.map((zone, i) => {
@@ -245,7 +245,7 @@ export default function Strain({ data, onNav }) {
                   <span className="text-gray-400">{zone} <span className="text-gray-600">({ZONE_DESCS[i]})</span></span>
                   <span className="text-white font-medium">{mins} min</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1a1a1a' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'linear-gradient(145deg, #1c1c1c, #161616)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
@@ -263,7 +263,7 @@ export default function Strain({ data, onNav }) {
 
       {/* Training Effect */}
       {trainingEffect && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Training Effect</p>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -286,7 +286,7 @@ export default function Strain({ data, onNav }) {
 
       {/* Recent Workouts */}
       {activityLogs.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <div className="px-4 pt-4 pb-2 flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recent Workouts</span>
             <span className="text-xs text-gray-600">{activityLogs.length} sessions (30d)</span>

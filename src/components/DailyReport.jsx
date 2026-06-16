@@ -37,12 +37,12 @@ export function getTimeOfDay() {
 }
 
 function StatPill({ label, value, unit = '', up }) {
-  const color = up === undefined ? '#888' : up ? '#00c9a7' : '#ef4444'
+  const color = up === undefined ? '#e0e0e0' : up ? '#00c9a7' : '#ef4444'
   return (
     <div className="flex flex-col items-center">
-      <span className="text-[10px] text-gray-600 uppercase tracking-wider">{label}</span>
-      <span className="text-sm font-bold" style={{ color: up !== undefined ? color : '#fff' }}>
-        {value}<span className="text-xs text-gray-500 ml-0.5">{unit}</span>
+      <span className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">{label}</span>
+      <span className="text-base font-bold" style={{ color }}>
+        {value}<span className="text-[11px] text-gray-500 ml-0.5">{unit}</span>
       </span>
     </div>
   )
@@ -154,7 +154,7 @@ export default function DailyReport({ data, type }) {
                 <StatPill label="Sleep" value={sleepHours} />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#1a1a1a' }}>
+            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
               <span className="text-xs text-gray-500">Target strain today</span>
               <span className="text-sm font-bold" style={{ color: accentColor }}>{optimalStrain}</span>
             </div>
@@ -169,13 +169,13 @@ export default function DailyReport({ data, type }) {
             </div>
             <div className="space-y-1.5">
               {optimalSleepWindow && (
-                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#1a1a1a' }}>
+                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
                   <span className="text-xs text-gray-500">Target bedtime</span>
                   <span className="text-sm font-bold text-white">{optimalSleepWindow.bedtime}</span>
                 </div>
               )}
               {sleepDebt > 0 && (
-                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#1a1a1a' }}>
+                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
                   <span className="text-xs text-gray-500">Sleep debt</span>
                   <span className="text-sm font-bold" style={{ color: sleepDebt >= 3 ? '#ef4444' : '#f59e0b' }}>{sleepDebt}h</span>
                 </div>

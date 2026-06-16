@@ -67,7 +67,7 @@ export default function ScoreRing({
           strokeDasharray={circ}
           strokeDashoffset={arcOffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.33, 1, 0.68, 1)' }}
+          style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.33, 1, 0.68, 1)', filter: `drop-shadow(0 0 6px ${color}cc)` }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

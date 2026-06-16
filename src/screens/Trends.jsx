@@ -17,7 +17,7 @@ function BackButton({ onNav }) {
   )
 }
 
-const CARD = { background: '#111', border: '1px solid #222' }
+const CARD = { background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }
 const TITLE = 'text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3'
 const EMPTY = 'text-gray-600 text-sm italic'
 

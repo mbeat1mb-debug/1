@@ -111,20 +111,20 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {/* Main score */}
-      <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <div className="flex items-center gap-5">
           <ScoreRing score={recoveryScore} color={color} size={130} strokeWidth={11} label={label} />
-          <div className="flex-1 space-y-3">
-            <div>
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">HRV</p>
+          <div className="flex-1">
+            <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #1e1e1e' }}>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-0.5">HRV</p>
               <p className="text-3xl font-bold text-white leading-tight">{todayHRV > 0 ? todayHRV : '--'}<span className="text-sm font-normal text-gray-500 ml-1">ms</span></p>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Resting HR</p>
+            <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #1e1e1e' }}>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-0.5">Resting HR</p>
               <p className="text-3xl font-bold text-white leading-tight">{todayRHR > 0 ? todayRHR : '--'}<span className="text-sm font-normal text-gray-500 ml-1">bpm</span></p>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Sleep</p>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-0.5">Sleep</p>
               <p className="text-3xl font-bold text-white leading-tight">{sleepHours}</p>
             </div>
           </div>
@@ -136,15 +136,15 @@ export default function Recovery({ data, onNav }) {
 
       {/* Recovery Stability */}
       {avgRecovery30 !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Recovery Stability — 30 Days</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+            <div className="rounded-xl p-3" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">30-Day Avg</p>
               <p className="text-2xl font-bold" style={{ color: getRecoveryColor(avgRecovery30) }}>{avgRecovery30}</p>
               <p className="text-[10px] mt-0.5" style={{ color: getRecoveryColor(avgRecovery30) }}>{getRecoveryLabel(avgRecovery30)}</p>
             </div>
-            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
+            <div className="rounded-xl p-3" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Volatility (σ)</p>
               <p className="text-2xl font-bold" style={{ color: volatility30 <= 8 ? '#00c9a7' : volatility30 <= 15 ? '#f59e0b' : '#ef4444' }}>{volatility30}</p>
               <p className="text-[10px] mt-0.5" style={{ color: volatility30 <= 8 ? '#00c9a7' : volatility30 <= 15 ? '#f59e0b' : '#ef4444' }}>
@@ -157,7 +157,7 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {/* Key metrics */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <div className="px-4 pt-4 pb-2">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Today's Metrics</span>
         </div>
@@ -183,7 +183,7 @@ export default function Recovery({ data, onNav }) {
 
       {/* Skin temperature */}
       {skinTempDev !== undefined && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Skin Temperature</p>
           <div className="flex items-center justify-between">
             <div>
@@ -209,7 +209,7 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {/* HRV trend */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">HRV — 14 Days</p>
         <LineGraph data={hrvChartData} dataKey="hrv" color="#00c9a7" unit="ms" reference={avgHRV} height={100} />
         {todayHRV > 0 && (() => {
@@ -230,7 +230,7 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {/* RHR trend */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Resting HR — 14 Days</p>
         <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} />
         {todayRHR > 0 && (() => {
@@ -248,7 +248,7 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {spo2History.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Blood Oxygen — 14 Days</p>
           <LineGraph data={spo2History} dataKey="spo2" color="#3b82f6" unit="%" reference={97} height={80} />
           <p className="text-xs text-gray-600 mt-2">Normal range: 95–100%. Below 95% warrants attention.</p>
@@ -256,7 +256,7 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {brHistory.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Respiratory Rate — 14 Days</p>
           <LineGraph data={brHistory} dataKey="br" color="#8b5cf6" unit=" br/m" height={80} />
           <p className="text-xs text-gray-600 mt-2">Normal range: 12–20 br/min. Elevated rate may indicate stress or illness.</p>
@@ -265,7 +265,7 @@ export default function Recovery({ data, onNav }) {
 
       {/* Recovery : Strain ratio trend */}
       {data.rsTrend?.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Recovery:Strain Ratio — 14 Days</p>
           <p className="text-[10px] text-gray-600 mb-3">Above 4 = well-recovered · Below 2 = accumulated load</p>
           <LineGraph data={data.rsTrend} dataKey="ratio" color="#00c9a7" unit="" reference={4} height={80} />
@@ -281,7 +281,7 @@ export default function Recovery({ data, onNav }) {
 
       {/* Yesterday's substance log */}
       {yesterdayTiming.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Yesterday's Substances</p>
           <div className="space-y-2 mb-2">
             {yesterdayTiming.map(entry => {

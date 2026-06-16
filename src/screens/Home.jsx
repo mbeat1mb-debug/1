@@ -499,7 +499,7 @@ function SetupCard({ onNav }) {
   }
 
   return (
-    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Finish Setup</span>
         <button
