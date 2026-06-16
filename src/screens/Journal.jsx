@@ -712,10 +712,22 @@ export default function Journal({ data, onNav }) {
         </div>
       )}
 
-      {healthHistory.length >= 3 && healthHistory.length < 10 && (
+      {healthHistory.length < 30 && (
         <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Behavior Impact</p>
-          <p className="text-sm text-gray-600">{10 - healthHistory.length} more days of data needed to unlock behavior correlations.</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights Calibrating</p>
+            <span className="text-xs font-bold text-gray-400">{healthHistory.length}/30 days</span>
+          </div>
+          <div className="w-full h-1.5 rounded-full mb-2" style={{ background: '#1a1a1a' }}>
+            <div className="h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (healthHistory.length / 30) * 100)}%`, background: healthHistory.length >= 10 ? '#00c9a7' : '#f59e0b' }} />
+          </div>
+          <p className="text-xs text-gray-600">
+            {healthHistory.length < 10
+              ? `${10 - healthHistory.length} more days until first insights unlock`
+              : healthHistory.length < 30
+              ? `Insights active — reliability improves until 30 days`
+              : null}
+          </p>
         </div>
       )}
 

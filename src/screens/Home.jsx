@@ -19,6 +19,7 @@ import {
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 import { getTopCorrelations } from '../lib/correlations'
+import { getEntryForDate, getAllTags } from '../lib/storage'
 
 function Pill({ label, value, unit = '' }) {
   return (
@@ -270,10 +271,43 @@ function WeeklyPatternContent({ data }) {
 }
 
 function JournalContent() {
+  const todayStr = new Date().toISOString().split('T')[0]
+  const entry = getEntryForDate(todayStr)
+  const loggedIds = entry.tagIds || []
+  const allTags = getAllTags()
+  const topEmojis = loggedIds.slice(0, 5).map(id => allTags.find(t => t.id === id)?.emoji).filter(Boolean)
+  const hasEnergy = entry.energy != null
+
+  if (loggedIds.length > 0 || hasEnergy) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Journal</span>
+          <div className="flex items-center gap-2 mt-1">
+            {topEmojis.length > 0 && <span className="text-base leading-none">{topEmojis.join('')}</span>}
+            <span className="text-xs text-gray-500">
+              {loggedIds.length > 0 ? `${loggedIds.length} logged` : ''}
+              {loggedIds.length > 0 && hasEnergy ? ' · ' : ''}
+              {hasEnergy ? `energy ${entry.energy}/5` : ''}
+            </span>
+          </div>
+        </div>
+        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00c9a720' }}>
+          <span className="text-sm" style={{ color: '#00c9a7' }}>✓</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-400 text-sm">Log today's behaviors</span>
-      <span className="text-xl text-gray-500">＋</span>
+      <div>
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Journal</span>
+        <p className="text-gray-500 text-sm mt-1">Nothing logged today</p>
+      </div>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00c9a715', border: '1px solid #00c9a740' }}>
+        <span className="text-xl font-light leading-none" style={{ color: '#00c9a7' }}>+</span>
+      </div>
     </div>
   )
 }
