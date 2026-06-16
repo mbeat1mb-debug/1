@@ -100,8 +100,8 @@ function CategoryInsightCard({ category, filteredTags, correlations, healthHisto
   if (withData.length === 0 && healthHistory.length < 10) return null
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#0d1218', border: '1px solid #1e2a38' }}>
-      <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a7fa5' }}>
+    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #0d1218, #0a0f14)', border: '1px solid #1e2a38' }}>
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#4a9fd4' }}>
         {category.charAt(0).toUpperCase() + category.slice(1)} Insights
       </p>
       {withData.length > 0 ? (
@@ -168,23 +168,47 @@ function MetricChip({ label, value, unit, positive }) {
   )
 }
 
-function TagButton({ tag, selected, streak, onToggle }) {
+const CATEGORY_META = {
+  all:       { emoji: '✦',  label: 'All' },
+  longevity: { emoji: '🧬', label: 'Longevity' },
+  intake:    { emoji: '🥩', label: 'Intake' },
+  sleep:     { emoji: '😴', label: 'Sleep' },
+  mental:    { emoji: '🧠', label: 'Mental' },
+  activity:  { emoji: '🏃', label: 'Activity' },
+  health:    { emoji: '❤️', label: 'Health' },
+  recovery:  { emoji: '⚡', label: 'Recovery' },
+  custom:    { emoji: '✨', label: 'Custom' },
+}
+
+function TagCard({ tag, selected, streak, onToggle }) {
   return (
     <button
       onClick={() => onToggle(tag.id)}
-      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 relative"
+      className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl transition-all duration-200 relative"
       style={{
-        background: selected ? '#00c9a720' : '#1a1a1a',
-        border: `1px solid ${selected ? '#00c9a7' : '#2a2a2a'}`,
-        color: selected ? '#00c9a7' : '#888',
+        background: selected
+          ? 'linear-gradient(145deg, #00c9a714, #00c9a708)'
+          : 'linear-gradient(145deg, #1c1c1c, #161616)',
+        border: `1px solid ${selected ? '#00c9a745' : '#242424'}`,
+        boxShadow: selected ? '0 0 18px #00c9a71a, inset 0 0 14px #00c9a706' : 'none',
+        minHeight: 76,
       }}
     >
-      <span>{tag.emoji}</span>
-      <span>{tag.label}</span>
+      <span className="text-2xl leading-none">{tag.emoji}</span>
+      <span className="text-[10px] font-medium text-center leading-tight mt-0.5" style={{ color: selected ? '#00c9a7' : '#777' }}>
+        {tag.label}
+      </span>
       {streak >= 2 && (
         <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[18px] text-center leading-none" style={{ background: '#f59e0b', color: '#000' }}>
           {streak}
         </span>
+      )}
+      {selected && (
+        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00c9a7' }}>
+          <svg viewBox="0 0 10 10" fill="none" stroke="black" strokeWidth={2.5} className="w-2 h-2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 5l2.5 2.5 3.5-4" />
+          </svg>
+        </div>
       )}
     </button>
   )
@@ -369,8 +393,13 @@ export default function Journal({ data, onNav }) {
     return result
   }, [recentActivity])
 
-  const ENERGY_LABELS = ['', 'Drained', 'Low', 'Okay', 'Good', 'Energized']
-  const ENERGY_COLORS = ['', '#ef4444', '#f59e0b', '#888', '#3b82f6', '#00c9a7']
+  const ENERGY_OPTIONS = [
+    { n: 1, emoji: '😴', label: 'Drained',   color: '#ef4444' },
+    { n: 2, emoji: '😕', label: 'Low',        color: '#f59e0b' },
+    { n: 3, emoji: '😐', label: 'Okay',       color: '#888888' },
+    { n: 4, emoji: '🙂', label: 'Good',       color: '#3b82f6' },
+    { n: 5, emoji: '⚡', label: 'Energized',  color: '#00c9a7' },
+  ]
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">
@@ -393,8 +422,8 @@ export default function Journal({ data, onNav }) {
 
       {/* Predictive Tomorrow */}
       {predictedRecovery && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: `1px solid ${predictedRecovery.totalDiff >= 0 ? '#00c9a733' : '#ef444433'}` }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Tomorrow's Outlook</p>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: `1px solid ${predictedRecovery.totalDiff >= 0 ? '#00c9a733' : '#ef444433'}` }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#00c9a7' }}>Tomorrow's Outlook</p>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-3xl font-bold" style={{ color: predictedRecovery.predicted >= 67 ? '#00c9a7' : predictedRecovery.predicted >= 34 ? '#f59e0b' : '#ef4444' }}>
@@ -436,27 +465,32 @@ export default function Journal({ data, onNav }) {
       )}
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
-            style={{
-              background: activeCategory === cat ? '#00c9a7' : '#1a1a1a',
-              color: activeCategory === cat ? '#000' : '#888',
-              border: '1px solid',
-              borderColor: activeCategory === cat ? '#00c9a7' : '#2a2a2a',
-            }}
-          >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </button>
-        ))}
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+        {categories.map(cat => {
+          const meta = CATEGORY_META[cat] || { emoji: '', label: cat }
+          const active = activeCategory === cat
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0"
+              style={{
+                background: active ? '#00c9a7' : 'linear-gradient(145deg, #1c1c1c, #161616)',
+                color: active ? '#000' : '#666',
+                border: `1px solid ${active ? '#00c9a7' : '#242424'}`,
+                boxShadow: active ? '0 0 12px #00c9a740' : 'none',
+              }}
+            >
+              <span className="text-sm leading-none">{meta.emoji}</span>
+              <span>{meta.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Tag grid */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">What happened today?</p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>What happened today?</p>
 
         {activeCategory === 'longevity' && (
           <div className="mb-3 p-3 rounded-xl space-y-1.5" style={{ background: '#0d1a14', border: '1px solid #00c9a722' }}>
@@ -481,9 +515,9 @@ export default function Journal({ data, onNav }) {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {filteredTags.map(tag => (
-            <TagButton
+            <TagCard
               key={tag.id}
               tag={tag}
               selected={selectedTags.includes(tag.id)}
@@ -493,18 +527,19 @@ export default function Journal({ data, onNav }) {
           ))}
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm text-gray-600 transition-all"
-            style={{ background: '#1a1a1a', border: '1px dashed #333' }}
+            className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl transition-all"
+            style={{ background: 'linear-gradient(145deg, #1a1a1a, #141414)', border: '1px dashed #333', minHeight: 76 }}
           >
-            <span>+</span> Custom
+            <span className="text-2xl leading-none text-gray-600">+</span>
+            <span className="text-[10px] text-gray-600 font-medium">Custom</span>
           </button>
         </div>
       </div>
 
       {/* Add custom tag */}
       {showAdd && (
-        <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #00c9a733' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">New Tag</p>
+        <div className="rounded-2xl p-4 space-y-3" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #00c9a733' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#00c9a7' }}>New Tag</p>
           <input
             className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
             placeholder="Tag name (e.g. Cold plunge)"
@@ -530,8 +565,8 @@ export default function Journal({ data, onNav }) {
       )}
 
       {/* Daily Timing */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Daily Timing</p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#00c9a7' }}>Daily Timing</p>
         <p className="text-[10px] text-gray-600 mb-3">Toggle on, then drag to set time</p>
         {TIMED_ITEMS.map(item => (
           <TimeSlider
@@ -545,8 +580,8 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Substance Log */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Substance Log</p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>Substance Log</p>
         <div className="flex gap-2 mb-3">
           <select
             value={timingSubstance}
@@ -580,7 +615,7 @@ export default function Journal({ data, onNav }) {
               const lateStim = ['caffeine', 'preworkout'].includes(entry.substance) && entry.time >= '14:00'
               const lateAlc = entry.substance === 'alcohol' && entry.time >= '19:00'
               return (
-                <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: '#1a1a1a' }}>
+                <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
                   <div className="flex items-center gap-2">
                     <span>{sub?.emoji ?? '💊'}</span>
                     <span className="text-sm text-white">{sub?.label ?? entry.substance}</span>
@@ -600,34 +635,33 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Energy level */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Energy Level</p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>Energy Level</p>
         <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map(n => (
-            <button
-              key={n}
-              onClick={() => { setEnergy(energy === n ? null : n); setSaved(false) }}
-              className="flex-1 py-3 rounded-xl text-base font-bold transition-all"
-              style={{
-                background: energy === n ? ENERGY_COLORS[n] + '20' : '#1a1a1a',
-                border: `1px solid ${energy === n ? ENERGY_COLORS[n] : '#2a2a2a'}`,
-                color: energy === n ? ENERGY_COLORS[n] : '#555',
-              }}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between text-[10px] text-gray-600 mt-1.5 px-1">
-          <span>Drained</span>
-          {energy !== null && <span style={{ color: ENERGY_COLORS[energy] }}>{ENERGY_LABELS[energy]}</span>}
-          <span>Energized</span>
+          {ENERGY_OPTIONS.map(({ n, emoji, label, color }) => {
+            const sel = energy === n
+            return (
+              <button
+                key={n}
+                onClick={() => { setEnergy(sel ? null : n); setSaved(false) }}
+                className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all duration-200"
+                style={{
+                  background: sel ? color + '18' : 'linear-gradient(145deg, #1c1c1c, #161616)',
+                  border: `1px solid ${sel ? color + '55' : '#242424'}`,
+                  boxShadow: sel ? `0 0 14px ${color}25` : 'none',
+                }}
+              >
+                <span className="text-xl leading-none">{emoji}</span>
+                <span className="text-[9px] font-semibold" style={{ color: sel ? color : '#444' }}>{label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Blood Pressure */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Blood Pressure <span className="normal-case font-normal text-gray-600">(optional)</span></p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>Blood Pressure <span className="normal-case font-normal" style={{ color: '#444' }}>(optional)</span></p>
         <div className="flex items-center gap-3">
           <input
             type="number" min={70} max={220}
@@ -657,8 +691,8 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Notes */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Notes</p>
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>Notes</p>
         <textarea
           className="w-full bg-transparent text-sm text-white placeholder-gray-600 outline-none resize-none"
           rows={3}
@@ -679,8 +713,8 @@ export default function Journal({ data, onNav }) {
 
       {/* All-behavior insights — sentence format, ranked by impact */}
       {correlations.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">What Moves Your Recovery</p>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#00c9a7' }}>What Moves Your Recovery</p>
           <p className="text-[10px] text-gray-600 mb-4">Ranked by impact · your data only · {healthHistory.length} days tracked</p>
           <div className="space-y-4">
             {correlations.map(({ tag, corr }) => {
@@ -713,12 +747,12 @@ export default function Journal({ data, onNav }) {
       )}
 
       {healthHistory.length < 30 && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights Calibrating</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#00c9a7' }}>Insights Calibrating</p>
             <span className="text-xs font-bold text-gray-400">{healthHistory.length}/30 days</span>
           </div>
-          <div className="w-full h-1.5 rounded-full mb-2" style={{ background: '#1a1a1a' }}>
+          <div className="w-full h-1.5 rounded-full mb-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
             <div className="h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (healthHistory.length / 30) * 100)}%`, background: healthHistory.length >= 10 ? '#00c9a7' : '#f59e0b' }} />
           </div>
           <p className="text-xs text-gray-600">
@@ -743,8 +777,8 @@ export default function Journal({ data, onNav }) {
 
       {/* Your Week — 7-day behavior grid */}
       {recentActivity.some(d => d.tagIds.length > 0) && (
-        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Your Week</p>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#00c9a7' }}>Your Week</p>
           <div className="grid grid-cols-7 gap-1">
             {recentActivity.map((day, i) => {
               const rec = recentRecovery[day.date]
@@ -779,9 +813,9 @@ export default function Journal({ data, onNav }) {
 
       {/* Energy vs Recovery */}
       {energyCorrelation && energyCorrelation.length >= 3 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <div className="px-4 pt-4 pb-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Energy vs Recovery</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#00c9a7' }}>Energy vs Recovery</p>
             <p className="text-xs text-gray-600 mt-1">How your self-rated energy relates to physiological recovery</p>
           </div>
           <div className="px-4 pb-4 flex items-end gap-2 mt-3 h-16">
