@@ -13,63 +13,170 @@ function BackButton({ onNav }) {
   )
 }
 
-function AgeMeter({ physAge, chronAge, phenoAge, phenoProgress }) {
+function BioAgeOrb({ physAge, chronAge }) {
   const diff = physAge - chronAge
   const color = diff <= -3 ? '#00c9a7' : diff <= 0 ? '#3b82f6' : diff <= 3 ? '#f59e0b' : '#ef4444'
-  const label = diff <= -3 ? 'Excellent' : diff <= 0 ? 'Good' : diff <= 3 ? 'Fair' : 'Needs Work'
+  const diffText = diff < 0
+    ? `${Math.abs(diff)} years younger`
+    : diff > 0
+    ? `${diff} years older`
+    : 'Same as calendar age'
+  return (
+    <div className="flex flex-col items-center py-4">
+      <div
+        className="relative flex items-center justify-center"
+        style={{
+          width: 210, height: 210, borderRadius: '50%',
+          background: `radial-gradient(circle at 38% 32%, ${color}55, ${color}20 45%, ${color}08 70%, transparent)`,
+          border: `1px solid ${color}30`,
+          boxShadow: `0 0 50px ${color}25, 0 0 100px ${color}12`,
+        }}
+      >
+        <div style={{ position: 'absolute', width: 70, height: 70, borderRadius: '50%', background: `radial-gradient(circle, ${color}30, transparent)`, top: 38, left: 42 }} />
+        <div className="text-center z-10">
+          <p className="text-6xl font-bold text-white" style={{ lineHeight: 1 }}>{physAge}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] mt-2" style={{ color }}>SOMA AGE</p>
+        </div>
+      </div>
+      <div className="mt-4 px-5 py-2 rounded-full" style={{ background: color + '20', border: `1px solid ${color}40` }}>
+        <p className="text-sm font-bold" style={{ color }}>{diffText}</p>
+      </div>
+      <p className="text-xs text-gray-600 mt-2">vs {chronAge} calendar age · wearable estimate ±3y</p>
+    </div>
+  )
+}
 
+function PaceSlider({ pace, physAge, chronAge }) {
+  const rate = pace?.rate ?? (chronAge > 0 ? physAge / chronAge : 1.0)
+  const paceColor = rate <= 0.85 ? '#00c9a7' : rate <= 1.05 ? '#3b82f6' : rate <= 1.3 ? '#f59e0b' : '#ef4444'
+  const paceLabel = rate <= 0.8 ? 'Slowing significantly' : rate <= 0.95 ? 'Slowing' : rate <= 1.05 ? 'On track' : rate <= 1.3 ? 'Slightly fast' : 'Accelerated'
+  const minRate = 0.5, maxRate = 1.8
+  const pct = Math.min(96, Math.max(4, ((rate - minRate) / (maxRate - minRate)) * 100))
   return (
     <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #222' }}>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Biological Age</p>
-      <div className="flex items-center justify-center gap-8">
-        <div className="text-center">
-          <p className="text-5xl font-bold" style={{ color }}>{physAge}</p>
-          <p className="text-xs text-gray-500 mt-1">Your body age</p>
+      <div className="flex items-baseline justify-between mb-1">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Pace of Aging</p>
+        <span className="text-2xl font-bold" style={{ color: paceColor }}>{rate.toFixed(1)}x</span>
+      </div>
+      <p className="text-sm font-medium mb-5" style={{ color: paceColor }}>{paceLabel}</p>
+      <div className="relative pt-2 mb-3 mx-1">
+        <div className="h-2 rounded-full" style={{ background: 'linear-gradient(to right, #00c9a7, #3b82f6 35%, #f59e0b 65%, #ef4444)' }} />
+        <div className="absolute top-0 flex justify-center" style={{ left: `calc(${pct}% - 5px)` }}>
+          <svg width="10" height="8"><polygon points="5,0 0,8 10,8" fill="white"/></svg>
         </div>
-        <div className="text-center text-gray-600">
-          <p className="text-2xl">vs</p>
-        </div>
-        <div className="text-center">
-          <p className="text-5xl font-bold text-gray-500">{chronAge}</p>
-          <p className="text-xs text-gray-500 mt-1">Calendar age</p>
+        <div className="absolute top-1 bottom-0 w-px opacity-30" style={{ background: 'white', left: `${((1.0 - minRate) / (maxRate - minRate)) * 100}%` }} />
+      </div>
+      <div className="flex justify-between">
+        <span className="text-xs text-gray-500">← Slow</span>
+        <span className="text-xs text-gray-600">1.0× normal</span>
+        <span className="text-xs text-gray-500">Fast →</span>
+      </div>
+      {pace && (
+        <p className="text-xs text-gray-600 mt-3">
+          Bio age {pace.bioAgeDelta < 0 ? '↓' : '↑'} {Math.abs(pace.bioAgeDelta).toFixed(1)}y over {Math.round(pace.calDays / 30)}mo · longitudinal tracking
+        </p>
+      )}
+      {!pace && (
+        <p className="text-xs text-gray-600 mt-3">Longitudinal pace unlocks after 30+ days of tracking.</p>
+      )}
+    </div>
+  )
+}
+
+function InsightCard({ physAge, chronAge, pace }) {
+  const diff = physAge - chronAge
+  const color = diff <= 0 ? '#00c9a7' : '#f59e0b'
+  let headline, body
+  if (pace && pace.bioAgeDelta < -0.5) {
+    headline = 'Trending Younger'
+    body = `Your biological age has dropped ${Math.abs(pace.bioAgeDelta).toFixed(1)} years over the last ${Math.round(pace.calDays / 30)} months. What you're doing is working — keep it up.`
+  } else if (diff <= -3) {
+    headline = 'Keep It Up'
+    body = `Your biological age is ${Math.abs(diff)} years younger than your calendar age. Your habits are measurably extending your healthspan.`
+  } else if (diff <= 0) {
+    headline = 'Good Shape'
+    body = `Biological age is in line with your calendar. Optimizing Zone 2 cardio, sleep consistency, or HRV could push you into the "younger" tier.`
+  } else {
+    headline = 'Room to Improve'
+    body = `Biological age is running ${diff} years ahead of your calendar. Focus on your top opportunities below to reverse this trend.`
+  }
+  return (
+    <div className="rounded-2xl p-4" style={{ background: color + '12', border: `1px solid ${color}30` }}>
+      <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color }}>{headline}</p>
+      <p className="text-sm text-gray-300 leading-relaxed">{body}</p>
+    </div>
+  )
+}
+
+function BioAgeTrendChart({ chronAge }) {
+  const data = useMemo(() => {
+    try {
+      const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
+      if (history.length < 2) return []
+      const today = new Date()
+      return history.slice(-90).map(entry => {
+        const daysAgo = Math.round((today - new Date(entry.date + 'T00:00:00')) / 86400000)
+        return {
+          label: entry.date.slice(5),
+          bioAge: entry.physAge,
+          chronAge: Math.round((chronAge - daysAgo / 365) * 10) / 10,
+        }
+      })
+    } catch { return [] }
+  }, [chronAge])
+  if (data.length < 2) return null
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Age Trend</p>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-gray-500 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#00c9a7' }} /> Soma Age
+          </span>
+          <span className="text-[10px] text-gray-500 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#555' }} /> Calendar
+          </span>
         </div>
       </div>
-      <div className="mt-4 text-center">
-        <span className="px-3 py-1 rounded-full text-xs font-bold" style={{ background: color + '20', color }}>
-          {diff < 0 ? `${Math.abs(diff)} years younger` : diff > 0 ? `${diff} years older` : 'Same as calendar age'} — {label}
+      <p className="text-[10px] text-gray-600 mb-3">Biological vs chronological age over time</p>
+      <DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#00c9a7" color2="#555" unit="y" height={110} />
+    </div>
+  )
+}
+
+function MetricFactorCard({ label, value, displayValue, unit, contribution, min, max, higherBetter = true, sublabel }) {
+  const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''))
+  const rawPct = isNaN(numericValue) || max === min ? 50 : ((numericValue - min) / (max - min)) * 100
+  const markerPct = higherBetter
+    ? Math.min(96, Math.max(4, rawPct))
+    : Math.min(96, Math.max(4, 100 - rawPct))
+  const color = contribution < 0 ? '#00c9a7' : contribution === 0 ? '#3b82f6' : contribution <= 2 ? '#f59e0b' : '#ef4444'
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{label}</p>
+      <div className="relative pt-2 mb-2 mx-1">
+        <div className="h-2 rounded-full" style={{
+          background: higherBetter
+            ? 'linear-gradient(to right, #ef4444, #f59e0b 40%, #00c9a7)'
+            : 'linear-gradient(to right, #00c9a7, #f59e0b 60%, #ef4444)',
+        }} />
+        <div className="absolute top-0 flex justify-center" style={{ left: `calc(${markerPct}% - 5px)` }}>
+          <svg width="10" height="8"><polygon points="5,0 0,8 10,8" fill="white"/></svg>
+        </div>
+      </div>
+      <div className="flex items-end justify-between mt-1">
+        <div>
+          <span className="text-base font-bold text-white">{displayValue ?? value}{unit}</span>
+          {sublabel && <p className="text-[10px] text-gray-500 mt-0.5">{sublabel}</p>}
+        </div>
+        <span className="text-base font-bold" style={{ color }}>
+          {contribution < 0 ? '' : contribution > 0 ? '+' : ''}{contribution}y
         </span>
       </div>
-      <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
-        {phenoAge !== null ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">PhenoAge (Levine Formula)</p>
-              <p className="text-xs text-gray-600 mt-0.5">Validated clinical model · all 9 markers entered</p>
-            </div>
-            <span className="text-lg font-bold" style={{ color: phenoAge < chronAge ? '#00c9a7' : phenoAge < chronAge + 5 ? '#f59e0b' : '#ef4444' }}>
-              {Math.round(phenoAge)}y
-            </span>
-          </div>
-        ) : phenoProgress ? (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-500">PhenoAge — bloodwork panel</p>
-              <span className="text-xs font-bold text-gray-400">{phenoProgress.present}/{phenoProgress.total} markers</span>
-            </div>
-            <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#222' }}>
-              <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#3b82f6' }} />
-            </div>
-            {phenoProgress.missingNames.length > 0 && (
-              <p className="text-[10px] text-gray-600">
-                Still needed: {phenoProgress.missingNames.join(', ')}
-              </p>
-            )}
-          </div>
-        ) : null}
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-gray-600">{higherBetter ? min : max}{unit}</span>
+        <span className="text-[10px] text-gray-600">{higherBetter ? max : min}{unit}</span>
       </div>
-      <p className="text-xs text-gray-600 text-center mt-3">
-        Wearable estimate ± ~3y. Updates daily with new data.
-      </p>
     </div>
   )
 }
@@ -447,7 +554,38 @@ export default function Healthspan({ data, onNav }) {
           )}
         </div>
       ) : (
-        <AgeMeter physAge={physAge} chronAge={userAge} phenoAge={phenoAge} phenoProgress={phenoProgress} />
+        <>
+          <BioAgeOrb physAge={physAge} chronAge={userAge} />
+          <PaceSlider pace={pace} physAge={physAge} chronAge={userAge} />
+          <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
+          <BioAgeTrendChart chronAge={userAge} />
+          {phenoAge !== null ? (
+            <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge</p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">Levine Formula · validated clinical model</p>
+                </div>
+                <span className="text-2xl font-bold" style={{ color: phenoAge < userAge ? '#00c9a7' : phenoAge < userAge + 5 ? '#f59e0b' : '#ef4444' }}>
+                  {Math.round(phenoAge)}y
+                </span>
+              </div>
+            </div>
+          ) : phenoProgress ? (
+            <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge — bloodwork panel</p>
+                <span className="text-xs font-bold text-gray-400">{phenoProgress.present}/{phenoProgress.total} markers</span>
+              </div>
+              <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#222' }}>
+                <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#3b82f6' }} />
+              </div>
+              {phenoProgress.missingNames.length > 0 && (
+                <p className="text-[10px] text-gray-600">Still needed: {phenoProgress.missingNames.join(', ')}</p>
+              )}
+            </div>
+          ) : null}
+        </>
       )}
 
       {/* Body composition */}
@@ -617,16 +755,27 @@ export default function Healthspan({ data, onNav }) {
       {/* Top Priorities — only shown when biologically older than calendar age */}
       {diff > 0 && <TopPriorities opportunities={allOpportunities} />}
 
-      {/* What's moving the needle */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
-        <div className="px-4 pt-4 pb-2">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">What's Moving the Needle</span>
-        </div>
-        <div className="px-4 pb-2">
-          {contributions.map((c) => {
-            const color = c.contribution < 0 ? '#00c9a7' : c.contribution > 1 ? '#ef4444' : '#f59e0b'
-            return <MetricContribution key={c.label} {...c} color={color} />
-          })}
+      {/* What's moving the needle — WHOOP-style metric factor cards */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 px-1">What's Moving the Needle</p>
+        <div className="space-y-3">
+          {/* HRV */}
+          {avgHRV > 0 && <MetricFactorCard label="Heart Rate Variability" value={Math.round(avgHRV)} unit=" ms" contribution={contributions.find(c => c.label === 'HRV')?.contribution ?? 0} min={20} max={120} higherBetter={true} sublabel={`30-day avg · norm ~${getHRVNorm(userAge)} ms for age`} />}
+          {/* RHR */}
+          {avgRHR > 0 && <MetricFactorCard label="Resting Heart Rate" value={Math.round(avgRHR)} unit=" bpm" contribution={contributions.find(c => c.label === 'Resting Heart Rate')?.contribution ?? 0} min={40} max={100} higherBetter={false} sublabel="lower is better" />}
+          {/* Sleep Duration */}
+          <MetricFactorCard label="Sleep Duration" value={Math.round(avgSleepHours * 10) / 10} unit="h avg" contribution={contributions.find(c => c.label === 'Sleep Duration')?.contribution ?? 0} min={5} max={9} higherBetter={true} />
+          {/* Daily Steps */}
+          <MetricFactorCard label="Daily Steps" value={steps} displayValue={steps.toLocaleString()} unit="" contribution={contributions.find(c => c.label === 'Daily Steps')?.contribution ?? 0} min={0} max={15000} higherBetter={true} />
+          {/* VO2 Max */}
+          {vo2Max > 0 && <MetricFactorCard label="VO2 Max" value={vo2Max} unit=" ml/kg/min" contribution={contributions.find(c => c.label === 'VO2 Max (Cardio Fitness)')?.contribution ?? 0} min={20} max={60} higherBetter={true} sublabel={(() => { const norms = userAge <= 29 ? [34,42,53] : userAge <= 39 ? [31,39,49] : userAge <= 49 ? [27,35,45] : userAge <= 59 ? [25,34,44] : [22,30,40]; const [f,g,e] = norms; return vo2Max >= e+5 ? 'Elite' : vo2Max >= e ? 'Superior' : vo2Max >= g ? 'Excellent' : vo2Max >= f ? 'Good' : 'Fair' })()} />}
+          {/* Body Fat or BMI */}
+          {bodyFatPct !== null && <MetricFactorCard label="Body Fat %" value={bodyFatPct} unit="%" contribution={contributions.find(c => c.label === 'Body Fat %')?.contribution ?? 0} min={5} max={35} higherBetter={false} sublabel={getBodyFatLabel(bodyFatPct)} />}
+          {bodyFatPct === null && bmi !== null && <MetricFactorCard label="BMI" value={bmi} unit="" contribution={contributions.find(c => c.label?.includes('BMI'))?.contribution ?? 0} min={16} max={40} higherBetter={false} sublabel={getBMILabel(bmi)} />}
+          {/* Grip Strength */}
+          {gripKg > 0 && <MetricFactorCard label="Grip Strength" value={units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg} unit={units === 'imperial' ? ' lbs' : ' kg'} contribution={contributions.find(c => c.label === 'Grip Strength')?.contribution ?? 0} min={units === 'imperial' ? 66 : 30} max={units === 'imperial' ? 132 : 60} higherBetter={true} />}
+          {/* Active Zone Minutes */}
+          <MetricFactorCard label="Weekly Active Zone Min" value={weeklyAZM} unit=" AZM" contribution={contributions.find(c => c.label === 'Active Zone Minutes')?.contribution ?? 0} min={0} max={500} higherBetter={true} sublabel="WHO target: 150/wk · Excellent: 300/wk" />
         </div>
       </div>
 
@@ -656,56 +805,6 @@ export default function Healthspan({ data, onNav }) {
           })()}
         </div>
       )}
-
-      {/* Pace of aging */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pace of Aging</p>
-        {pace ? (() => {
-          const bioYrsPerCalYr = pace.rate  // bio years elapsed per calendar year (1.0 = calendar rate)
-          const paceColor = bioYrsPerCalYr <= 0 ? '#00c9a7' : bioYrsPerCalYr <= 0.9 ? '#00c9a7' : bioYrsPerCalYr <= 1.1 ? '#3b82f6' : bioYrsPerCalYr <= 1.5 ? '#f59e0b' : '#ef4444'
-          const paceLabel = bioYrsPerCalYr <= 0 ? 'Getting younger' : bioYrsPerCalYr <= 0.9 ? 'Slowing down' : bioYrsPerCalYr <= 1.1 ? 'On track' : bioYrsPerCalYr <= 1.5 ? 'Slightly fast' : 'Accelerated'
-          const months = Math.round(pace.calDays / 30)
-          const windowLabel = months < 2 ? `${pace.calDays}d` : months < 12 ? `${months}mo` : `${Math.round(months / 12)}yr`
-          return (
-            <>
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-4xl font-bold" style={{ color: paceColor }}>
-                  {bioYrsPerCalYr.toFixed(2)}x
-                </span>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: paceColor }}>{paceLabel}</p>
-                  <p className="text-xs text-gray-600">biological years per calendar year</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs font-bold px-2 py-0.5 rounded"
-                  style={{ background: paceColor + '20', color: paceColor }}>
-                  {pace.bioAgeDelta < 0 ? '↓' : pace.bioAgeDelta > 0 ? '↑' : '→'}{Math.abs(pace.bioAgeDelta)}y
-                </span>
-                <span className="text-xs text-gray-600">
-                  biological age change over {windowLabel} · from {pace.calDays} days of data
-                </span>
-              </div>
-            </>
-          )
-        })() : (
-          <div>
-            <div className="flex items-baseline gap-3 mb-2">
-              <span className="text-4xl font-bold" style={{ color: diff <= 0 ? '#00c9a7' : '#f59e0b' }}>
-                {userAge > 0 ? (physAge / userAge).toFixed(2) : '--'}x
-              </span>
-              <div>
-                <p className="text-sm font-medium text-gray-400">Current ratio</p>
-                <p className="text-xs text-gray-600">biological ÷ calendar age</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600">Longitudinal pace calculates after 30+ days of tracking.</p>
-          </div>
-        )}
-        <p className="text-xs text-gray-600 mt-3">
-          Pace measures how fast your biological clock is moving relative to calendar time. Below 1.0x = aging slower than the calendar.
-        </p>
-      </div>
 
       {/* Lab results impact */}
       {labContributions.length > 0 && (

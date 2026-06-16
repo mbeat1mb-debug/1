@@ -111,32 +111,27 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {/* Main score */}
-      <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#111', border: '1px solid #222' }}>
-        <ScoreRing score={recoveryScore} color={color} size={130} strokeWidth={11} label={label} />
-        <div className="flex-1">
-          <p className="text-gray-400 text-sm mb-3">Recovery Score</p>
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">HRV weight</span>
-              <span className="text-white font-medium">40%</span>
+      <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="flex items-center gap-5">
+          <ScoreRing score={recoveryScore} color={color} size={130} strokeWidth={11} label={label} />
+          <div className="flex-1 space-y-3">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">HRV</p>
+              <p className="text-3xl font-bold text-white leading-tight">{todayHRV > 0 ? todayHRV : '--'}<span className="text-sm font-normal text-gray-500 ml-1">ms</span></p>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Resting HR</span>
-              <span className="text-white font-medium">25%</span>
+            <div>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Resting HR</p>
+              <p className="text-3xl font-bold text-white leading-tight">{todayRHR > 0 ? todayRHR : '--'}<span className="text-sm font-normal text-gray-500 ml-1">bpm</span></p>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Sleep</span>
-              <span className="text-white font-medium">25%</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">SpO₂ + Resp</span>
-              <span className="text-white font-medium">10%</span>
+            <div>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Sleep</p>
+              <p className="text-3xl font-bold text-white leading-tight">{sleepHours}</p>
             </div>
           </div>
-          {isCalibrating && (
-            <p className="text-[10px] text-yellow-600 mt-2">{daysOfData}/14 days calibrated</p>
-          )}
         </div>
+        {isCalibrating && (
+          <p className="text-[10px] text-yellow-600 mt-3">{daysOfData}/14 days calibrated</p>
+        )}
       </div>
 
       {/* Recovery Stability */}
