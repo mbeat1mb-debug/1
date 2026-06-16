@@ -214,6 +214,14 @@ function TagCard({ tag, selected, streak, onToggle }) {
   )
 }
 
+const ENERGY_OPTIONS = [
+  { n: 1, emoji: '😴', label: 'Drained',   color: '#ef4444' },
+  { n: 2, emoji: '😕', label: 'Low',        color: '#f59e0b' },
+  { n: 3, emoji: '😐', label: 'Okay',       color: '#888888' },
+  { n: 4, emoji: '🙂', label: 'Good',       color: '#3b82f6' },
+  { n: 5, emoji: '⚡', label: 'Energized',  color: '#00c9a7' },
+]
+
 export default function Journal({ data, onNav }) {
   const [selectedTags, setSelectedTags] = useState([])
   const [notes, setNotes] = useState('')
@@ -392,14 +400,6 @@ export default function Journal({ data, onNav }) {
     }
     return result
   }, [recentActivity])
-
-  const ENERGY_OPTIONS = [
-    { n: 1, emoji: '😴', label: 'Drained',   color: '#ef4444' },
-    { n: 2, emoji: '😕', label: 'Low',        color: '#f59e0b' },
-    { n: 3, emoji: '😐', label: 'Okay',       color: '#888888' },
-    { n: 4, emoji: '🙂', label: 'Good',       color: '#3b82f6' },
-    { n: 5, emoji: '⚡', label: 'Energized',  color: '#00c9a7' },
-  ]
 
   return (
     <div className="px-4 pt-safe pb-28 space-y-4">

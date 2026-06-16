@@ -276,7 +276,7 @@ export function getHOMAIR() {
   } catch { return 0 }
 }
 
-export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0, hrvHistory = [] }) {
+export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsistency, avgSteps, weeklyAZM, vo2Max = 0, avgDeepPct = 0, avgRemPct = 0, hrvHistory = [], lastKnownHRR = null }) {
   const userAge = getUserAge()
   const heightCm = getUserHeightCm()
   const weightKg = getUserWeightKg()
@@ -339,13 +339,12 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   }
 
   // Cole NEJM 1999: HRR <12 bpm at 1 min post-exercise predicts 2× all-cause mortality.
-  // Uses last known value — exercise sessions are infrequent so we persist across days.
-  const lastHRR = getLastKnownHRR()
-  if (lastHRR?.hrr60 > 0) {
-    if (lastHRR.hrr60 >= 25)      cardio -= 2  // Excellent autonomic recovery
-    else if (lastHRR.hrr60 >= 18) cardio -= 1  // Good
-    else if (lastHRR.hrr60 >= 12) cardio += 0  // Normal
-    else                          cardio += 2  // Poor — independent mortality risk
+  // Uses last known value (≤90 days old) — exercise sessions are infrequent so we persist across days.
+  if (lastKnownHRR?.hrr60 > 0) {
+    if (lastKnownHRR.hrr60 >= 25)      cardio -= 2  // Excellent autonomic recovery
+    else if (lastKnownHRR.hrr60 >= 18) cardio -= 1  // Good
+    else if (lastKnownHRR.hrr60 >= 12) cardio += 0  // Normal
+    else                               cardio += 2  // Poor — independent mortality risk
   }
 
   const cardioCapped = clamp(cardio, -7, 9)
@@ -1225,7 +1224,13 @@ export function saveLastKnownHRR(hrr) {
 }
 
 export function getLastKnownHRR() {
-  try { return JSON.parse(localStorage.getItem('last_known_hrr') || 'null') } catch { return null }
+  try {
+    const v = JSON.parse(localStorage.getItem('last_known_hrr') || 'null')
+    if (!v) return null
+    // Discard readings older than 90 days — HRR changes meaningfully with training
+    const ageDays = (Date.now() - new Date(v.date + 'T00:00:00').getTime()) / 86400000
+    return ageDays <= 90 ? v : null
+  } catch { return null }
 }
 
 // ── Post-exercise Heart Rate Recovery ──────────────────────────────────────

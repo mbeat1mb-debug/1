@@ -333,7 +333,7 @@ export default function Healthspan({ data, onNav }) {
   const physAge = useMemo(() => calculatePhysiologicalAge({
     avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
     avgSteps: steps, weeklyAZM,
-    vo2Max, avgDeepPct, avgRemPct, hrvHistory,
+    vo2Max, avgDeepPct, avgRemPct, hrvHistory, lastKnownHRR,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
     smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri,
@@ -731,33 +731,38 @@ export default function Healthspan({ data, onNav }) {
         </div>
       )}
 
-      {/* Post-exercise Heart Rate Recovery */}
-      {data.hrr && (
+      {/* Post-exercise Heart Rate Recovery — shows live today or last known (≤90 days) */}
+      {lastKnownHRR && (
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Heart Rate Recovery</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Heart Rate Recovery</p>
+            {!data.hrr && lastKnownHRR.date && (
+              <span className="text-[10px] text-gray-600">last recorded {lastKnownHRR.date}</span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3 mb-2">
             <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Post-Exercise Drop</p>
-              <p className="text-2xl font-bold" style={{ color: data.hrr.hrr60 >= 18 ? '#00c9a7' : data.hrr.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
-                -{data.hrr.hrr60}<span className="text-sm font-normal text-gray-500"> bpm</span>
+              <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr60 >= 18 ? '#00c9a7' : lastKnownHRR.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
+                -{lastKnownHRR.hrr60}<span className="text-sm font-normal text-gray-500"> bpm</span>
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: data.hrr.hrr60 >= 25 ? '#00c9a7' : data.hrr.hrr60 >= 18 ? '#00c9a7' : data.hrr.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
-                {data.hrr.hrr60 >= 25 ? 'Excellent' : data.hrr.hrr60 >= 18 ? 'Good' : data.hrr.hrr60 >= 12 ? 'Average' : 'Poor (↑ risk)'}
+              <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr60 >= 25 ? '#00c9a7' : lastKnownHRR.hrr60 >= 18 ? '#00c9a7' : lastKnownHRR.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
+                {lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor (↑ risk)'}
               </p>
             </div>
-            {data.hrr.hrr120 !== null && (
+            {lastKnownHRR.hrr120 !== null && (
               <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
                 <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Early Recovery Drop</p>
-                <p className="text-2xl font-bold" style={{ color: data.hrr.hrr120 >= 42 ? '#00c9a7' : data.hrr.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
-                  -{data.hrr.hrr120}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#00c9a7' : lastKnownHRR.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
+                  -{lastKnownHRR.hrr120}<span className="text-sm font-normal text-gray-500"> bpm</span>
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: data.hrr.hrr120 >= 42 ? '#00c9a7' : data.hrr.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
-                  {data.hrr.hrr120 >= 42 ? 'Excellent' : data.hrr.hrr120 >= 30 ? 'Good' : 'Below average'}
+                <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#00c9a7' : lastKnownHRR.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
+                  {lastKnownHRR.hrr120 >= 42 ? 'Excellent' : lastKnownHRR.hrr120 >= 30 ? 'Good' : 'Below average'}
                 </p>
               </div>
             )}
           </div>
-          <p className="text-[10px] text-gray-600">Peak HR {data.hrr.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>
+          {lastKnownHRR.peakHR && <p className="text-[10px] text-gray-600">Peak HR {lastKnownHRR.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>}
         </div>
       )}
 

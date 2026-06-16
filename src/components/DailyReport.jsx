@@ -37,7 +37,7 @@ export function getTimeOfDay() {
 }
 
 function StatPill({ label, value, unit = '', up }) {
-  const color = up === undefined ? '#e0e0e0' : up ? '#00c9a7' : '#ef4444'
+  const color = up === undefined ? '#ffffff' : up ? '#00c9a7' : '#ef4444'
   return (
     <div className="flex flex-col items-center">
       <span className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">{label}</span>
