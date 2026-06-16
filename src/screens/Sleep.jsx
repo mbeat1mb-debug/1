@@ -119,12 +119,17 @@ export default function Sleep({ data, onNav }) {
   const displayHours = Math.floor(displayMins / 60)
   const displayMinRemainder = displayMins % 60
 
-  const sleepDebt = calculateSleepDebt(sleepHistory)
-  const chronotype = calculateChronotype(sleepHistory)
-  const sleepDebtPayback = calculateSleepDebtPayback(sleepDebt, sleepHistory)
+  // Apply correction to today's entry so debt and chart reflect the edited time
+  const adjustedSleepHistory = correctedMins !== null
+    ? sleepHistory.map(s => s.date === sleepDate ? { ...s, minutes: correctedMins } : s)
+    : sleepHistory
+
+  const sleepDebt = calculateSleepDebt(adjustedSleepHistory)
+  const chronotype = calculateChronotype(adjustedSleepHistory)
+  const sleepDebtPayback = calculateSleepDebtPayback(sleepDebt, adjustedSleepHistory)
 
   const todayStr = new Date().toISOString().split('T')[0]
-  const sleepChartData = sleepHistory.slice(-14).map(s => ({
+  const sleepChartData = adjustedSleepHistory.slice(-14).map(s => ({
     label: s.date === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(s.date)) / 86400000)}d`,
     hours: Math.round((s.minutes / 60) * 10) / 10,
   }))
@@ -237,10 +242,10 @@ export default function Sleep({ data, onNav }) {
           <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Sleep Stages</p>
             <div className="space-y-3">
-              <SleepStageBar label="Deep (Restorative)" minutes={deep} total={totalMins} color="#4f46e5" />
-              <SleepStageBar label="REM (Dream)" minutes={rem} total={totalMins} color="#8b5cf6" />
-              <SleepStageBar label="Light" minutes={light} total={totalMins} color="#a78bfa" />
-              <SleepStageBar label="Awake" minutes={wake} total={totalMins} color="#374151" />
+              <SleepStageBar label="Deep (Restorative)" minutes={deep} total={displayMins} color="#4f46e5" />
+              <SleepStageBar label="REM (Dream)" minutes={rem} total={displayMins} color="#8b5cf6" />
+              <SleepStageBar label="Light" minutes={light} total={displayMins} color="#a78bfa" />
+              <SleepStageBar label="Awake" minutes={wake} total={displayMins} color="#374151" />
             </div>
           </div>
 

@@ -43,14 +43,17 @@ export default async function handler(req, res) {
 
   webPush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
 
+  // Claim the slot before delivery so concurrent cron runs can't both send
+  await kv.set(sentKey, 1, { ex: 90000 })
+
   try {
     await webPush.sendNotification(
       subscription,
       JSON.stringify({ title: 'Weekly Health Check-In 📋', body, url: '/settings', tag: 'weekly' })
     )
-    await kv.set(sentKey, 1, { ex: 90000 })
   } catch (err) {
     console.error('Weekly push failed:', err.message)
+    await kv.del(sentKey)
     return res.json({ error: err.message })
   }
 

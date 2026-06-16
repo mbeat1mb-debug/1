@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import {
   getUserUnits, getBodyWeightHistory, getBPReadings, getGripHistory,
   getWaistHistory, calculateLeanMass, calculateFatMass, getUserAge,
@@ -99,7 +99,7 @@ export default function Vitals({ data, onNav }) {
   const cutoff = cutoffFor(rangeDef.days)
 
   // ── Blood Pressure ──────────────────────────────────────────────────────────
-  const bpAll = useMemo(() => getBPReadings(), [])
+  const bpAll = getBPReadings()
   const bpFiltered = cutoff ? bpAll.filter(r => r.date >= cutoff) : bpAll
   const bpChartData = bpFiltered.map(r => ({ label: fmtDate(r.date), sys: r.sys, dia: r.dia }))
   const bpLatest = bpAll.at(-1)
@@ -111,7 +111,7 @@ export default function Vitals({ data, onNav }) {
   const avgDia = recentBP.length ? Math.round(recentBP.reduce((s, r) => s + r.dia, 0) / recentBP.length) : null
 
   // ── Body Weight ─────────────────────────────────────────────────────────────
-  const weightAll = useMemo(() => getBodyWeightHistory(), [])
+  const weightAll = getBodyWeightHistory()
   const weightFiltered = cutoff ? weightAll.filter(e => e.date >= cutoff) : weightAll
   const weightLatest = weightAll.at(-1)
   const weightFirst = weightFiltered[0]
@@ -136,7 +136,7 @@ export default function Vitals({ data, onNav }) {
   const leanDelta = delta(leanDisplay(leanLatest), leanDisplay(leanFirst))
 
   // ── Waist ───────────────────────────────────────────────────────────────────
-  const waistAll = useMemo(() => getWaistHistory(), [])
+  const waistAll = getWaistHistory()
   const waistFiltered = cutoff ? waistAll.filter(e => e.date >= cutoff) : waistAll
   const waistLatest = waistAll.at(-1)
   const waistFirst = waistFiltered[0]
@@ -147,7 +147,7 @@ export default function Vitals({ data, onNav }) {
   const waistDelta = delta(waistDisplay(waistLatest?.cm), waistDisplay(waistFirst?.cm))
 
   // ── Grip Strength ───────────────────────────────────────────────────────────
-  const gripAll = useMemo(() => getGripHistory(), [])
+  const gripAll = getGripHistory()
   const gripFiltered = cutoff ? gripAll.filter(e => e.date >= cutoff) : gripAll
   const gripLatest = gripAll.at(-1)
   const gripFirst = gripFiltered[0]
@@ -175,10 +175,10 @@ export default function Vitals({ data, onNav }) {
   const hrvFirst = hrvFiltered[0]
   const hrvDelta = delta(hrvLatest?.hrv, hrvFirst?.hrv)
 
-  const vo2Days = calDays.filter(d => d.vo2Max > 0)
-  const vo2Filtered = cutoff ? vo2Days.filter(d => d.date >= cutoff) : vo2Days
+  const vo2History = data?.vo2MaxHistory || []
+  const vo2Filtered = cutoff ? vo2History.filter(d => d.date >= cutoff) : vo2History
   const vo2ChartData = vo2Filtered.map(d => ({ label: fmtDate(d.date), vo2: d.vo2Max }))
-  const vo2Latest = vo2Days.at(-1)
+  const vo2Latest = vo2History.at(-1)
   const vo2First = vo2Filtered[0]
   const vo2Delta = delta(vo2Latest?.vo2Max, vo2First?.vo2Max)
 
