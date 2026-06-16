@@ -81,7 +81,7 @@ export const FRESHNESS_RULES = [
     emoji: '🧪',
     cadenceDays: 180,
     graceDays: 30,
-    action: 'Enter results in Healthspan → Labs',
+    action: 'Enter results in Chronos → Labs',
     getLastDate: latestLabDate,
   },
 ]

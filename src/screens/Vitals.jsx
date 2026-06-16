@@ -187,7 +187,7 @@ export default function Vitals({ data, onNav }) {
 
       {/* Header */}
       <div className="pt-2 flex items-center gap-3">
-        <button onClick={() => onNav('healthspan')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center">
+        <button onClick={() => onNav('chronos')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>

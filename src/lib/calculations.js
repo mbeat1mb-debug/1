@@ -1176,7 +1176,7 @@ export function calculateTrainingEffect(zoneMinutes) {
   }
 }
 
-// ── Body Fat % classification (shared across Settings + Healthspan) ───────────
+// ── Body Fat % classification (shared across Settings + Chronos) ───────────
 // Male-oriented ACE ranges. Colors follow the app's 3-tier semantic palette
 // (teal = optimal, amber = caution, red = high) — no one-off colors.
 export function getBodyFatLabel(pct) {
@@ -1338,10 +1338,10 @@ export function calculateSleepApneaRisk({ spo2Intraday, br, todaySleep }) {
   return { risk, riskLevel, minSpo2, avgSpo2, odi, brElevated }
 }
 
-// ── Healthspan Delta Engine ─────────────────────────────────────────────────
+// ── Chronos Delta Engine ─────────────────────────────────────────────────
 // For each modifiable factor, computes how many biological years you'd gain
 // by reaching the next better tier. Sorted by highest gain first.
-export function getHealthspanDeltas({ vo2Max, steps, weeklyAZM, avgHRV, avgSleepHours, bodyFatPct, waistCm, gripKg, bp }) {
+export function getChronosDeltas({ vo2Max, steps, weeklyAZM, avgHRV, avgSleepHours, bodyFatPct, waistCm, gripKg, bp }) {
   const userAge = getUserAge()
   const deltas = []
 

@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -237,7 +237,7 @@ function MetricContribution({ label, value, unit, contribution, color, sublabel 
   )
 }
 
-export default function Healthspan({ data, onNav }) {
+export default function Chronos({ data, onNav }) {
   const { todayHRV = 0, todayRHR = 0, todaySleep, sleepHistory = [], hrvHistory = [],
     steps = 0, vo2Max = 0 } = data
   const userAge = getUserAge()
@@ -532,7 +532,7 @@ export default function Healthspan({ data, onNav }) {
   const allOpportunities = allContributions.filter(c => c.contribution > 0).sort((a, b) => b.contribution - a.contribution)
   const allAssets = allContributions.filter(c => c.contribution < 0).sort((a, b) => a.contribution - b.contribution)
 
-  const healthspanDeltas = getHealthspanDeltas({
+  const chronosDeltas = getChronosDeltas({
     vo2Max, steps, weeklyAZM, avgHRV, avgSleepHours,
     bodyFatPct, waistCm, gripKg, bp,
   })
@@ -542,7 +542,7 @@ export default function Healthspan({ data, onNav }) {
       <div className="pt-2 flex items-center gap-3">
         {onNav && <BackButton onNav={onNav} />}
         <div>
-          <p className="text-gray-500 text-xs uppercase tracking-wider">Healthspan</p>
+          <p className="text-gray-500 text-xs uppercase tracking-wider">Chronos</p>
           <h1 className="text-xl font-bold">Your biological age</h1>
         </div>
       </div>
@@ -912,13 +912,13 @@ export default function Healthspan({ data, onNav }) {
         </div>
       </div>
 
-      {/* Healthspan Delta Engine */}
-      {healthspanDeltas.length > 0 && (
+      {/* Chronos Delta Engine */}
+      {chronosDeltas.length > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
           <p className="text-[10px] text-gray-600 mb-3">One-tier improvement on each factor</p>
           <div className="space-y-3">
-            {healthspanDeltas.slice(0, 5).map(d => (
+            {chronosDeltas.slice(0, 5).map(d => (
               <div key={d.label} className="flex items-start gap-3">
                 <span className="text-lg font-bold flex-shrink-0" style={{ color: '#00c9a7', minWidth: 32 }}>+{d.gain}y</span>
                 <div>

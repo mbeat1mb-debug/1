@@ -181,7 +181,7 @@ function RecordsContent() {
   )
 }
 
-function HealthspanContent({ data }) {
+function ChronosContent({ data }) {
   const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0, weeklyZone2 = 0 } = data
   const userAge = getUserAge()
   const physAge = userAge > 0 ? calculatePhysiologicalAge({
@@ -200,7 +200,7 @@ function HealthspanContent({ data }) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Healthspan</span>
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Chronos</span>
         {physAge !== null ? (
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold" style={{ color }}>{physAge}</span>
@@ -549,7 +549,7 @@ const SECTION_CONTENT = {
   sleep: SleepContent,
   stress: StressContent,
   records: RecordsContent,
-  healthspan: HealthspanContent,
+  chronos: ChronosContent,
   weeklypattern: WeeklyPatternContent,
   journal: JournalContent,
   insights: InsightsContent,
@@ -596,7 +596,7 @@ function getCardGlowColor(id, data) {
     }
     case 'stress':     return data.stressScore != null ? getStressColor(data.stressScore) : null
     case 'journal':    return '#C9A84C'
-    case 'healthspan': return '#00c9a7'
+    case 'chronos':    return '#00c9a7'
     case 'records':    return '#C9A84C'
     case 'trends':     return '#3b82f6'
     default:           return null

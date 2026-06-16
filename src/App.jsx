@@ -29,7 +29,7 @@ const Sleep = lazy(() => import('./screens/Sleep'))
 const Stress = lazy(() => import('./screens/Stress'))
 const Journal = lazy(() => import('./screens/Journal'))
 const Coach = lazy(() => import('./screens/Coach'))
-const Healthspan = lazy(() => import('./screens/Healthspan'))
+const Chronos = lazy(() => import('./screens/Chronos'))
 const Records = lazy(() => import('./screens/Records'))
 const Settings = lazy(() => import('./screens/Settings'))
 const Trends = lazy(() => import('./screens/Trends'))
@@ -174,7 +174,7 @@ function ConnectScreen({ onNav }) {
   )
 }
 
-const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'stress', 'healthspan', 'journal', 'records', 'coach', 'settings', 'trends']
+const TAB_ORDER = ['home', 'recovery', 'sleep', 'strain', 'stress', 'chronos', 'journal', 'records', 'coach', 'settings', 'trends']
 
 export default function App() {
   const [pinUnlocked, setPinUnlocked] = useState(() => !isPinSet())
@@ -515,7 +515,7 @@ export default function App() {
         {tab === 'stress'     && <div key="stress"     className={screenCls}><Stress     data={data} onNav={handleNav} /></div>}
         {tab === 'journal'    && <div key="journal"    className={screenCls}><Journal    data={data} onNav={handleNav} /></div>}
         {tab === 'coach'      && <div key="coach"      className={screenCls}><Coach      data={data} onNav={handleNav} /></div>}
-        {tab === 'healthspan' && <div key="healthspan" className={screenCls}><Healthspan data={data} onNav={handleNav} /></div>}
+        {tab === 'chronos' && <div key="chronos" className={screenCls}><Chronos data={data} onNav={handleNav} /></div>}
         {tab === 'records'    && <div key="records"    className={screenCls}><Records    data={data} onNav={handleNav} /></div>}
         {tab === 'settings'   && <div key="settings"   className="screen-fade"><Settings onBack={() => handleNav('home')} /></div>}
         {tab === 'trends'     && <div key="trends"     className={screenCls}><Trends     data={data} onNav={handleNav} /></div>}
