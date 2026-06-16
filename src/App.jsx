@@ -33,6 +33,7 @@ const Healthspan = lazy(() => import('./screens/Healthspan'))
 const Records = lazy(() => import('./screens/Records'))
 const Settings = lazy(() => import('./screens/Settings'))
 const Trends = lazy(() => import('./screens/Trends'))
+const Vitals = lazy(() => import('./screens/Vitals'))
 
 function makeCalendarDays() {
   return Array.from({ length: 90 }, (_, i) => {
@@ -488,7 +489,7 @@ export default function App() {
   if (!connected && !demo) return <ConnectScreen onNav={handleNav} />
 
   const data = demo ? DEMO : (appData || DEMO)
-  const showNav = tab !== 'settings' && tab !== 'coach'
+  const showNav = tab !== 'settings' && tab !== 'coach' && tab !== 'vitals'
   const showAlerts = tab === 'home' && data.alerts?.length > 0
 
   const screenCls = transDir >= 0 ? 'screen-fwd' : 'screen-back'
@@ -518,6 +519,7 @@ export default function App() {
         {tab === 'records'    && <div key="records"    className={screenCls}><Records    data={data} onNav={handleNav} /></div>}
         {tab === 'settings'   && <div key="settings"   className="screen-fade"><Settings onBack={() => handleNav('home')} /></div>}
         {tab === 'trends'     && <div key="trends"     className={screenCls}><Trends     data={data} onNav={handleNav} /></div>}
+        {tab === 'vitals'     && <div key="vitals"     className={screenCls}><Vitals     data={data} onNav={handleNav} /></div>}
       </Suspense>
 
       {demo && tab !== 'settings' && tab !== 'coach' && (

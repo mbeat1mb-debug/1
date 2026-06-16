@@ -597,6 +597,24 @@ export default function Healthspan({ data, onNav }) {
         </>
       )}
 
+      {/* Vitals History shortcut */}
+      <button
+        onClick={() => onNav('vitals')}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl"
+        style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg">📊</span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-white">Vitals History</p>
+            <p className="text-xs text-gray-600">BP · Weight · Grip · Waist · HRV · RHR</p>
+          </div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
