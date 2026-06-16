@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity } from '../lib/storage'
+import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity, getDailyTimings, saveDailyTiming } from '../lib/storage'
 import { getBPReadings, saveBPReading } from '../lib/calculations'
 import { haptic } from '../lib/haptics'
 
@@ -14,6 +14,72 @@ function nowTime() {
 
 function fmtTime(t) {
   return new Date(`2000-01-01T${t}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+function minsToTime(mins) {
+  return `${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+}
+
+function timeToMins(t) {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
+const TIMED_ITEMS = [
+  { id: 'sunlight',  label: 'First Sunlight', emoji: '☀️', minMins: 300,  maxMins: 720,  defaultMins: 420,  warnAfter: null,    warnMsg: null },
+  { id: 'caffeine',  label: 'Last Caffeine',  emoji: '☕', minMins: 360,  maxMins: 1320, defaultMins: 480,  warnAfter: '14:00', warnMsg: 'Late caffeine delays sleep onset and reduces REM' },
+  { id: 'sauna',     label: 'Sauna',          emoji: '🧖', minMins: 360,  maxMins: 1380, defaultMins: 1080, warnAfter: null,    warnMsg: null },
+  { id: 'last_meal', label: 'Last Meal',      emoji: '🍽️', minMins: 600,  maxMins: 1380, defaultMins: 1140, warnAfter: '20:00', warnMsg: 'Late meals can reduce overnight HRV and recovery' },
+]
+
+function TimeSlider({ item, value, onToggle, onChange }) {
+  const active = value !== null
+  const mins = active ? timeToMins(value) : item.defaultMins
+  const timeStr = fmtTime(minsToTime(mins))
+  const isLate = active && item.warnAfter && value >= item.warnAfter
+
+  return (
+    <div className="py-2.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => onToggle(item.id)}
+            className="w-10 h-[22px] rounded-full flex items-center transition-colors duration-200 flex-shrink-0 px-0.5"
+            style={{ background: active ? '#00c9a7' : '#2a2a2a', justifyContent: active ? 'flex-end' : 'flex-start' }}
+          >
+            <div className="w-[18px] h-[18px] rounded-full bg-white shadow" />
+          </button>
+          <span className="text-sm" style={{ color: active ? '#e5e5e5' : '#555' }}>{item.emoji} {item.label}</span>
+        </div>
+        <span className="text-sm font-bold tabular-nums" style={{ color: isLate ? '#f59e0b' : active ? '#00c9a7' : '#444' }}>
+          {active ? timeStr : '--'}
+        </span>
+      </div>
+      {active && (
+        <>
+          <input
+            type="range"
+            min={item.minMins}
+            max={item.maxMins}
+            step={15}
+            value={mins}
+            onChange={e => onChange(item.id, minsToTime(parseInt(e.target.value)))}
+            className="w-full"
+            style={{ accentColor: isLate ? '#f59e0b' : '#00c9a7', height: '4px' }}
+          />
+          <div className="flex justify-between mt-0.5">
+            <span className="text-[9px] text-gray-700">{fmtTime(minsToTime(item.minMins))}</span>
+            <span className="text-[9px] text-gray-700">{fmtTime(minsToTime(item.maxMins))}</span>
+          </div>
+          {isLate && (
+            <p className="text-[10px] mt-1 px-2 py-1 rounded-lg" style={{ color: '#f59e0b', background: '#f59e0b10' }}>
+              ⚠️ {item.warnMsg}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
 }
 
 function fmtSleep(mins) {
@@ -85,6 +151,12 @@ export default function Journal({ data, onNav }) {
   const [timingSubstance, setTimingSubstance] = useState('caffeine')
   const [timingTime, setTimingTime] = useState(nowTime)
   const [timingEntries, setTimingEntries] = useState([])
+  const [sliderTimes, setSliderTimes] = useState(() => {
+    const saved = getDailyTimings(today())
+    const init = {}
+    for (const item of TIMED_ITEMS) init[item.id] = saved[item.id] ?? null
+    return init
+  })
   const savedTimerRef = useRef(null)
   const tags = getAllTags()
 
@@ -123,6 +195,24 @@ export default function Journal({ data, onNav }) {
     addTimingEntry(today(), timingSubstance, timingTime)
     setTimingEntries(getTimingForDate(today()))
     setTimingTime(nowTime())
+  }
+
+  const handleSliderToggle = (id) => {
+    haptic('light')
+    const item = TIMED_ITEMS.find(i => i.id === id)
+    if (sliderTimes[id] !== null) {
+      saveDailyTiming(today(), id, null)
+      setSliderTimes(prev => ({ ...prev, [id]: null }))
+    } else {
+      const defaultTime = minsToTime(item.defaultMins)
+      saveDailyTiming(today(), id, defaultTime)
+      setSliderTimes(prev => ({ ...prev, [id]: defaultTime }))
+    }
+  }
+
+  const handleSliderChange = (id, time) => {
+    saveDailyTiming(today(), id, time)
+    setSliderTimes(prev => ({ ...prev, [id]: time }))
   }
 
   const handleRemoveTiming = (id) => {
@@ -376,6 +466,21 @@ export default function Journal({ data, onNav }) {
           </div>
         </div>
       )}
+
+      {/* Daily Timing */}
+      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Daily Timing</p>
+        <p className="text-[10px] text-gray-600 mb-3">Toggle on, then drag to set time</p>
+        {TIMED_ITEMS.map(item => (
+          <TimeSlider
+            key={item.id}
+            item={item}
+            value={sliderTimes[item.id]}
+            onToggle={handleSliderToggle}
+            onChange={handleSliderChange}
+          />
+        ))}
+      </div>
 
       {/* Substance Log */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>

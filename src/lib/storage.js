@@ -7,7 +7,6 @@ export const DEFAULT_TAGS = [
   { id: 'high_stress', label: 'High Stress', emoji: '😰', category: 'mental' },
   { id: 'meditation', label: 'Meditated', emoji: '🧘', category: 'mental' },
   { id: 'screens_bed', label: 'Screens in Bed', emoji: '📱', category: 'sleep' },
-  { id: 'sleep_mask', label: 'Sleep Mask', emoji: '😴', category: 'sleep' },
   { id: 'nap', label: 'Napped', emoji: '💤', category: 'sleep' },
   { id: 'supplements', label: 'Took Supplements', emoji: '💊', category: 'intake' },
   { id: 'hydrated', label: 'Well Hydrated', emoji: '💧', category: 'intake' },
@@ -158,6 +157,27 @@ export const TIMING_SUBSTANCES = [
   { id: 'ashwagandha', label: 'Ashwagandha', emoji: '🌿' },
   { id: 'magnesium',   label: 'Magnesium',   emoji: '🔋' },
 ]
+
+// ── Daily Timing Sliders ────────────────────────────────────────────────────
+// Stores one time-of-day value per tracked item per day (sunlight, caffeine, sauna, last_meal).
+const DAILY_TIMING_KEY = 'daily_timing_sliders'
+
+export function getDailyTimings(date) {
+  try {
+    const all = JSON.parse(localStorage.getItem(DAILY_TIMING_KEY) || '{}')
+    return all[date] ?? {}
+  } catch { return {} }
+}
+
+export function saveDailyTiming(date, field, time) {
+  try {
+    const all = JSON.parse(localStorage.getItem(DAILY_TIMING_KEY) || '{}')
+    if (!all[date]) all[date] = {}
+    if (time === null) delete all[date][field]
+    else all[date][field] = time
+    localStorage.setItem(DAILY_TIMING_KEY, JSON.stringify(all))
+  } catch {}
+}
 
 export function getTimingLog() {
   try { return JSON.parse(localStorage.getItem(TIMING_KEY) || '[]') } catch { return [] }
