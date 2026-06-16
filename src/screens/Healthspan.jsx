@@ -954,7 +954,7 @@ export default function Healthspan({ data, onNav }) {
       {/* Sleep Apnea Risk */}
       {sleepApneaRisk !== null && (
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Apnea Risk</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Breathing Risk</p>
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#00c9a7' : sleepApneaRisk.riskLevel === 1 ? '#f59e0b' : '#ef4444' }}>
@@ -983,7 +983,7 @@ export default function Healthspan({ data, onNav }) {
             <p className="text-xs text-amber-500 mt-1">Elevated respiratory rate detected — additional risk signal.</p>
           )}
           {sleepApneaRisk.riskLevel >= 2 && (
-            <p className="text-xs text-red-400 mt-1">Consider a sleep study (polysomnography). Untreated apnea raises CVD and cognitive decline risk.</p>
+            <p className="text-xs text-red-400 mt-1">Consider discussing with a doctor — a sleep study (polysomnography) is the only way to diagnose sleep apnea.</p>
           )}
           <p className="text-[10px] text-gray-600 mt-2">Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
         </div>

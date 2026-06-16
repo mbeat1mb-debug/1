@@ -483,11 +483,11 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else                       activity += 3
   }
 
-  if (weeklyAZM >= 500)       activity -= 2
-  else if (weeklyAZM >= 300)  activity -= 1
-  else if (weeklyAZM >= 150)  activity += 0
-  else if (weeklyAZM >= 75)   activity += 1
-  else                        activity += 2
+  let azmContribution = weeklyAZM >= 500 ? -2 : weeklyAZM >= 300 ? -1 : weeklyAZM >= 150 ? 0 : weeklyAZM >= 75 ? 1 : 2
+  // AZM and the Cardio domain both partly reflect cardiovascular fitness; halve AZM's
+  // favorable contribution when Cardio is already strongly rewarded to avoid double-counting.
+  if (azmContribution < 0 && cardioCapped <= -3) azmContribution = Math.ceil(azmContribution / 2)
+  activity += azmContribution
 
   const activityCapped = clamp(activity, -3, 5)
 
