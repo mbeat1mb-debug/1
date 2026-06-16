@@ -4,13 +4,16 @@ import { getTokens } from './auth'
 const BACKUP_KEYS = [
   'journal_entries', 'custom_tags',
   'bp_readings', 'physio_age_history',
-  'personal_records', 'unlocked_achievements',
+  'personal_records', 'achievements_unlocked',
   'observed_max_hr', 'google_client_id',
   'user_age', 'user_units', 'user_height_cm', 'user_weight_kg',
   'user_body_fat_pct', 'weight_history',
   'user_smoking', 'user_alcohol_week',
-  'home_layout', 'cards_minimized',
+  'home_section_order', 'cards_minimized',
   'lab_results',
+  'user_vo2_max', 'last_known_hrr',
+  'grip_history', 'user_grip_kg', 'user_grip_date',
+  'waist_history', 'user_waist_cm', 'user_waist_date',
 ]
 
 function authHeader() {
