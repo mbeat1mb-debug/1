@@ -11,6 +11,7 @@ import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
 import LabResultsSection from '../components/LabResultsSection'
+import { getDataFreshness } from '../lib/dataFreshness'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -634,6 +635,69 @@ async function exportCSV() {
   a.download = `health-export-${new Date().toISOString().split('T')[0]}.csv`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ── Data Freshness ────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG = {
+  ok:      { color: '#00c9a7', label: 'Current',  dot: '#00c9a7' },
+  due:     { color: '#f59e0b', label: 'Due soon', dot: '#f59e0b' },
+  overdue: { color: '#ef4444', label: 'Overdue',  dot: '#ef4444' },
+  never:   { color: '#ef4444', label: 'Never logged', dot: '#ef4444' },
+}
+
+function DataFreshnessSection() {
+  const [metrics, setMetrics] = useState([])
+
+  useEffect(() => {
+    setMetrics(getDataFreshness())
+  }, [])
+
+  const needsAttention = metrics.filter(m => m.status !== 'ok')
+  const headerColor = needsAttention.length === 0 ? '#00c9a7' : needsAttention.some(m => m.status === 'overdue' || m.status === 'never') ? '#ef4444' : '#f59e0b'
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: `1px solid ${headerColor}28` }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">Data Freshness</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {needsAttention.length === 0 ? 'All metrics are up to date' : `${needsAttention.length} metric${needsAttention.length > 1 ? 's' : ''} need attention`}
+          </p>
+        </div>
+        <div className="w-2.5 h-2.5 rounded-full" style={{ background: headerColor }} />
+      </div>
+
+      <div className="space-y-2">
+        {metrics.map(m => {
+          const cfg = STATUS_CONFIG[m.status]
+          return (
+            <div key={m.id} className="flex items-center justify-between py-2" style={{ borderTop: '1px solid #1a1a1a' }}>
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg leading-none">{m.emoji}</span>
+                <div>
+                  <p className="text-sm text-gray-200">{m.label}</p>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    {m.status === 'never'
+                      ? m.action
+                      : m.status === 'ok'
+                        ? `${m.daysAgo}d ago · every ${m.cadenceDays}d`
+                        : `${m.daysAgo}d ago · ${m.action}`}
+                  </p>
+                </div>
+              </div>
+              <span
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
+                style={{ background: cfg.color + '18', color: cfg.color }}
+              >
+                {cfg.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ── Main Settings screen ──────────────────────────────────────────────────────
@@ -1494,6 +1558,9 @@ Labs: marker,value,date`}</pre>
           )}
         </div>
       </div>
+
+      {/* Data Freshness */}
+      <DataFreshnessSection />
 
       {/* Note on API migration */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>

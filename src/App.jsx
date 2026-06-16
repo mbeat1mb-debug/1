@@ -9,6 +9,7 @@ import {
   calculateSleepApneaRisk, calculateSocialJetLag, getHRVNorm, getUserAge,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
+import { getDataFreshness } from './lib/dataFreshness'
 import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
 } from './lib/achievements'
@@ -404,6 +405,18 @@ export default function App() {
           rhr: result.todayRHR,
         }),
       }).catch(() => {})
+
+      // Sync manual data freshness to KV so weekly push can report what's overdue
+      try {
+        const freshItems = getDataFreshness()
+        const overdue = freshItems.filter(m => m.status === 'overdue' || m.status === 'never').map(m => m.label)
+        const due = freshItems.filter(m => m.status === 'due').map(m => m.label)
+        fetch('/api/push-freshness', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ overdue, due }),
+        }).catch(() => {})
+      } catch (_) {}
 
       // Auto-backup once per day after a successful sync (fire-and-forget)
       const lastBackup = getLastBackupAt()
