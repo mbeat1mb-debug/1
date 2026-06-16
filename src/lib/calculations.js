@@ -1490,3 +1490,35 @@ export function calculateDaytimeStress(hrIntradayData, wakeHour, rhr) {
   const score = Math.min(100, Math.round(delta < 5 ? delta * 5 : 25 + (delta - 5) * 5))
   return { score, avgHR: Math.round(avgHR), delta: Math.round(delta * 10) / 10 }
 }
+
+export function calculateReadiness({ recoveryScore = 0, recoveryVelocity = 0, sleepDebt = 0, trainingLoad = null, todayHRV = 0, hrvHistory = [], stressScore = 0 }) {
+  const tsb = trainingLoad?.tsb ?? 0
+  const hrv14 = hrvHistory.slice(-14).filter(Boolean)
+  const avgHRV14 = hrv14.length ? hrv14.reduce((a, b) => a + b, 0) / hrv14.length : 0
+  const hrvDelta = todayHRV > 0 && avgHRV14 > 0 ? Math.round(todayHRV - avgHRV14) : 0
+
+  // Tier assignment — Primed requires all signals green
+  let headline, color
+  if (recoveryScore >= 67 && sleepDebt < 1 && tsb > -15 && stressScore < 60 && recoveryVelocity >= -2) {
+    headline = 'Primed'; color = '#00c9a7'
+  } else if (recoveryScore >= 34 || (recoveryScore >= 50 && sleepDebt < 2)) {
+    headline = 'Balanced'; color = '#3b82f6'
+  } else if (recoveryScore >= 15) {
+    headline = 'Strained'; color = '#f59e0b'
+  } else {
+    headline = 'Run Down'; color = '#ef4444'
+  }
+
+  // Build reason tags (max 3, most informative first)
+  const reasons = []
+  if (hrvDelta >= 6) reasons.push(`HRV +${hrvDelta}ms`)
+  else if (hrvDelta <= -6) reasons.push(`HRV ${hrvDelta}ms`)
+  if (sleepDebt >= 1) reasons.push(`${sleepDebt}h sleep debt`)
+  if (tsb > 10) reasons.push('Low training load')
+  else if (tsb < -20) reasons.push('High training load')
+  if (stressScore >= 65) reasons.push('Elevated stress')
+  if (recoveryVelocity <= -4) reasons.push('Recovery dropping')
+  else if (recoveryVelocity >= 5) reasons.push('Recovery rising')
+
+  return { headline, color, reasons: reasons.slice(0, 3) }
+}

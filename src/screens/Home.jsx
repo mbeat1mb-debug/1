@@ -15,7 +15,7 @@ import DailyReport, { getTimeOfDay } from '../components/DailyReport'
 import {
   getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
   getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
-  calculatePhysiologicalAge, getUserAge,
+  calculatePhysiologicalAge, getUserAge, calculateReadiness,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 import { getTopCorrelations } from '../lib/correlations'
@@ -556,6 +556,33 @@ const SECTION_CONTENT = {
   trends: TrendsContent,
 }
 
+function ReadinessCard({ data }) {
+  const { headline, color, reasons } = calculateReadiness({
+    recoveryScore: data.recoveryScore,
+    recoveryVelocity: data.recoveryVelocity,
+    sleepDebt: data.sleepDebt,
+    trainingLoad: data.trainingLoad,
+    todayHRV: data.todayHRV,
+    hrvHistory: data.hrvHistory ?? [],
+    stressScore: data.stressScore,
+  })
+  return (
+    <div className="mx-4 rounded-2xl px-4 py-3 flex items-center justify-between" style={{ background: color + '10', border: `1px solid ${color}28` }}>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: color + 'aa' }}>Readiness</p>
+        <p className="text-2xl font-bold" style={{ color }}>{headline}</p>
+      </div>
+      {reasons.length > 0 && (
+        <div className="flex flex-col items-end gap-1">
+          {reasons.map(r => (
+            <span key={r} className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: color + '18', color: color + 'cc' }}>{r}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Sortable card ────────────────────────────────────────────────────────────
 
 function getCardGlowColor(id, data) {
@@ -854,6 +881,13 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
       {editing && (
         <p className="text-center text-xs text-gray-600 pb-2">Hold grip to reorder · Chevron to minimize</p>
+      )}
+
+      {/* Readiness headline */}
+      {!editing && (
+        <div className="mb-2 mt-2">
+          <ReadinessCard data={data} />
+        </div>
       )}
 
       {/* Morning / Nightly report */}
