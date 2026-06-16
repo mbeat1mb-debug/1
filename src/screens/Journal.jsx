@@ -90,6 +90,58 @@ function fmtSleep(mins) {
   return h > 0 ? `${sign}${h}h${m > 0 ? m + 'm' : ''}` : `${sign}${m}m`
 }
 
+function CategoryInsightCard({ category, filteredTags, correlations, healthHistory }) {
+  const catCorrs = filteredTags.map(tag => ({
+    tag,
+    corr: correlations.find(c => c.tag.id === tag.id)?.corr ?? null,
+  }))
+  const withData = catCorrs.filter(x => x.corr)
+  const building = catCorrs.filter(x => !x.corr)
+  if (withData.length === 0 && healthHistory.length < 10) return null
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#0d1218', border: '1px solid #1e2a38' }}>
+      <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a7fa5' }}>
+        {category.charAt(0).toUpperCase() + category.slice(1)} Insights
+      </p>
+      {withData.length > 0 ? (
+        <div className="space-y-3">
+          {withData.map(({ tag, corr }) => {
+            const color = corr.diff > 0 ? '#00c9a7' : '#ef4444'
+            const dir = corr.diff > 0 ? 'higher' : 'lower'
+            return (
+              <div key={tag.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs text-gray-300 flex-1">
+                    When you log <span className="font-semibold text-white">{tag.emoji} {tag.label}</span>, recovery averages{' '}
+                    <span className="font-bold" style={{ color }}>{Math.abs(corr.diff)}% {dir}</span>
+                    <span className="text-gray-600"> ({corr.withAvg} vs {corr.withoutAvg})</span>
+                  </p>
+                  <span className="text-[10px] text-gray-600 flex-shrink-0 mt-0.5">{corr.sampleSize}d</span>
+                </div>
+                {(corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1) || (corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5) || (corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10) ? (
+                  <p className="text-[10px] text-gray-600 mt-0.5">
+                    {corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1 && `HRV ${corr.hrvDiff > 0 ? '+' : ''}${corr.hrvDiff}ms`}
+                    {corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5 && ` · RHR ${corr.rhrDiff > 0 ? '+' : ''}${corr.rhrDiff}bpm`}
+                    {corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10 && ` · Sleep ${fmtSleep(corr.sleepDiff)}`}
+                  </p>
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-600">{10 - healthHistory.length} more days needed to unlock insights for this category.</p>
+      )}
+      {building.length > 0 && withData.length > 0 && (
+        <p className="text-[10px] text-gray-700 mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
+          Still building: {building.map(x => `${x.tag.emoji} ${x.tag.label}`).join(' · ')}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function ImpactBar({ diff, maxDiff = 30 }) {
   const pct = Math.min(100, (Math.abs(diff) / maxDiff) * 100)
   const color = diff > 0 ? '#00c9a7' : '#ef4444'
@@ -467,6 +519,16 @@ export default function Journal({ data, onNav }) {
         </div>
       )}
 
+      {/* Category insights — inline, sentence-style, WHOOP-phrasing */}
+      {activeCategory !== 'all' && (
+        <CategoryInsightCard
+          category={activeCategory}
+          filteredTags={filteredTags}
+          correlations={correlations}
+          healthHistory={healthHistory}
+        />
+      )}
+
       {/* Daily Timing */}
       <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Daily Timing</p>
@@ -615,39 +677,38 @@ export default function Journal({ data, onNav }) {
         {saved ? '✓ Saved' : "Save Today's Log"}
       </button>
 
-      {/* Behavior Insights — enhanced visual correlations */}
+      {/* All-behavior insights — sentence format, ranked by impact */}
       {correlations.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#111', border: '1px solid #222' }}>
-          <div className="px-4 pt-4 pb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Behavior Impact</p>
-            <p className="text-xs text-gray-600 mt-1">Your personal data — how each behavior affects next-day recovery, HRV, and sleep</p>
-          </div>
-          <div className="px-4 pb-4 space-y-4">
-            {correlations.map(({ tag, corr }) => (
-              <div key={tag.id}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-sm">{tag.emoji}</span>
-                  <span className="text-sm text-gray-200 flex-1">{tag.label}</span>
-                  <span className="text-[10px] text-gray-600">{corr.sampleSize} days</span>
-                </div>
-                <ImpactBar diff={corr.diff} maxDiff={maxAbsDiff} />
-                {(corr.hrvDiff !== null || corr.rhrDiff !== null || corr.sleepDiff !== null) && (
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    {corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1 && (
-                      <MetricChip label="HRV" value={corr.hrvDiff} unit="ms" positive={corr.hrvDiff > 0} />
-                    )}
-                    {corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5 && (
-                      <MetricChip label="RHR" value={corr.rhrDiff} unit="bpm" positive={corr.rhrDiff < 0} />
-                    )}
-                    {corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10 && (
-                      <MetricChip label="Sleep" value={fmtSleep(corr.sleepDiff)} unit="" positive={corr.sleepDiff > 0} />
-                    )}
+        <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">What Moves Your Recovery</p>
+          <p className="text-[10px] text-gray-600 mb-4">Ranked by impact · your data only · {healthHistory.length} days tracked</p>
+          <div className="space-y-4">
+            {correlations.map(({ tag, corr }) => {
+              const color = corr.diff > 0 ? '#00c9a7' : '#ef4444'
+              const dir = corr.diff > 0 ? 'higher' : 'lower'
+              return (
+                <div key={tag.id}>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-xs text-gray-300 flex-1">
+                      When you log <span className="font-semibold text-white">{tag.emoji} {tag.label}</span>, recovery averages{' '}
+                      <span className="font-bold" style={{ color }}>{Math.abs(corr.diff)}% {dir}</span>
+                      <span className="text-gray-600"> ({corr.withAvg} vs {corr.withoutAvg})</span>
+                    </p>
+                    <span className="text-[10px] text-gray-600 flex-shrink-0 mt-0.5">{corr.sampleSize}d</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <ImpactBar diff={corr.diff} maxDiff={maxAbsDiff} />
+                  {((corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1) || (corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5) || (corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10)) && (
+                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      {corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1 && <MetricChip label="HRV" value={corr.hrvDiff} unit="ms" positive={corr.hrvDiff > 0} />}
+                      {corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5 && <MetricChip label="RHR" value={corr.rhrDiff} unit="bpm" positive={corr.rhrDiff < 0} />}
+                      {corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10 && <MetricChip label="Sleep" value={fmtSleep(corr.sleepDiff)} unit="" positive={corr.sleepDiff > 0} />}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-          <p className="text-[10px] text-gray-600 px-4 pb-3">Correlations from your history only · not medical advice · needs 10+ logged days</p>
+          <p className="text-[10px] text-gray-700 mt-4">Correlation, not causation · based on your personal history</p>
         </div>
       )}
 
