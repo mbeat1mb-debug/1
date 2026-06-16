@@ -338,6 +338,16 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
     else                  cardio += 4
   }
 
+  // Cole NEJM 1999: HRR <12 bpm at 1 min post-exercise predicts 2× all-cause mortality.
+  // Uses last known value — exercise sessions are infrequent so we persist across days.
+  const lastHRR = getLastKnownHRR()
+  if (lastHRR?.hrr60 > 0) {
+    if (lastHRR.hrr60 >= 25)      cardio -= 2  // Excellent autonomic recovery
+    else if (lastHRR.hrr60 >= 18) cardio -= 1  // Good
+    else if (lastHRR.hrr60 >= 12) cardio += 0  // Normal
+    else                          cardio += 2  // Poor — independent mortality risk
+  }
+
   const cardioCapped = clamp(cardio, -7, 9)
 
   // ── Domain 2: Body Composition ────────────────────────────────────────────
@@ -1207,6 +1217,15 @@ export function calculateSRI(sleepHistory) {
   }
   if (totalMins === 0) return null
   return Math.round((matchMins / totalMins) * 100) / 100
+}
+
+export function saveLastKnownHRR(hrr) {
+  if (!hrr) return
+  try { localStorage.setItem('last_known_hrr', JSON.stringify({ ...hrr, date: new Date().toISOString().split('T')[0] })) } catch {}
+}
+
+export function getLastKnownHRR() {
+  try { return JSON.parse(localStorage.getItem('last_known_hrr') || 'null') } catch { return null }
 }
 
 // ── Post-exercise Heart Rate Recovery ──────────────────────────────────────

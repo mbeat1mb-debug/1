@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData, getVO2MortalityContext } from '../lib/calculations'
+import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getHealthspanDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -324,6 +324,7 @@ export default function Healthspan({ data, onNav }) {
   const tygIndex = getTyGIndex()
   const sleepApneaRisk = data.sleepApneaRisk ?? null
   const socialJetLag = data.socialJetLag ?? null
+  const lastKnownHRR = data.hrr ?? getLastKnownHRR()
   const ffmi = leanMass !== null && heightCm > 0 ? Math.round((leanMass / Math.pow(heightCm / 100, 2)) * 10) / 10 : null
   const labContributions = getLabContributions()
   const labAdj = getLabAgeAdjustment()
@@ -335,7 +336,8 @@ export default function Healthspan({ data, onNav }) {
     vo2Max, avgDeepPct, avgRemPct, hrvHistory,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri, data.hrvHistory?.length])
+    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri,
+    data.hrvHistory?.length, lastKnownHRR?.hrr60])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
@@ -495,6 +497,13 @@ export default function Healthspan({ data, onNav }) {
       unit: '',
       contribution: tygIndex < 4.5 ? -1 : tygIndex < 4.68 ? 0 : tygIndex < 5.0 ? 2 : 4,
       sublabel: (tygIndex < 4.5 ? 'Low IR risk' : tygIndex < 4.68 ? 'Borderline' : tygIndex < 5.0 ? 'Elevated IR risk' : 'High IR risk') + ' · ln(trig × glucose ÷ 2)',
+    }] : []),
+    ...(lastKnownHRR?.hrr60 > 0 ? [{
+      label: 'Heart Rate Recovery',
+      value: lastKnownHRR.hrr60,
+      unit: ' bpm drop',
+      contribution: lastKnownHRR.hrr60 >= 25 ? -2 : lastKnownHRR.hrr60 >= 18 ? -1 : lastKnownHRR.hrr60 >= 12 ? 0 : 2,
+      sublabel: (lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor — ↑ mortality risk') + (data.hrr ? '' : ` · last recorded ${lastKnownHRR.date}`),
     }] : []),
     {
       label: 'Smoking',
@@ -776,6 +785,18 @@ export default function Healthspan({ data, onNav }) {
           {gripKg > 0 && <MetricFactorCard label="Grip Strength" value={units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg} unit={units === 'imperial' ? ' lbs' : ' kg'} contribution={contributions.find(c => c.label === 'Grip Strength')?.contribution ?? 0} min={units === 'imperial' ? 66 : 30} max={units === 'imperial' ? 132 : 60} higherBetter={true} />}
           {/* Active Zone Minutes */}
           <MetricFactorCard label="Weekly Active Zone Min" value={weeklyAZM} unit=" AZM" contribution={contributions.find(c => c.label === 'Active Zone Minutes')?.contribution ?? 0} min={0} max={500} higherBetter={true} sublabel="WHO target: 150/wk · Excellent: 300/wk" />
+          {/* Heart Rate Recovery */}
+          {lastKnownHRR?.hrr60 > 0 && (
+            <MetricFactorCard
+              label="Heart Rate Recovery"
+              value={lastKnownHRR.hrr60}
+              unit=" bpm"
+              contribution={contributions.find(c => c.label === 'Heart Rate Recovery')?.contribution ?? 0}
+              min={6} max={30}
+              higherBetter={true}
+              sublabel={(lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor — ↑ mortality risk') + (data.hrr ? ' · today' : ` · last recorded ${lastKnownHRR.date}`)}
+            />
+          )}
         </div>
       </div>
 

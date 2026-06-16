@@ -5,7 +5,7 @@ import {
   parseFitbitData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
-  calculateTrainingEffect, calculateDaytimeStress, calculateHRR,
+  calculateTrainingEffect, calculateDaytimeStress, calculateHRR, saveLastKnownHRR,
   calculateSleepApneaRisk, calculateSocialJetLag, getHRVNorm, getUserAge,
 } from './lib/calculations'
 import { detectAlerts } from './lib/alerts'
@@ -271,6 +271,7 @@ export default function App() {
     }))
 
     const hrr = calculateHRR(parsed.hrIntradayData)
+    if (hrr) saveLastKnownHRR(hrr)
     const sleepApneaRisk = calculateSleepApneaRisk({
       spo2Intraday: raw.spo2Intraday,
       br: parsed.todayBR,
