@@ -237,6 +237,29 @@ function PushNotificationsSection() {
         )}
       </div>
 
+      {/* Health alerts */}
+      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
+        <p className="text-xs text-gray-500 uppercase tracking-wider pt-1">Health Alerts</p>
+        {[
+          { key: 'alertsEnabled', label: 'Illness & Red-Zone Alerts', desc: 'Pushes immediately when an illness signal or 3+ day low recovery streak is detected' },
+        ].map(({ key, label, desc }) => (
+          <div key={key} className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-white">{label}</span>
+              <p className="text-[11px] text-gray-600">{desc}</p>
+            </div>
+            <button
+              onClick={() => setPrefs(p => ({ ...p, [key]: p[key] !== false ? false : true }))}
+              className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
+              style={{ background: prefs[key] !== false ? '#00c9a7' : '#333' }}
+            >
+              <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
+                style={{ left: prefs[key] !== false ? '22px' : '4px' }} />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Data reminders */}
       <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
         <p className="text-xs text-gray-500 uppercase tracking-wider pt-1">Data Entry Reminders</p>

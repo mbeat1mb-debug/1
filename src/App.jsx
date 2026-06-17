@@ -407,6 +407,18 @@ export default function App() {
         }),
       }).catch(() => {})
 
+      // Proactively push the highest-severity alerts (illness signal, red-zone recovery)
+      // instead of leaving them to be discovered only when the app is opened.
+      const pushWorthy = (result.alerts || []).filter(a => a.severity === 'danger' || a.id === 'illness_signal')
+      const accessToken = localStorage.getItem('access_token') || ''
+      for (const alert of pushWorthy) {
+        fetch('/api/push-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ id: alert.id, title: alert.title, body: alert.message }),
+        }).catch(() => {})
+      }
+
       // Sync manual data freshness to KV so weekly push can report what's overdue
       try {
         const freshItems = getDataFreshness()
