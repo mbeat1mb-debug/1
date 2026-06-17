@@ -1,4 +1,4 @@
-import { getLabAgeAdjustment, getTyGIndex } from './labs'
+import { getLabAgeAdjustment, getTyGIndex, getPhenoAgeProgress } from './labs'
 
 // Dynamic user age from settings
 export function getUserAge() {
@@ -516,6 +516,32 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
   const adj = cardioCapped + compositionCapped + metabolicCapped + sleepCapped + activityCapped + lifestyle + synergy
 
   return Math.round(Math.max(userAge - 15, Math.min(userAge + 20, userAge + adj)))
+}
+
+// How many of the 5 scoring domains are using real user-entered data vs. silently
+// defaulting to a 0 contribution — mirrors the existing PhenoAge "X/9 markers" indicator.
+export function getPhysiologicalAgeConfidence({ avgHRV, avgRHR, avgSleep, avgSteps, weeklyAZM, vo2Max = 0, lastKnownHRR = null } = {}) {
+  const bodyFatPct = getUserBodyFatPct()
+  const waistCm = getUserWaistCm()
+  const gripKg = getUserGripStrengthKg()
+  const homaIR = getHOMAIR()
+  const bp = getAverageBP()
+  const humeData = getLatestHumeData()
+  const tyg = homaIR === 0 ? getTyGIndex() : null
+  const labProgress = getPhenoAgeProgress()
+
+  const domains = [
+    { label: 'Cardio', present: vo2Max > 0 || avgHRV > 0 || avgRHR > 0 || lastKnownHRR?.hrr60 > 0 },
+    { label: 'Body Composition', present: bodyFatPct !== null || waistCm > 0 || gripKg > 0 || !!humeData },
+    { label: 'Metabolic', present: bp.sys > 0 || homaIR > 0 || tyg !== null || labProgress.present > 0 },
+    { label: 'Sleep & Recovery', present: avgSleep > 0 },
+    { label: 'Activity', present: avgSteps > 0 || weeklyAZM > 0 },
+  ]
+  return {
+    present: domains.filter(d => d.present).length,
+    total: domains.length,
+    missingNames: domains.filter(d => !d.present).map(d => d.label),
+  }
 }
 
 // Returns rate in biological years per calendar year from longitudinal history.

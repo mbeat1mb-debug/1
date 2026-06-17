@@ -3,7 +3,7 @@ import { isConnected, startOAuth, disconnect } from '../lib/auth'
 import {
   getPermission, isPushSupported, getPushSubscription,
   subscribeToPush, unsubscribeFromPush, savePushPrefs,
-  getLocalPushPrefs, DEFAULT_PREFS,
+  getLocalPushPrefs, DEFAULT_PREFS, isPushHealthy,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
 import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry, saveGripEntry, saveWaistEntry } from '../lib/calculations'
@@ -73,6 +73,7 @@ function PushNotificationsSection() {
   const [saved, setSaved] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [error, setError] = useState('')
+  const [subscriptionLost, setSubscriptionLost] = useState(false)
 
   const stored = getLocalPushPrefs() || DEFAULT_PREFS
   const [prefs, setPrefs] = useState(stored)
@@ -80,7 +81,10 @@ function PushNotificationsSection() {
   useEffect(() => {
     isPushSupported().then(supported => {
       setPushSupported(supported)
-      if (supported) getPushSubscription().then(sub => setSubscribed(!!sub))
+      if (supported) {
+        getPushSubscription().then(sub => setSubscribed(!!sub))
+        isPushHealthy().then(healthy => setSubscriptionLost(!healthy))
+      }
     })
   }, [])
 
@@ -93,7 +97,7 @@ function PushNotificationsSection() {
     setLoading(true); setError('')
     try {
       await subscribeToPush(prefs)
-      setSubscribed(true); setSaved(true)
+      setSubscribed(true); setSaved(true); setSubscriptionLost(false)
       setTimeout(() => setSaved(false), 2500)
     } catch (e) {
       setError(e.message)
@@ -114,6 +118,7 @@ function PushNotificationsSection() {
   const handleUnsubscribe = async () => {
     await unsubscribeFromPush()
     setSubscribed(false)
+    setSubscriptionLost(false)
   }
 
   const morningCron = toCronExpression(prefs.morningTime, tzEntry.value)
@@ -150,6 +155,23 @@ function PushNotificationsSection() {
           </button>
         )}
       </div>
+
+      {subscriptionLost && (
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#1a0a0a', border: '1px solid #3a1a1a' }}>
+          <p className="text-xs text-red-400 font-semibold">Push notifications have stopped working</p>
+          <p className="text-[11px] text-gray-500">
+            Your browser subscription expired or was revoked — scheduled briefs and health alerts are no longer being delivered. Tap below to re-enable.
+          </p>
+          <button
+            onClick={handleSubscribe}
+            disabled={loading}
+            className="w-full py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
+            style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440' }}
+          >
+            {loading ? 'Reconnecting…' : 'Re-enable Push Notifications'}
+          </button>
+        </div>
+      )}
 
       {/* Morning toggle */}
       <div className="space-y-2">

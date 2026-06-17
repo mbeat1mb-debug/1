@@ -105,3 +105,50 @@ export function detectAlerts(data) {
 export function getAlertColor(severity) {
   return severity === 'danger' ? '#ef4444' : '#f59e0b'
 }
+
+// ── Alert calibration ───────────────────────────────────────────────────────
+// Persists fired alerts with dates so we can later check whether illness-related
+// alerts actually preceded a self-reported "Feeling Sick" journal entry.
+
+const ALERT_HISTORY_KEY = 'alert_history'
+const ILLNESS_ALERT_IDS = ['illness_signal', 'hrv_declining', 'rhr_elevated']
+
+export function logAlertHistory(alerts, date = new Date().toISOString().split('T')[0]) {
+  if (!alerts || alerts.length === 0) return
+  try {
+    const history = JSON.parse(localStorage.getItem(ALERT_HISTORY_KEY) || '[]')
+    for (const a of alerts) {
+      if (!history.find(h => h.date === date && h.id === a.id)) {
+        history.push({ date, id: a.id, severity: a.severity })
+      }
+    }
+    localStorage.setItem(ALERT_HISTORY_KEY, JSON.stringify(history.slice(-500)))
+  } catch {}
+}
+
+export function getAlertHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(ALERT_HISTORY_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+// Of the illness-related alerts fired, what % were followed within `windowDays`
+// by a "Feeling Sick" journal tag — a personal precision/hit-rate metric.
+export function getIllnessAlertAccuracy(journalEntries, windowDays = 3) {
+  const history = getAlertHistory().filter(h => ILLNESS_ALERT_IDS.includes(h.id))
+  if (history.length === 0) return null
+
+  const sickDates = new Set(journalEntries.filter(e => e.tagIds?.includes('sick')).map(e => e.date))
+  let hits = 0
+  for (const h of history) {
+    const start = new Date(h.date + 'T00:00:00')
+    for (let i = 0; i <= windowDays; i++) {
+      const d = new Date(start)
+      d.setDate(d.getDate() + i)
+      if (sickDates.has(d.toISOString().split('T')[0])) { hits++; break }
+    }
+  }
+  return { total: history.length, hits, rate: Math.round((hits / history.length) * 100) }
+}

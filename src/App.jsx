@@ -8,7 +8,7 @@ import {
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR, saveLastKnownHRR,
   calculateSleepApneaRisk, calculateSocialJetLag, getHRVNorm, getUserAge,
 } from './lib/calculations'
-import { detectAlerts } from './lib/alerts'
+import { detectAlerts, logAlertHistory } from './lib/alerts'
 import { getDataFreshness } from './lib/dataFreshness'
 import {
   updatePersonalRecords, calculateStreaks, checkAndUnlockAchievements,
@@ -296,6 +296,7 @@ export default function App() {
       pr, streaks, recoveryHistory, sleepHistory: parsed.sleepHistory,
     })
     const alerts = detectAlerts({ ...base, recoveryHistory })
+    logAlertHistory(alerts)
     const result = { ...base, personalRecords: pr, streaks, unlockedAchievements: unlocked, alerts }
 
     fireDataNotifications(result, newUnlocks)

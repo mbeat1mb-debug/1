@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity, getDailyTimings, saveDailyTiming } from '../lib/storage'
+import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity, getDailyTimings, saveDailyTiming, getJournalEntries } from '../lib/storage'
+import { getIllnessAlertAccuracy } from '../lib/alerts'
 import { getBPReadings, saveBPReading } from '../lib/calculations'
 import { haptic } from '../lib/haptics'
 
@@ -324,6 +325,7 @@ export default function Journal({ data, onNav }) {
 
   const filteredTags = activeCategory === 'all' ? tags : tags.filter(t => t.category === activeCategory)
   const energyCorrelation = analyzeEnergyCorrelation(healthHistory)
+  const illnessAlertAccuracy = useMemo(() => getIllnessAlertAccuracy(getJournalEntries()), [saved])
 
   // Streaks — only compute for tags with >= 2 streak to avoid spam
   const streaks = useMemo(() => {
@@ -743,6 +745,20 @@ export default function Journal({ data, onNav }) {
             })}
           </div>
           <p className="text-[10px] text-gray-700 mt-4">Correlation, not causation · based on your personal history</p>
+        </div>
+      )}
+
+      {/* Illness alert calibration — personal hit-rate of the proactive alert engine */}
+      {illnessAlertAccuracy && (
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#00c9a7' }}>Alert Accuracy</p>
+          <p className="text-[10px] text-gray-600 mb-3">Illness-signal alerts followed by a 🤒 Feeling Sick log within 3 days</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold" style={{ color: illnessAlertAccuracy.rate >= 50 ? '#00c9a7' : '#f59e0b' }}>
+              {illnessAlertAccuracy.rate}%
+            </span>
+            <span className="text-xs text-gray-600">{illnessAlertAccuracy.hits} of {illnessAlertAccuracy.total} alerts</span>
+          </div>
         </div>
       )}
 

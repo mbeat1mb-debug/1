@@ -191,12 +191,22 @@ export async function subscribeToPush(prefs) {
   })
   if (!res.ok) throw new Error('Failed to register subscription with server')
 
+  localStorage.setItem('push_subscribed_flag', '1')
   return subscription
 }
 
 export async function unsubscribeFromPush() {
   const sub = await getPushSubscription()
   if (sub) await sub.unsubscribe()
+  localStorage.removeItem('push_subscribed_flag')
+}
+
+// True if the browser's push subscription has silently expired or been revoked
+// since the user last enabled it — protects proactive alerts from going dark unnoticed.
+export async function isPushHealthy() {
+  if (localStorage.getItem('push_subscribed_flag') !== '1') return true
+  const sub = await getPushSubscription()
+  return !!sub
 }
 
 export async function savePushPrefs(prefs) {

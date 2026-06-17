@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
+import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -42,6 +42,22 @@ function BioAgeOrb({ physAge, chronAge }) {
         <p className="text-sm font-bold" style={{ color }}>{diffText}</p>
       </div>
       <p className="text-xs text-gray-600 mt-2">vs {chronAge} calendar age · wearable estimate ±3y</p>
+    </div>
+  )
+}
+
+function ConfidenceBadge({ confidence }) {
+  if (!confidence) return null
+  const { present, total, missingNames } = confidence
+  const color = present === total ? '#00c9a7' : present >= total - 1 ? '#3b82f6' : present >= total / 2 ? '#f59e0b' : '#ef4444'
+  return (
+    <div className="rounded-xl px-4 py-2.5 -mt-1 mb-1" style={{ background: color + '12', border: `1px solid ${color}30` }}>
+      <p className="text-xs font-semibold" style={{ color }}>
+        {present}/{total} domains using real data
+      </p>
+      {missingNames.length > 0 && (
+        <p className="text-[11px] text-gray-600 mt-0.5">Missing: {missingNames.join(', ')} — those domains default to 0</p>
+      )}
     </div>
   )
 }
@@ -339,6 +355,12 @@ export default function Chronos({ data, onNav }) {
     smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri,
     data.hrvHistory?.length, lastKnownHRR?.hrr60])
 
+  const confidence = useMemo(() => getPhysiologicalAgeConfidence({
+    avgHRV, avgRHR, avgSleep: avgSleepHours, avgSteps: steps, weeklyAZM, vo2Max, lastKnownHRR,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [avgHRV, avgRHR, avgSleepHours, steps, weeklyAZM, vo2Max, lastKnownHRR?.hrr60,
+    waistCm, gripKg, homaIR, tygIndex, bodyFatPct, bp.sys])
+
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)
   useEffect(() => {
@@ -565,6 +587,7 @@ export default function Chronos({ data, onNav }) {
       ) : (
         <>
           <BioAgeOrb physAge={physAge} chronAge={userAge} />
+          <ConfidenceBadge confidence={confidence} />
           <PaceSlider pace={pace} physAge={physAge} chronAge={userAge} />
           <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
           <BioAgeTrendChart chronAge={userAge} />
