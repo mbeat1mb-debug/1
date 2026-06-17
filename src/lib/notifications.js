@@ -201,10 +201,12 @@ export async function unsubscribeFromPush() {
   localStorage.removeItem('push_subscribed_flag')
 }
 
-// True if the browser's push subscription has silently expired or been revoked
-// since the user last enabled it — protects proactive alerts from going dark unnoticed.
+// True if the browser's push subscription has silently expired or been revoked,
+// or the OS-level notification permission was pulled, since the user last enabled
+// push — protects proactive alerts from going dark unnoticed either way.
 export async function isPushHealthy() {
   if (localStorage.getItem('push_subscribed_flag') !== '1') return true
+  if (getPermission() !== 'granted') return false
   const sub = await getPushSubscription()
   return !!sub
 }

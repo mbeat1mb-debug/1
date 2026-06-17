@@ -137,18 +137,33 @@ export function getAlertHistory() {
 // Of the illness-related alerts fired, what % were followed within `windowDays`
 // by a "Feeling Sick" journal tag — a personal precision/hit-rate metric.
 export function getIllnessAlertAccuracy(journalEntries, windowDays = 3) {
-  const history = getAlertHistory().filter(h => ILLNESS_ALERT_IDS.includes(h.id))
-  if (history.length === 0) return null
+  const sorted = getAlertHistory()
+    .filter(h => ILLNESS_ALERT_IDS.includes(h.id))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (sorted.length === 0) return null
+
+  // Collapse consecutive-day firings of the same alert id into one "episode" anchored
+  // on its first day — otherwise a multi-day illness inflates the denominator and looks
+  // like several missed alerts instead of one correctly-caught episode.
+  const episodes = []
+  for (const h of sorted) {
+    const last = episodes[episodes.length - 1]
+    if (last && last.id === h.id) {
+      const gapDays = Math.round((new Date(h.date + 'T00:00:00') - new Date(last.lastDate + 'T00:00:00')) / 86400000)
+      if (gapDays <= 1) { last.lastDate = h.date; continue }
+    }
+    episodes.push({ id: h.id, date: h.date, lastDate: h.date })
+  }
 
   const sickDates = new Set(journalEntries.filter(e => e.tagIds?.includes('sick')).map(e => e.date))
   let hits = 0
-  for (const h of history) {
-    const start = new Date(h.date + 'T00:00:00')
+  for (const ep of episodes) {
+    const start = new Date(ep.date + 'T00:00:00')
     for (let i = 0; i <= windowDays; i++) {
       const d = new Date(start)
       d.setDate(d.getDate() + i)
       if (sickDates.has(d.toISOString().split('T')[0])) { hits++; break }
     }
   }
-  return { total: history.length, hits, rate: Math.round((hits / history.length) * 100) }
+  return { total: episodes.length, hits, rate: Math.round((hits / episodes.length) * 100) }
 }

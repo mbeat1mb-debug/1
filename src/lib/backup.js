@@ -14,6 +14,7 @@ const BACKUP_KEYS = [
   'user_vo2_max', 'last_known_hrr',
   'grip_history', 'user_grip_kg', 'user_grip_date',
   'waist_history', 'user_waist_cm', 'user_waist_date',
+  'alert_history',
 ]
 
 function authHeader() {
