@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
-import { loadDashboardData } from './lib/api'
+import { loadDashboardData, getFetchErrors } from './lib/api'
 import {
   parseGoogleHealthData, calculateRecovery, calculateStrain, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
@@ -318,7 +318,14 @@ export default function App() {
 
     try {
       const raw = await loadDashboardData()
-      if (!raw) { setSyncFailed(true); return }
+      const fetchErrors = getFetchErrors()
+      if (fetchErrors.length) {
+        localStorage.setItem('sync_debug_error', fetchErrors.join('\n'))
+        setSyncFailed(true)
+      } else {
+        localStorage.removeItem('sync_debug_error')
+      }
+      if (!raw) return
 
       const result = { ...processData(raw), date: raw.date }
 
@@ -443,6 +450,7 @@ export default function App() {
       }
     } catch (e) {
       console.error(e)
+      localStorage.setItem('sync_debug_error', `Sync crashed: ${e.message}`)
       setSyncFailed(true)
     } finally {
       syncInFlight.current = false

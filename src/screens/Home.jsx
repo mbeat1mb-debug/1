@@ -833,6 +833,11 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
                     : ''}
             </p>
           )}
+          {!editing && localStorage.getItem('sync_debug_error') && (
+            <p className="text-[10px] mt-0.5 max-w-[220px] break-words" style={{ color: '#f59e0b' }}>
+              {localStorage.getItem('sync_debug_error')}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onRefresh && !editing && (

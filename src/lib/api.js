@@ -2,6 +2,14 @@ import { getTokens, isTokenExpired, refreshAccessToken, disconnect } from './aut
 
 const BASE = 'https://health.googleapis.com/v4/users/me'
 
+// Diagnostic trail for the most recent loadDashboardData() call — each failed
+// ghFetch appends here so the UI can show the real reason instead of a blank screen.
+let fetchErrors = []
+
+export function getFetchErrors() {
+  return fetchErrors
+}
+
 async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
   try {
     if (isTokenExpired()) {
@@ -23,9 +31,14 @@ async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
       if (!retried && await refreshAccessToken()) return ghFetch(path, { method, body }, true)
       disconnect(); window.location.reload(); return null
     }
-    if (!res.ok) return null
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      fetchErrors.push(`${path} -> ${res.status}: ${text}`)
+      return null
+    }
     return res.json()
-  } catch {
+  } catch (e) {
+    fetchErrors.push(`${path} -> network error: ${e.message}`)
     return null
   }
 }
@@ -131,6 +144,7 @@ export async function getActivityLogs(afterDate) {
 }
 
 export async function loadDashboardData() {
+  fetchErrors = []
   const date = today()
   const [
     summary,
