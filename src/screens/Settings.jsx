@@ -251,7 +251,7 @@ function PushNotificationsSection() {
               <p className="text-[11px] text-gray-600">Wind-down uses a 3rd cron job. Add to vercel.json:</p>
               {winddownCron && (
                 <pre className="text-[11px] font-mono text-green-400 mt-1 overflow-x-auto">
-                  {`{"path": "/api/push-winddown", "schedule": "${winddownCron}"}`}
+                  {`{"path": "/api/push-scheduled?type=winddown", "schedule": "${winddownCron}"}`}
                 </pre>
               )}
             </div>
@@ -328,8 +328,8 @@ function PushNotificationsSection() {
           </p>
           <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-green-400" style={{ background: '#0a0a0a' }}>
 {`"crons": [
-  {"path": "/api/push-morning", "schedule": "${morningCron}"},
-  {"path": "/api/push-evening", "schedule": "${eveningCron}"}
+  {"path": "/api/push-scheduled?type=morning", "schedule": "${morningCron}"},
+  {"path": "/api/push-scheduled?type=evening", "schedule": "${eveningCron}"}
 ]`}
           </pre>
         </div>
