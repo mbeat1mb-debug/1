@@ -80,6 +80,15 @@ function snake(dataType) {
   return dataType.replace(/-/g, '_')
 }
 
+// civil_start_time fields want a plain civil date-time (no trailing Z) —
+// passing a real timestamp fails with INVALID_DATA_POINT_FILTER_CIVIL_DATE_TIME_FORMAT.
+function civilStart(date) {
+  return `${date}T00:00:00`
+}
+function civilNextStart(date) {
+  return `${nextDay(date)}T00:00:00`
+}
+
 // Time-range list query against a dataType's points. `timeField` differs by
 // category: Interval types use interval.start_time, Sample types use
 // sample_time.physical_time, Daily types use a plain civil date, Session types
@@ -88,7 +97,9 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
   const field = snake(dataType)
   const filter = timeField === 'date'
     ? `${field}.date >= "${startDate}" AND ${field}.date < "${nextDay(endDate)}"`
-    : `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
+    : timeField.includes('civil')
+      ? `${field}.${timeField} >= "${civilStart(startDate)}" AND ${field}.${timeField} < "${civilNextStart(endDate)}"`
+      : `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
   return ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams({ filter }).toString()}`)
 }
 
