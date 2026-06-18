@@ -80,12 +80,17 @@ export default function Sleep({ data, onNav }) {
   const sleepScore = data.sleepScore || 0
   const sleepColor = sleepScore >= 75 ? '#8b5cf6' : sleepScore >= 50 ? '#f59e0b' : '#ef4444'
 
+  // Google Health sleep points are normalized to flat deepMinutes/remMinutes/
+  // minutesAwake fields (see normalizeSleepPoint in calculations.js) — fall
+  // back to the old Fitbit levels.summary shape for any cached/legacy data.
   const stages = todaySleep?.levels?.summary || {}
-  const deep = stages.deep?.minutes || stages.deepSleep?.minutes || 0
-  const light = stages.light?.minutes || stages.lightSleep?.minutes || 0
-  const rem = stages.rem?.minutes || 0
-  const wake = stages.wake?.minutes || stages.awake?.minutes || 0
+  const deep = todaySleep?.deepMinutes ?? (stages.deep?.minutes || stages.deepSleep?.minutes || 0)
+  const rem = todaySleep?.remMinutes ?? (stages.rem?.minutes || 0)
+  const wake = todaySleep?.minutesAwake ?? (stages.wake?.minutes || stages.awake?.minutes || 0)
   const totalMins = todaySleep?.minutesAsleep || 0
+  const light = todaySleep?.deepMinutes != null
+    ? Math.max(0, totalMins - deep - rem)
+    : (stages.light?.minutes || stages.lightSleep?.minutes || 0)
   const totalInBed = todaySleep?.timeInBed || 0
 
   const hours = Math.floor(totalMins / 60)
