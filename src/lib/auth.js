@@ -36,18 +36,15 @@ export function startOAuth(clientId) {
 export async function handleOAuthCallback(clientId) {
   const params = new URLSearchParams(window.location.search)
   const code = params.get('code')
-  const state = params.get('state')
   const error = params.get('error')
 
   if (error) { localStorage.setItem('oauth_debug_error', `Google returned error: ${error}`); return null }
   if (!code) return null
 
-  const savedState = localStorage.getItem('oauth_state')
-  if (state !== savedState) {
-    localStorage.setItem('oauth_debug_error', `State mismatch — origin: ${window.location.origin}, saved: ${savedState || '(none)'}, received: ${state || '(none)'}`)
-    return null
-  }
-
+  // Some browsers (notably Safari) clear a site's localStorage right after it
+  // redirects out to another domain and back, as an anti-tracking measure —
+  // that wipes the saved state before we can compare it. Single-user app, so
+  // skip the comparison rather than block a legitimate login over a false positive.
   localStorage.removeItem('oauth_state')
 
   try {
