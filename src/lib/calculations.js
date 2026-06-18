@@ -864,9 +864,12 @@ function normalizeSleepPoint(point) {
 }
 
 function toLegacySpo2Minutes(spo2Intraday) {
+  // Spot SpO2 readings below 60% are sensor glitches, not real physiology
+  // (sustained SpO2 that low is incompatible with consciousness) — drop them
+  // so they can't trigger a false "Very High" apnea risk alert.
   const minutes = (spo2Intraday?.dataPoints ?? [])
     .map(p => ({ minute: p.sampleTime?.physicalTime ?? p.effectiveTime, value: Number(p.oxygenSaturation?.percentage) }))
-    .filter(p => p.minute && p.value > 0)
+    .filter(p => p.minute && p.value >= 60)
     .sort((a, b) => new Date(a.minute) - new Date(b.minute))
   return { minutes }
 }
