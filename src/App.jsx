@@ -35,6 +35,22 @@ const Settings = lazy(() => import('./screens/Settings'))
 const Trends = lazy(() => import('./screens/Trends'))
 const Vitals = lazy(() => import('./screens/Vitals'))
 
+// Shrinks loadDashboardData()'s raw API response down to a couple of sample
+// entries per list — full 30-day histories are too big to paste anywhere,
+// but a couple of real entries is enough to see Google's actual field names.
+function summarizeForDebug(raw) {
+  const shrink = (val) => {
+    if (Array.isArray(val)) return val.slice(0, 2)
+    if (val && typeof val === 'object') {
+      const out = {}
+      for (const [k, v] of Object.entries(val)) out[k] = shrink(v)
+      return out
+    }
+    return val
+  }
+  return shrink(raw)
+}
+
 function makeCalendarDays() {
   return Array.from({ length: 90 }, (_, i) => {
     const d = new Date()
@@ -324,7 +340,7 @@ export default function App() {
         setSyncFailed(true)
       } else {
         localStorage.removeItem('sync_debug_error')
-        try { localStorage.setItem('raw_health_dump', JSON.stringify(raw)) } catch {}
+        try { localStorage.setItem('raw_health_dump', JSON.stringify(summarizeForDebug(raw))) } catch {}
       }
       if (!raw) return
 
