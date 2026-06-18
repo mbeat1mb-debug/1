@@ -777,11 +777,21 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
 // (civilStartTime/effectiveTime/sampleTime), or, for session types like
 // sleep, on the interval. This pulls whichever is present down to YYYY-MM-DD.
 function pointDate(point) {
-  const d = point?.date
-  if (d?.year) return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
-  const t = point?.civilStartTime ?? point?.effectiveTime ?? point?.sampleTime?.physicalTime
-    ?? point?.interval?.startTime ?? point?.startTime
-  return t ? String(t).split('T')[0] : null
+  if (!point) return null
+  // Daily-category types nest the date under the type-specific key
+  // (e.g. { dailyRestingHeartRate: { date: {year,month,day} } }), and
+  // Sample types nest sampleTime the same way (e.g. { weight: { sampleTime } }),
+  // so check the point itself plus every nested sub-object.
+  const candidates = [point, ...Object.values(point).filter(v => v && typeof v === 'object')]
+  for (const c of candidates) {
+    const d = c.date
+    if (d?.year) return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+  }
+  for (const c of candidates) {
+    const t = c.civilStartTime ?? c.effectiveTime ?? c.sampleTime?.physicalTime ?? c.interval?.startTime ?? c.startTime
+    if (t) return String(t).split('T')[0]
+  }
+  return null
 }
 
 function rollupValue(rollupResponse, dataTypeKey, ...sumKeys) {
