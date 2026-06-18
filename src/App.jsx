@@ -170,6 +170,9 @@ function ConnectScreen({ onNav }) {
       <button onClick={() => onNav('demo')} className="text-gray-500 text-sm underline">
         View demo first
       </button>
+      {localStorage.getItem('oauth_debug_error') && (
+        <p className="text-red-400 text-xs max-w-xs break-words">{localStorage.getItem('oauth_debug_error')}</p>
+      )}
     </div>
   )
 }

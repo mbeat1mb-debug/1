@@ -39,10 +39,14 @@ export async function handleOAuthCallback(clientId) {
   const state = params.get('state')
   const error = params.get('error')
 
-  if (error || !code) return null
+  if (error) { localStorage.setItem('oauth_debug_error', `Google returned error: ${error}`); return null }
+  if (!code) return null
 
   const savedState = sessionStorage.getItem('oauth_state')
-  if (state !== savedState) return null
+  if (state !== savedState) {
+    localStorage.setItem('oauth_debug_error', 'State mismatch (saved state was missing or did not match)')
+    return null
+  }
 
   sessionStorage.removeItem('oauth_state')
 
@@ -52,12 +56,18 @@ export async function handleOAuthCallback(clientId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, redirect_uri: getRedirectUri() }),
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      const text = await res.text()
+      localStorage.setItem('oauth_debug_error', `Server rejected token exchange (${res.status}): ${text}`)
+      return null
+    }
     const tokens = await res.json()
     saveTokens(tokens)
+    localStorage.removeItem('oauth_debug_error')
     window.history.replaceState({}, '', '/')
     return tokens
-  } catch {
+  } catch (e) {
+    localStorage.setItem('oauth_debug_error', `Network error: ${e.message}`)
     return null
   }
 }
