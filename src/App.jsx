@@ -499,7 +499,7 @@ export default function App() {
 
   if (!pinUnlocked) return <PinLock onUnlock={() => setPinUnlocked(true)} />
   if (loading) return <SkeletonScreen />
-  if (!connected && !demo) return <ConnectScreen onNav={handleNav} />
+  if (!connected && !demo && tab !== 'settings') return <ConnectScreen onNav={handleNav} />
 
   const data = demo ? DEMO : (appData || DEMO)
   const showNav = tab !== 'settings' && tab !== 'coach' && tab !== 'vitals'
