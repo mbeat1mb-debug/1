@@ -930,6 +930,19 @@ export default function Settings({ onBack }) {
     setConnected(false)
   }
 
+  const [debugCopyMsg, setDebugCopyMsg] = useState('')
+  const handleCopyDebugData = async () => {
+    const data = localStorage.getItem('raw_health_dump')
+    if (!data) { setDebugCopyMsg('No data yet — sync first'); setTimeout(() => setDebugCopyMsg(''), 3000); return }
+    try {
+      await navigator.clipboard.writeText(data)
+      setDebugCopyMsg('Copied — paste it in the chat')
+    } catch {
+      setDebugCopyMsg('Could not copy')
+    }
+    setTimeout(() => setDebugCopyMsg(''), 3000)
+  }
+
   const handleHumeImport = async (e) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
@@ -1100,6 +1113,15 @@ export default function Settings({ onBack }) {
           </button>
         )}
       </div>
+
+      {connected && (
+        <div className="rounded-2xl p-4 flex items-center justify-between gap-3" style={{ background: '#111', border: '1px solid #222' }}>
+          <p className="text-xs text-gray-500">{debugCopyMsg || 'Copy the raw data from your last sync (for troubleshooting)'}</p>
+          <button onClick={handleCopyDebugData} className="text-xs text-gray-300 px-3 py-1.5 rounded-xl bg-[#1a1a1a] flex-shrink-0">
+            Copy debug data
+          </button>
+        </div>
+      )}
 
       {/* Google Health credentials */}
       {!connected && (
