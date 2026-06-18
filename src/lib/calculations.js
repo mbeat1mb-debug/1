@@ -700,32 +700,28 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
   const hrMap = {}
   const hrPoints = hrIntraday?.dataPoints ?? []
   for (const p of hrPoints) {
-    const bpm = p.heartRate?.bpm
+    const bpm = Number(p.heartRate?.beatsPerMinute)
     const t = p.sampleTime?.physicalTime ?? p.effectiveTime
     if (bpm > 0 && t) hrMap[t] = bpm
   }
 
   return activities
-    .filter(a => a.interval?.startTime && a.interval?.endTime)
+    .filter(a => a.exercise?.interval?.startTime && a.exercise?.interval?.endTime)
     .map(a => {
-      const startTime = a.interval.startTime
+      const session = a.exercise
+      const startTime = session.interval.startTime
       const startDate = startTime.split('T')[0]
       const isToday   = startDate === todayStr
-      const durationMins = Math.round((new Date(a.interval.endTime) - new Date(startTime)) / 60000)
-      const session = a.exercise ?? {}
-      const sport = classifyWorkoutSport(session.activityType, session.name)
+      const durationMins = Math.round((new Date(session.interval.endTime) - new Date(startTime)) / 60000)
+      const sport = classifyWorkoutSport(session.exerciseType, session.displayName)
+      const metrics = session.metricsSummary ?? {}
 
-      // Map zone minutes (if the API reports them) to our 4-zone array
+      // Zone durations come as second-strings like "960s"
+      const secsToMins = s => s ? Math.round(parseInt(s, 10) / 60) : 0
       let zoneMinutes = null
-      if (session.heartRateZones?.length) {
-        zoneMinutes = [0, 0, 0, 0, 0]
-        for (const z of session.heartRateZones) {
-          const n = (z.name ?? '').toLowerCase()
-          if (n.includes('out'))     zoneMinutes[0] = z.durationMinutes
-          else if (n.includes('fat')) zoneMinutes[1] = z.durationMinutes
-          else if (n.includes('cardio')) zoneMinutes[2] = z.durationMinutes
-          else if (n.includes('peak'))   zoneMinutes[3] = z.durationMinutes
-        }
+      if (metrics.heartRateZoneDurations) {
+        const z = metrics.heartRateZoneDurations
+        zoneMinutes = [0, secsToMins(z.lightTime), secsToMins(z.moderateTime), secsToMins(z.vigorousTime), secsToMins(z.peakTime)]
       }
 
       const epoc = zoneMinutes ? calculateEPOC(zoneMinutes, getUserWeightKg() || 70) : null
@@ -734,7 +730,7 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
       let cardiacDrift = null
       if (isToday && Object.keys(hrMap).length > 0 && durationMins >= 20) {
         const startMs = new Date(startTime).getTime()
-        const endMs   = new Date(a.interval.endTime).getTime()
+        const endMs   = new Date(session.interval.endTime).getTime()
         const pts = []
         for (const [tStr, hr] of Object.entries(hrMap)) {
           const tMs = new Date(tStr).getTime()
@@ -762,11 +758,11 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
         date: startDate,
         startTime,
         durationMins,
-        avgHR: session.averageHeartRate ?? null,
-        calories: session.calories ?? null,
-        steps: session.steps ?? null,
-        distance: session.distance ?? null,
-        distanceUnit: session.distanceUnit ?? null,
+        avgHR: metrics.averageHeartRateBeatsPerMinute ? Number(metrics.averageHeartRateBeatsPerMinute) : null,
+        calories: metrics.caloriesKcal ?? null,
+        steps: metrics.steps ? Number(metrics.steps) : null,
+        distance: metrics.distanceMillimeters ? metrics.distanceMillimeters / 1000 : null,
+        distanceUnit: metrics.distanceMillimeters ? 'm' : null,
         zoneMinutes,
         epoc,
         cardiacDrift,
@@ -817,16 +813,49 @@ function pick(obj, ...paths) {
 // rather than rewriting every consumer.
 function toLegacyHRDataset(hrIntraday) {
   const dataset = (hrIntraday?.dataPoints ?? [])
-    .map(p => ({ t: p.sampleTime?.physicalTime ?? p.effectiveTime, value: p.heartRate?.bpm }))
+    .map(p => ({ t: p.sampleTime?.physicalTime ?? p.effectiveTime, value: Number(p.heartRate?.beatsPerMinute) }))
     .filter(p => p.t && p.value > 0)
     .sort((a, b) => new Date(a.t) - new Date(b.t))
     .map(p => ({ time: new Date(p.t).toTimeString().slice(0, 8), value: p.value }))
   return { 'activities-heart-intraday': { dataset } }
 }
 
+// Google Health's sleep data points nest everything under `.sleep`
+// ({ interval: {startTime,endTime}, stages: [...], summary: {minutesAsleep,
+// minutesAwake,...} }) — this flattens a point into the shape the rest of the
+// app expects (minutesAsleep, efficiency, deepMinutes, remMinutes, etc).
+function normalizeSleepPoint(point) {
+  const s = point?.sleep
+  if (!s?.interval?.startTime || !s?.interval?.endTime) return null
+  const stages = s.stages ?? []
+  const stageMins = type => stages.filter(st => st.type === type)
+    .reduce((sum, st) => sum + (new Date(st.endTime) - new Date(st.startTime)) / 60000, 0)
+  const summary = s.summary ?? {}
+  const deepMinutes = Math.round(stageMins('DEEP'))
+  const remMinutes = Math.round(stageMins('REM'))
+  const minutesAwake = summary.minutesAwake != null ? Number(summary.minutesAwake) : Math.round(stageMins('AWAKE'))
+  const minutesAsleep = summary.minutesAsleep != null
+    ? Number(summary.minutesAsleep)
+    : Math.round((new Date(s.interval.endTime) - new Date(s.interval.startTime)) / 60000) - minutesAwake
+  const efficiency = summary.efficiency != null
+    ? Number(summary.efficiency)
+    : (minutesAsleep > 0 ? Math.round((minutesAsleep / (minutesAsleep + minutesAwake)) * 100) : 0)
+  return {
+    date: String(s.interval.startTime).split('T')[0],
+    minutes: minutesAsleep,
+    minutesAsleep,
+    minutesAwake,
+    efficiency,
+    startTime: s.interval.startTime,
+    endTime: s.interval.endTime,
+    deepMinutes,
+    remMinutes,
+  }
+}
+
 function toLegacySpo2Minutes(spo2Intraday) {
   const minutes = (spo2Intraday?.dataPoints ?? [])
-    .map(p => ({ minute: p.sampleTime?.physicalTime ?? p.effectiveTime, value: p.oxygenSaturation?.percentage }))
+    .map(p => ({ minute: p.sampleTime?.physicalTime ?? p.effectiveTime, value: Number(p.oxygenSaturation?.percentage) }))
     .filter(p => p.minute && p.value > 0)
     .sort((a, b) => new Date(a.minute) - new Date(b.minute))
   return { minutes }
@@ -838,58 +867,56 @@ export function parseGoogleHealthData(raw) {
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
   for (const d of (hrvRange?.dataPoints ?? [])) {
-    const val = pick(d, 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value', 'dailyHeartRateVariability.sdnn')
+    const val = pick(d, 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
     const date = pointDate(d)
-    if (date && val) hrvByDate[date] = val
+    if (date && val) hrvByDate[date] = Number(val)
   }
   const rhrByDate = {}
   for (const d of (hrRange?.dataPoints ?? [])) {
-    const val = pick(d, 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.avg')
+    const val = pick(d, 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.avg')
     const date = pointDate(d)
-    if (date && val) rhrByDate[date] = val
+    if (date && val) rhrByDate[date] = Number(val)
   }
   const historyDates = Object.keys(hrvByDate).sort()
   const hrvHistory = historyDates.map(date => hrvByDate[date])
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
-  const todayHRV = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value', 'dailyHeartRateVariability.sdnn') ?? 0
+  const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
+  const todayHRV = todayHRVRaw ? Number(todayHRVRaw) : 0
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
-  const todaySleep = sleepPoints.find(s => s.metadata?.main) ?? sleepPoints[0]
-  const todaySpO2 = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg') ?? 97
-  const todayBR = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.value', 'dailyRespiratoryRate.avg') ?? 14
+  const todaySleep = normalizeSleepPoint(sleepPoints[0])
+  const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
+  const todaySpO2 = todaySpO2Raw ? Number(todaySpO2Raw) : 97
+  const todayBRRaw = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.breathsPerMinute', 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.avg')
+  const todayBR = todayBRRaw ? Number(todayBRRaw) : 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
   const calories = rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
-  const activeMinutes = rollupValue(summary?.activeZoneMinutes, 'activeZoneMinutes', 'minutesSum', 'durationMinutesSum')
+  const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
+  const activeMinutes = azmPoints.reduce((sum, p) => {
+    const z = p.activeZoneMinutes
+    if (!z) return sum
+    return sum + (Number(z.sumInCardioHeartZone) || 0) + (Number(z.sumInPeakHeartZone) || 0) + (Number(z.sumInFatBurnHeartZone) || 0)
+  }, 0)
 
   // VO2 Max from Google Health's daily-vo2-max data type
-  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.at(-1), 'dailyVo2Max.value', 'dailyVo2Max.vo2Max')
+  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.at(-1), 'dailyVo2Max.vo2Max', 'dailyVo2Max.value')
   const vo2Max = (vo2MaxRaw ? Math.round(vo2MaxRaw) : 0) || getUserVO2Max()
   const vo2MaxRange = vo2MaxRaw ? String(Math.round(vo2MaxRaw)) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
-  const skinTempDev = pick(skinTemp?.dataPoints?.[0], 'dailySleepTemperatureDerivations.nightlyRelative', 'dailySleepTemperatureDerivations.value') ?? null
+  const skinTempPoint = skinTemp?.dataPoints?.[0]?.dailySleepTemperatureDerivations
+  const skinTempDev = (skinTempPoint?.nightlyTemperatureCelsius != null && skinTempPoint?.baselineTemperatureCelsius != null)
+    ? skinTempPoint.nightlyTemperatureCelsius - skinTempPoint.baselineTemperatureCelsius
+    : null
 
   const sleepHistory = (sleepRange?.dataPoints ?? [])
-    .filter(s => s.metadata?.main)
-    .map(s => {
-      const stages = s.sleep?.stages ?? []
-      const stageMins = type => stages.filter(st => st.type === type)
-        .reduce((sum, st) => sum + (new Date(st.endTime) - new Date(st.startTime)) / 60000, 0)
-      return {
-        date: pointDate(s),
-        minutes: Math.round((new Date(s.interval?.endTime) - new Date(s.interval?.startTime)) / 60000) - Math.round(stageMins('AWAKE')),
-        efficiency: s.sleep?.efficiency ?? 0,
-        startTime: s.interval?.startTime,
-        endTime: s.interval?.endTime,
-        deepMinutes: Math.round(stageMins('DEEP')),
-        remMinutes: Math.round(stageMins('REM')),
-      }
-    })
+    .map(s => normalizeSleepPoint(s))
+    .filter(Boolean)
 
   // Sleep end hour for daytime stress calculation
-  const sleepEndHour = todaySleep?.interval?.endTime
-    ? new Date(todaySleep.interval.endTime).getHours()
+  const sleepEndHour = todaySleep?.endTime
+    ? new Date(todaySleep.endTime).getHours()
     : null
 
   // Sync Google Health-logged body weight/fat into local history if available.
@@ -903,7 +930,8 @@ export function parseGoogleHealthData(raw) {
   }
   for (const w of weightPoints) {
     const date = pointDate(w)
-    const kg = pick(w, 'weight.kilograms', 'weight.value')
+    const grams = pick(w, 'weight.weightGrams', 'weight.kilograms', 'weight.value')
+    const kg = w.weight?.weightGrams != null ? grams / 1000 : grams
     if (date && kg) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
   }
 
