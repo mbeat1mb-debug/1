@@ -1,8 +1,5 @@
 {
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
-  "functions": {
-    "api/*.js": { "runtime": "nodejs20.x" }
-  },
   "crons": [
     { "path": "/api/push-morning", "schedule": "0 12 * * *" },
     { "path": "/api/push-evening", "schedule": "0 2 * * *" },
