@@ -91,12 +91,10 @@ export default function Sleep({ data, onNav }) {
   const light = todaySleep?.deepMinutes != null
     ? Math.max(0, totalMins - deep - rem)
     : (stages.light?.minutes || stages.lightSleep?.minutes || 0)
-  const totalInBed = todaySleep?.timeInBed || 0
-
   const hours = Math.floor(totalMins / 60)
   const mins = totalMins % 60
 
-  const sleepDate = todaySleep?.dateOfSleep ?? new Date().toISOString().split('T')[0]
+  const sleepDate = todaySleep?.date ?? new Date().toISOString().split('T')[0]
   const [override, setOverride] = useState(() => getSleepTimeOverride(sleepDate))
   const [editingBed, setEditingBed] = useState(false)
   const [editingWake, setEditingWake] = useState(false)
@@ -115,7 +113,7 @@ export default function Sleep({ data, onNav }) {
         const wake = new Date(`2000-01-01T${override.wake}`)
         let mins = (wake - bed) / 60000
         if (mins < 0) mins += 24 * 60  // crosses midnight
-        const awake = todaySleep?.timeInBed ? (todaySleep.timeInBed - (todaySleep.minutesAsleep || 0)) : 0
+        const awake = todaySleep?.minutesAwake || 0
         return Math.max(0, Math.round(mins - awake))
       })()
     : null
@@ -254,7 +252,7 @@ export default function Sleep({ data, onNav }) {
             </div>
           </div>
 
-          {todaySleep?.levels?.data?.length > 0 && (() => {
+          {todaySleep?.stageSegments?.length > 0 && (() => {
             const arch = parseSleepArchitecture(todaySleep)
             if (!arch?.hypnogram?.length) return null
             return (
@@ -281,11 +279,11 @@ export default function Sleep({ data, onNav }) {
               <StatRow label="Sleep Efficiency" value={todaySleep.efficiency ?? '--'} unit="%" color={sleepColor} />
               <StatRow label="Sleep Score" value={sleepScore} unit="/ 100" color={sleepColor} />
               <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
-              <StatRow label="Wakeups" value={todaySleep.levels?.data?.filter(d => d.level === 'wake' && d.seconds >= 60).length ?? '--'} />
+              <StatRow label="Wakeups" value={todaySleep.stageSegments?.filter(d => d.type === 'AWAKE' && (new Date(d.endTime) - new Date(d.startTime)) / 1000 >= 60).length ?? '--'} />
             </div>
           </div>
 
-          {todaySleep?.levels?.data?.length > 0 && (() => {
+          {todaySleep?.stageSegments?.length > 0 && (() => {
             const arch = parseSleepArchitecture(todaySleep)
             if (!arch?.hypnogram?.length) return null
             const latColor  = arch.sleepLatency <= 20 ? '#00c9a7' : arch.sleepLatency <= 30 ? '#f59e0b' : '#ef4444'
@@ -306,14 +304,14 @@ export default function Sleep({ data, onNav }) {
             )
           })()}
 
-          {todaySleep?.levels?.data?.length > 0 && (() => {
+          {todaySleep?.stageSegments?.length > 0 && (() => {
             const arch  = parseSleepArchitecture(todaySleep)
             if (!arch?.hypnogram?.length) return null
             const age   = getUserAge()
             const norms = getSleepStageNorms(age)
             const totalMinsN = todaySleep.minutesAsleep || 0
-            const deepMins  = todaySleep.levels?.summary?.deep?.minutes || 0
-            const remMins   = todaySleep.levels?.summary?.rem?.minutes  || 0
+            const deepMins  = todaySleep.deepMinutes || 0
+            const remMins   = todaySleep.remMinutes || 0
             const deepPct   = totalMinsN > 0 ? Math.round(deepMins / totalMinsN * 100) : 0
             const remPct    = totalMinsN > 0 ? Math.round(remMins  / totalMinsN * 100) : 0
             const deepColor = deepPct >= norms.deepPct ? '#00c9a7' : deepPct >= norms.deepPct * 0.7 ? '#f59e0b' : '#ef4444'

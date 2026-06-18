@@ -579,25 +579,30 @@ export function getSleepStageNorms(age) {
   return { deepPct: row[1], remPct: row[2], solMins: row[3], wasoMins: row[4] }
 }
 
-// Parse Fitbit minute-level sleep stage data into clinical architecture metrics.
+// Parse Google Health per-stage sleep segments into clinical architecture metrics.
 // Borbely two-process model: deep (SWS) front-loads in first half, REM back-loads.
 export function parseSleepArchitecture(todaySleep) {
   if (!todaySleep) return null
-  const levelsData = todaySleep.levels?.data ?? []
-  const shortData  = todaySleep.levels?.shortData ?? []
+  // stageSegments come from normalizeSleepPoint as { startTime, endTime, type } with
+  // type one of AWAKE/LIGHT/DEEP/REM — map to the lowercase level names this function uses.
+  const STAGE_TYPE_TO_LEVEL = { AWAKE: 'wake', LIGHT: 'light', DEEP: 'deep', REM: 'rem' }
+  const segments = todaySleep.stageSegments ?? []
 
-  const sleepLatency  = todaySleep.minutesToFallAsleep ?? 0
+  const sleepLatency  = todaySleep.sleepLatency ?? 0
   const minutesAwake  = todaySleep.minutesAwake ?? 0
-  const awakenings    = todaySleep.numberOfAwakenings ?? 0
-  const briefAwakenings = shortData.filter(d => d.level === 'wake').length
-  const fullAwakenings  = levelsData.filter(d => d.level === 'wake' && d.seconds >= 90).length
+  const awakenings    = todaySleep.awakenings ?? 0
+  // Google Health doesn't distinguish brief vs full awakenings the way Fitbit's
+  // levels.shortData/levels.data split did — classify by segment duration instead.
+  const wakeSegs = segments.filter(d => d.type === 'AWAKE')
+  const briefAwakenings = wakeSegs.filter(d => (new Date(d.endTime) - new Date(d.startTime)) / 1000 < 90).length
+  const fullAwakenings  = wakeSegs.filter(d => (new Date(d.endTime) - new Date(d.startTime)) / 1000 >= 90).length
 
   // Build hypnogram segments (millisecond-resolution)
-  const hypnogram = levelsData.map(e => ({
-    startMs: new Date(e.dateTime).getTime(),
-    endMs:   new Date(e.dateTime).getTime() + e.seconds * 1000,
-    level:   e.level,
-    seconds: e.seconds,
+  const hypnogram = segments.map(e => ({
+    startMs: new Date(e.startTime).getTime(),
+    endMs:   new Date(e.endTime).getTime(),
+    level:   STAGE_TYPE_TO_LEVEL[e.type] ?? e.type,
+    seconds: (new Date(e.endTime) - new Date(e.startTime)) / 1000,
   }))
 
   // Detect NREM→REM cycles (Borbely: each cycle ~90 min, deep peaks early, REM peaks late)
@@ -850,6 +855,8 @@ function normalizeSleepPoint(point) {
   const efficiency = summary.efficiency != null
     ? Number(summary.efficiency)
     : (minutesAsleep > 0 ? Math.round((minutesAsleep / (minutesAsleep + minutesAwake)) * 100) : 0)
+  const sleepLatency = summary.minutesToFallAsleep != null ? Number(summary.minutesToFallAsleep) : 0
+  const awakenings = (summary.stagesSummary ?? []).find(g => g.type === 'AWAKE')?.count
   return {
     date: String(s.interval.startTime).split('T')[0],
     minutes: minutesAsleep,
@@ -860,6 +867,10 @@ function normalizeSleepPoint(point) {
     endTime: s.interval.endTime,
     deepMinutes,
     remMinutes,
+    sleepLatency,
+    awakenings: awakenings != null ? Number(awakenings) : 0,
+    // Raw stage segments, kept for parseSleepArchitecture's hypnogram/cycle detection.
+    stageSegments: stages,
   }
 }
 
