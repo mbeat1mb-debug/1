@@ -66,6 +66,14 @@ function startOfNextDay(date) {
   return d.toISOString().split('.')[0] + 'Z'
 }
 
+// Plain civil date one day after `date` (no time/Z suffix) — Daily-category
+// types' `.date` filter field rejects full timestamps with INVALID_DATA_POINT_FILTER_CIVIL_DATE_TIME_FORMAT.
+function nextDay(date) {
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
 // snake_case version of a kebab-case data type id, for use inside filter expressions
 // (the API uses kebab-case in URL paths but snake_case in filter field names).
 function snake(dataType) {
@@ -74,10 +82,13 @@ function snake(dataType) {
 
 // Time-range list query against a dataType's points. `timeField` differs by
 // category: Interval types use interval.start_time, Sample types use
-// sample_time.physical_time, Daily types use date, Session types use interval.end_time.
+// sample_time.physical_time, Daily types use a plain civil date, Session types
+// use an interval field.
 async function listDataPoints(dataType, startDate, endDate, timeField) {
   const field = snake(dataType)
-  const filter = `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
+  const filter = timeField === 'date'
+    ? `${field}.date >= "${startDate}" AND ${field}.date < "${nextDay(endDate)}"`
+    : `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
   return ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams({ filter }).toString()}`)
 }
 
@@ -164,7 +175,7 @@ export async function getBodyFat() {
 }
 
 export async function getActivityLogs(afterDate) {
-  return listDataPoints('exercise', afterDate, today(), 'interval.end_time')
+  return listDataPoints('exercise', afterDate, today(), 'interval.civil_start_time')
 }
 
 export async function loadDashboardData() {
