@@ -44,7 +44,7 @@ export async function handleOAuthCallback(clientId) {
 
   const savedState = localStorage.getItem('oauth_state')
   if (state !== savedState) {
-    localStorage.setItem('oauth_debug_error', 'State mismatch (saved state was missing or did not match)')
+    localStorage.setItem('oauth_debug_error', `State mismatch — origin: ${window.location.origin}, saved: ${savedState || '(none)'}, received: ${state || '(none)'}`)
     return null
   }
 
