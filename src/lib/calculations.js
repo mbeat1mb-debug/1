@@ -912,8 +912,10 @@ export function parseGoogleHealthData(raw) {
     return sum + (Number(z.sumInCardioHeartZone) || 0) + (Number(z.sumInPeakHeartZone) || 0) + (Number(z.sumInFatBurnHeartZone) || 0)
   }, 0)
 
-  // VO2 Max from Google Health's daily-vo2-max data type
-  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.at(-1), 'dailyVo2Max.vo2Max', 'dailyVo2Max.value')
+  // VO2 Max from Google Health's daily-vo2-max data type — the API returns
+  // these date-ranged lists newest-first (same as hrv/hr/sleep ranges above),
+  // so the most recent reading is dataPoints[0], not the last element.
+  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.[0], 'dailyVo2Max.vo2Max', 'dailyVo2Max.value')
   const vo2Max = (vo2MaxRaw ? Math.round(vo2MaxRaw) : 0) || getUserVO2Max()
   const vo2MaxRange = vo2MaxRaw ? String(Math.round(vo2MaxRaw)) : null
 
