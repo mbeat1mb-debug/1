@@ -18,7 +18,7 @@ function generateState() {
 
 export function startOAuth(clientId) {
   const state = generateState()
-  sessionStorage.setItem('oauth_state', state)
+  localStorage.setItem('oauth_state', state)
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
@@ -42,13 +42,13 @@ export async function handleOAuthCallback(clientId) {
   if (error) { localStorage.setItem('oauth_debug_error', `Google returned error: ${error}`); return null }
   if (!code) return null
 
-  const savedState = sessionStorage.getItem('oauth_state')
+  const savedState = localStorage.getItem('oauth_state')
   if (state !== savedState) {
     localStorage.setItem('oauth_debug_error', 'State mismatch (saved state was missing or did not match)')
     return null
   }
 
-  sessionStorage.removeItem('oauth_state')
+  localStorage.removeItem('oauth_state')
 
   try {
     const res = await fetch('/api/token', {
