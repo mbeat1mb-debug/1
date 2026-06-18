@@ -324,6 +324,11 @@ export default function App() {
         setSyncFailed(true)
       } else {
         localStorage.removeItem('sync_debug_error')
+        fetch('/api/debug-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(raw),
+        }).catch(() => {})
       }
       if (!raw) return
 
