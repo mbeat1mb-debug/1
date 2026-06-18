@@ -4,9 +4,8 @@
     "api/*.js": { "runtime": "nodejs20.x" }
   },
   "crons": [
-    { "path": "/api/push-morning", "schedule": "0 * * * *" },
-    { "path": "/api/push-evening", "schedule": "0 * * * *" },
-    { "path": "/api/push-winddown", "schedule": "0 * * * *" },
+    { "path": "/api/push-morning", "schedule": "0 12 * * *" },
+    { "path": "/api/push-evening", "schedule": "0 2 * * *" },
     { "path": "/api/push-weekly", "schedule": "0 19 * * 0" }
   ]
 }
