@@ -57,42 +57,66 @@ function startOfDay(date) {
   return `${date}T00:00:00Z`
 }
 
-function endOfDay(date) {
-  return `${date}T23:59:59Z`
+// Exclusive upper bound (start of the day AFTER endDate) — the API's interval/
+// sample/date filters only accept GREATER_THAN_EQUALS and LESS_THAN comparators,
+// so an inclusive "<=" end-of-day bound is rejected with INVALID_ARGUMENT.
+function startOfNextDay(date) {
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().split('.')[0] + 'Z'
+}
+
+// snake_case version of a kebab-case data type id, for use inside filter expressions
+// (the API uses kebab-case in URL paths but snake_case in filter field names).
+function snake(dataType) {
+  return dataType.replace(/-/g, '_')
 }
 
 // Time-range list query against a dataType's points. `timeField` differs by
-// data type: interval-based types (sleep) filter on interval.end_time,
-// instantaneous samples (heartRate, hrv, etc.) filter on effective_time.
-async function listDataPoints(dataType, startDate, endDate, timeField = 'effective_time') {
-  const filter = `${dataType}.${timeField} >= "${startOfDay(startDate)}" AND ${dataType}.${timeField} <= "${endOfDay(endDate)}"`
+// category: Interval types use interval.start_time, Sample types use
+// sample_time.physical_time, Daily types use date, Session types use interval.end_time.
+async function listDataPoints(dataType, startDate, endDate, timeField) {
+  const field = snake(dataType)
+  const filter = `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
   return ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams({ filter }).toString()}`)
 }
 
+function civilDateTime(date, hours, minutes, seconds) {
+  const [year, month, day] = date.split('-').map(Number)
+  return { date: { year, month, day }, time: { hours, minutes, seconds, nanos: 0 } }
+}
+
 // Daily aggregate via the dailyRollUp custom method, used for cumulative
-// metrics (steps, calories, active minutes, body weight/fat).
+// metrics (steps, calories, active minutes).
 async function dailyRollUp(dataType, startDate, endDate) {
+  const days = Math.round((new Date(`${endDate}T00:00:00Z`) - new Date(`${startDate}T00:00:00Z`)) / 86400000) + 1
   return ghFetch(`/dataTypes/${dataType}/dataPoints:dailyRollUp`, {
     method: 'POST',
-    body: { range: { startTime: startOfDay(startDate), endTime: endOfDay(endDate) } },
+    body: {
+      range: {
+        start: civilDateTime(startDate, 0, 0, 0),
+        end: civilDateTime(endDate, 23, 59, 59),
+      },
+      windowSizeDays: days,
+    },
   })
 }
 
 export async function getDailySummary(date = today()) {
   const [steps, calories, activeZoneMinutes] = await Promise.all([
     dailyRollUp('steps', date, date),
-    dailyRollUp('caloriesBurned', date, date),
-    dailyRollUp('activeZoneMinutes', date, date),
+    dailyRollUp('total-calories', date, date),
+    dailyRollUp('active-zone-minutes', date, date),
   ])
   return { steps, calories, activeZoneMinutes }
 }
 
 export async function getHeartRateIntraday(date = today()) {
-  return listDataPoints('heartRate', date, date, 'effective_time')
+  return listDataPoints('heart-rate', date, date, 'sample_time.physical_time')
 }
 
 export async function getHeartRateRange(startDate, endDate) {
-  return dailyRollUp('dailyRestingHeartRate', startDate, endDate)
+  return listDataPoints('daily-resting-heart-rate', startDate, endDate, 'date')
 }
 
 export async function getSleep(date = today()) {
@@ -104,43 +128,43 @@ export async function getSleepRange(startDate, endDate) {
 }
 
 export async function getHRV(date = today()) {
-  return listDataPoints('dailyHeartRateVariability', date, date, 'effective_time')
+  return listDataPoints('daily-heart-rate-variability', date, date, 'date')
 }
 
 export async function getHRVRange(startDate, endDate) {
-  return listDataPoints('dailyHeartRateVariability', startDate, endDate, 'effective_time')
+  return listDataPoints('daily-heart-rate-variability', startDate, endDate, 'date')
 }
 
 export async function getSpO2(date = today()) {
-  return listDataPoints('oxygenSaturation', date, date, 'effective_time')
+  return listDataPoints('daily-oxygen-saturation', date, date, 'date')
 }
 
 export async function getSpO2Intraday(date = today()) {
-  return listDataPoints('oxygenSaturation', date, date, 'effective_time')
+  return listDataPoints('oxygen-saturation', date, date, 'sample_time.physical_time')
 }
 
 export async function getRespiratoryRate(date = today()) {
-  return listDataPoints('respiratoryRate', date, date, 'effective_time')
+  return listDataPoints('daily-respiratory-rate', date, date, 'date')
 }
 
 export async function getCardioFitness() {
-  return listDataPoints('vo2Max', daysAgo(7), today(), 'effective_time')
+  return listDataPoints('daily-vo2-max', daysAgo(7), today(), 'date')
 }
 
 export async function getSkinTemp(date = today()) {
-  return listDataPoints('skinTemperature', date, date, 'effective_time')
+  return listDataPoints('daily-sleep-temperature-derivations', date, date, 'date')
 }
 
 export async function getBodyWeight() {
-  return dailyRollUp('weight', daysAgo(30), today())
+  return listDataPoints('weight', daysAgo(30), today(), 'sample_time.physical_time')
 }
 
 export async function getBodyFat() {
-  return dailyRollUp('bodyFatPercentage', daysAgo(30), today())
+  return listDataPoints('body-fat', daysAgo(30), today(), 'sample_time.physical_time')
 }
 
 export async function getActivityLogs(afterDate) {
-  return listDataPoints('activitySession', afterDate, today(), 'interval.end_time')
+  return listDataPoints('exercise', afterDate, today(), 'interval.end_time')
 }
 
 export async function loadDashboardData() {

@@ -701,7 +701,7 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
   const hrPoints = hrIntraday?.dataPoints ?? []
   for (const p of hrPoints) {
     const bpm = p.heartRate?.bpm
-    const t = p.effectiveTime
+    const t = p.sampleTime?.physicalTime ?? p.effectiveTime
     if (bpm > 0 && t) hrMap[t] = bpm
   }
 
@@ -712,7 +712,7 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
       const startDate = startTime.split('T')[0]
       const isToday   = startDate === todayStr
       const durationMins = Math.round((new Date(a.interval.endTime) - new Date(startTime)) / 60000)
-      const session = a.activitySession ?? {}
+      const session = a.exercise ?? {}
       const sport = classifyWorkoutSport(session.activityType, session.name)
 
       // Map zone minutes (if the API reports them) to our 4-zone array
@@ -776,32 +776,75 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
     .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
 }
 
-// Google Health API dataPoints carry a civil date on either the point itself
-// (effective_time/civilStartTime) or, for session types like sleep, on the
-// interval. This pulls whichever is present down to a YYYY-MM-DD string.
+// Google Health API dataPoints carry a date on the point itself — either a
+// civil {year,month,day} object (Daily-category types), a timestamp string
+// (civilStartTime/effectiveTime/sampleTime), or, for session types like
+// sleep, on the interval. This pulls whichever is present down to YYYY-MM-DD.
 function pointDate(point) {
-  const t = point?.civilStartTime ?? point?.effectiveTime ?? point?.interval?.startTime ?? point?.startTime
+  const d = point?.date
+  if (d?.year) return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+  const t = point?.civilStartTime ?? point?.effectiveTime ?? point?.sampleTime?.physicalTime
+    ?? point?.interval?.startTime ?? point?.startTime
   return t ? String(t).split('T')[0] : null
 }
 
-function rollupValue(rollupResponse, dataTypeKey, sumKey) {
+function rollupValue(rollupResponse, dataTypeKey, ...sumKeys) {
   const points = rollupResponse?.rollupDataPoints ?? []
-  return points.reduce((sum, p) => sum + (Number(p?.[dataTypeKey]?.[sumKey]) || 0), 0)
+  return points.reduce((sum, p) => {
+    for (const key of sumKeys) {
+      const val = Number(p?.[dataTypeKey]?.[key])
+      if (val) return sum + val
+    }
+    return sum
+  }, 0)
+}
+
+// Several Google Health field names below aren't fully confirmed from docs alone
+// (the docs don't show a complete JSON example for every data type), so each
+// reads a couple of plausible key spellings rather than betting on just one.
+function pick(obj, ...paths) {
+  for (const path of paths) {
+    const val = path.split('.').reduce((o, k) => o?.[k], obj)
+    if (val !== undefined && val !== null) return val
+  }
+  return undefined
+}
+
+// calculateStrain/ZoneMinutes/HRR/DaytimeStress and calculateSleepApneaRisk were
+// written against the legacy Fitbit Web API's per-minute intraday shape
+// ({ 'activities-heart-intraday': { dataset: [{time,value}] } } / { minutes: [{minute,value}] }).
+// The Google Health API returns a flat dataPoints list instead, so convert here
+// rather than rewriting every consumer.
+function toLegacyHRDataset(hrIntraday) {
+  const dataset = (hrIntraday?.dataPoints ?? [])
+    .map(p => ({ t: p.sampleTime?.physicalTime ?? p.effectiveTime, value: p.heartRate?.bpm }))
+    .filter(p => p.t && p.value > 0)
+    .sort((a, b) => new Date(a.t) - new Date(b.t))
+    .map(p => ({ time: new Date(p.t).toTimeString().slice(0, 8), value: p.value }))
+  return { 'activities-heart-intraday': { dataset } }
+}
+
+function toLegacySpo2Minutes(spo2Intraday) {
+  const minutes = (spo2Intraday?.dataPoints ?? [])
+    .map(p => ({ minute: p.sampleTime?.physicalTime ?? p.effectiveTime, value: p.oxygenSaturation?.percentage }))
+    .filter(p => p.minute && p.value > 0)
+    .sort((a, b) => new Date(a.minute) - new Date(b.minute))
+  return { minutes }
 }
 
 export function parseGoogleHealthData(raw) {
-  const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat } = raw
+  const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday } = raw
 
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
   for (const d of (hrvRange?.dataPoints ?? [])) {
-    const val = d.dailyHeartRateVariability?.rmssd ?? d.dailyHeartRateVariability?.value
+    const val = pick(d, 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value', 'dailyHeartRateVariability.sdnn')
     const date = pointDate(d)
     if (date && val) hrvByDate[date] = val
   }
   const rhrByDate = {}
-  for (const d of (hrRange?.rollupDataPoints ?? [])) {
-    const val = d.dailyRestingHeartRate?.bpm ?? d.dailyRestingHeartRate?.avg
+  for (const d of (hrRange?.dataPoints ?? [])) {
+    const val = pick(d, 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.avg')
     const date = pointDate(d)
     if (date && val) rhrByDate[date] = val
   }
@@ -809,23 +852,23 @@ export function parseGoogleHealthData(raw) {
   const hrvHistory = historyDates.map(date => hrvByDate[date])
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
-  const todayHRV = hrv?.dataPoints?.[0]?.dailyHeartRateVariability?.rmssd ?? 0
+  const todayHRV = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value', 'dailyHeartRateVariability.sdnn') ?? 0
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
   const todaySleep = sleepPoints.find(s => s.metadata?.main) ?? sleepPoints[0]
-  const todaySpO2 = spo2?.dataPoints?.[0]?.oxygenSaturation?.percentage ?? 97
-  const todayBR = br?.dataPoints?.[0]?.respiratoryRate?.bpm ?? 14
+  const todaySpO2 = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg') ?? 97
+  const todayBR = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.value', 'dailyRespiratoryRate.avg') ?? 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
-  const calories = rollupValue(summary?.calories, 'caloriesBurned', 'kcalSum')
-  const activeMinutes = rollupValue(summary?.activeZoneMinutes, 'activeZoneMinutes', 'durationMinutesSum')
+  const calories = rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
+  const activeMinutes = rollupValue(summary?.activeZoneMinutes, 'activeZoneMinutes', 'minutesSum', 'durationMinutesSum')
 
-  // VO2 Max from Google Health's vo2Max data type
-  const vo2MaxRaw = cardioFitness?.dataPoints?.at(-1)?.vo2Max?.value ?? null
+  // VO2 Max from Google Health's daily-vo2-max data type
+  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.at(-1), 'dailyVo2Max.value', 'dailyVo2Max.vo2Max')
   const vo2Max = (vo2MaxRaw ? Math.round(vo2MaxRaw) : 0) || getUserVO2Max()
   const vo2MaxRange = vo2MaxRaw ? String(Math.round(vo2MaxRaw)) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
-  const skinTempDev = skinTemp?.dataPoints?.[0]?.skinTemperature?.nightlyRelative ?? null
+  const skinTempDev = pick(skinTemp?.dataPoints?.[0], 'dailySleepTemperatureDerivations.nightlyRelative', 'dailySleepTemperatureDerivations.value') ?? null
 
   const sleepHistory = (sleepRange?.dataPoints ?? [])
     .filter(s => s.metadata?.main)
@@ -852,15 +895,15 @@ export function parseGoogleHealthData(raw) {
   // Sync Google Health-logged body weight/fat into local history if available.
   // Sort ascending so the most recent entry is written last and wins as the
   // quick-access user_weight_kg value, regardless of API return order.
-  const weightPoints = [...(bodyWeight?.rollupDataPoints ?? [])].sort((a, b) => String(pointDate(a)).localeCompare(String(pointDate(b))))
+  const weightPoints = [...(bodyWeight?.dataPoints ?? [])].sort((a, b) => String(pointDate(a)).localeCompare(String(pointDate(b))))
   const fatByDate = {}
-  for (const f of (bodyFat?.rollupDataPoints ?? [])) {
+  for (const f of (bodyFat?.dataPoints ?? [])) {
     const date = pointDate(f)
-    if (date) fatByDate[date] = f.bodyFatPercentage?.avg ?? f.bodyFatPercentage?.value
+    if (date) fatByDate[date] = pick(f, 'bodyFat.percentage', 'bodyFat.value')
   }
   for (const w of weightPoints) {
     const date = pointDate(w)
-    const kg = w.weight?.avg ?? w.weight?.value
+    const kg = pick(w, 'weight.kilograms', 'weight.value')
     if (date && kg) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
   }
 
@@ -871,7 +914,8 @@ export function parseGoogleHealthData(raw) {
     steps, calories, activeMinutes,
     hrvHistory, rhrHistory, historyDates, sleepHistory,
     hrvByDate, rhrByDate,
-    hrIntradayData: hrIntraday,
+    hrIntradayData: toLegacyHRDataset(hrIntraday),
+    spo2IntradayLegacy: toLegacySpo2Minutes(spo2Intraday),
     vo2Max, vo2MaxRange, skinTempDev, sleepEndHour,
     activityLogs,
   }

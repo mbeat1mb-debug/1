@@ -278,7 +278,7 @@ export default function App() {
     const hrr = calculateHRR(parsed.hrIntradayData)
     if (hrr) saveLastKnownHRR(hrr)
     const sleepApneaRisk = calculateSleepApneaRisk({
-      spo2Intraday: raw.spo2Intraday,
+      spo2Intraday: parsed.spo2IntradayLegacy,
       br: parsed.todayBR,
       todaySleep: parsed.todaySleep,
     })
