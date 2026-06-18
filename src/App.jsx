@@ -537,7 +537,11 @@ export default function App() {
 
   return (
     <div className="bg-black" style={{ minHeight: '100dvh' }}>
-      {showAlerts && <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />}
+      {showAlerts && (
+        <div className="pt-safe">
+          <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />
+        </div>
+      )}
 
       {tab === 'home' && (
         <Home
