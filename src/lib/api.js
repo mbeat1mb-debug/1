@@ -43,14 +43,21 @@ async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
   }
 }
 
+// Local calendar date (not UTC) — toISOString() shifts to UTC, which rolls
+// over to "tomorrow" hours before midnight for anyone west of Greenwich,
+// making "today" queries look for a date that hasn't started locally yet.
+function localDateString(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function today() {
-  return new Date().toISOString().split('T')[0]
+  return localDateString(new Date())
 }
 
 function daysAgo(n) {
   const d = new Date()
   d.setDate(d.getDate() - n)
-  return d.toISOString().split('T')[0]
+  return localDateString(d)
 }
 
 function startOfDay(date) {
