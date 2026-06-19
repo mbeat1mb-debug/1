@@ -920,13 +920,23 @@ export function parseGoogleHealthData(raw) {
   const todayHRV = todayHRVRaw ? Number(todayHRVRaw) : (hrvByDate[historyDates.at(-1)] ?? 0)
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
-  // Google Health returns range queries newest-first; sort ascending so
-  // "most recent" is always the last element, matching hrvHistory/rhrHistory
-  // and what every consumer (streaks, sleep debt, etc.) assumes.
-  const sleepHistory = (sleepRange?.dataPoints ?? [])
-    .map(s => normalizeSleepPoint(s))
-    .filter(Boolean)
-    .sort((a, b) => a.date.localeCompare(b.date))
+  // Google Health can return more than one sleep session for the same calendar
+  // date (e.g. a daytime nap alongside the main overnight sleep). Treating every
+  // session as its own "night" double-counts that date and lets a 20-minute nap
+  // get scored as a full night's deficit, wildly inflating sleep debt — so keep
+  // only the longest session per date. Sort ascending so "most recent" is always
+  // the last element, matching hrvHistory/rhrHistory and what every consumer
+  // (streaks, sleep debt, etc.) assumes.
+  const sleepByDate = {}
+  for (const point of (sleepRange?.dataPoints ?? [])) {
+    const normalized = normalizeSleepPoint(point)
+    if (!normalized) continue
+    const existing = sleepByDate[normalized.date]
+    if (!existing || normalized.minutesAsleep > existing.minutesAsleep) {
+      sleepByDate[normalized.date] = normalized
+    }
+  }
+  const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
   const todaySleep = normalizeSleepPoint(sleepPoints[0]) ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
   const todaySpO2 = todaySpO2Raw ? Number(todaySpO2Raw) : 97
