@@ -107,7 +107,21 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
     : timeField.includes('civil')
       ? `${field}.${timeField} >= "${civilStart(startDate)}" AND ${field}.${timeField} < "${civilNextStart(endDate)}"`
       : `${field}.${timeField} >= "${startOfDay(startDate)}" AND ${field}.${timeField} < "${startOfNextDay(endDate)}"`
-  return ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams({ filter }).toString()}`)
+
+  let pageToken = ''
+  let combined = null
+  do {
+    const params = { filter, ...(pageToken ? { pageToken } : {}) }
+    const page = await ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams(params).toString()}`)
+    if (!page) return combined
+    if (!combined) {
+      combined = page
+    } else if (Array.isArray(page.dataPoints)) {
+      combined.dataPoints = [...(combined.dataPoints || []), ...page.dataPoints]
+    }
+    pageToken = page.nextPageToken || ''
+  } while (pageToken)
+  return combined
 }
 
 function civilDateTime(date, hours, minutes, seconds) {

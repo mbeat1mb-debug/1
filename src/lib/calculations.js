@@ -603,7 +603,9 @@ export function parseSleepArchitecture(todaySleep) {
   // stageSegments come from normalizeSleepPoint as { startTime, endTime, type } with
   // type one of AWAKE/LIGHT/DEEP/REM — map to the lowercase level names this function uses.
   const STAGE_TYPE_TO_LEVEL = { AWAKE: 'wake', LIGHT: 'light', DEEP: 'deep', REM: 'rem' }
-  const segments = todaySleep.stageSegments ?? []
+  // Cycle detection below walks segments in time order, so sort defensively —
+  // the API doesn't guarantee stage segments arrive chronologically.
+  const segments = [...(todaySleep.stageSegments ?? [])].sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
 
   const sleepLatency  = todaySleep.sleepLatency ?? 0
   const minutesAwake  = todaySleep.minutesAwake ?? 0
@@ -780,11 +782,11 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
         date: startDate,
         startTime,
         durationMins,
-        avgHR: metrics.averageHeartRateBeatsPerMinute ? Number(metrics.averageHeartRateBeatsPerMinute) : null,
+        avgHR: metrics.averageHeartRateBeatsPerMinute != null ? Number(metrics.averageHeartRateBeatsPerMinute) : null,
         calories: metrics.caloriesKcal ?? null,
-        steps: metrics.steps ? Number(metrics.steps) : null,
-        distance: metrics.distanceMillimeters ? metrics.distanceMillimeters / 1000 : null,
-        distanceUnit: metrics.distanceMillimeters ? 'm' : null,
+        steps: metrics.steps != null ? Number(metrics.steps) : null,
+        distance: metrics.distanceMillimeters != null ? metrics.distanceMillimeters / 1000 : null,
+        distanceUnit: metrics.distanceMillimeters != null ? 'm' : null,
         zoneMinutes,
         epoc,
         cardiacDrift,
@@ -810,8 +812,13 @@ function pointDate(point) {
     if (d?.year) return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
   }
   for (const c of candidates) {
-    const t = c.civilStartTime ?? c.effectiveTime ?? c.sampleTime?.physicalTime ?? c.interval?.startTime ?? c.startTime
-    if (t) return String(t).split('T')[0]
+    // civilStartTime has no timezone offset (it's a plain civil time, not UTC), so
+    // splitting it on 'T' is correct as-is. Every other field is a real timestamp
+    // (UTC or offset-qualified) and must go through localDateOf, or a reading taken
+    // late evening local time gets filed under the next UTC day.
+    if (c.civilStartTime) return String(c.civilStartTime).split('T')[0]
+    const t = c.effectiveTime ?? c.sampleTime?.physicalTime ?? c.interval?.startTime ?? c.startTime
+    if (t) return localDateOf(t)
   }
   return null
 }
@@ -902,7 +909,7 @@ function toLegacySpo2Minutes(spo2Intraday) {
   // so they can't trigger a false "Very High" apnea risk alert.
   const minutes = (spo2Intraday?.dataPoints ?? [])
     .map(p => ({ minute: p.sampleTime?.physicalTime ?? p.effectiveTime, value: Number(p.oxygenSaturation?.percentage) }))
-    .filter(p => p.minute && p.value >= 60)
+    .filter(p => p.minute && p.value >= 60 && p.value <= 100)
     .sort((a, b) => new Date(a.minute) - new Date(b.minute))
   return { minutes }
 }
@@ -915,20 +922,20 @@ export function parseGoogleHealthData(raw) {
   for (const d of (hrvRange?.dataPoints ?? [])) {
     const val = pick(d, 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
     const date = pointDate(d)
-    if (date && val) hrvByDate[date] = Math.round(Number(val))
+    if (date && val != null) hrvByDate[date] = Math.round(Number(val))
   }
   const rhrByDate = {}
   for (const d of (hrRange?.dataPoints ?? [])) {
     const val = pick(d, 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.avg')
     const date = pointDate(d)
-    if (date && val) rhrByDate[date] = Math.round(Number(val))
+    if (date && val != null) rhrByDate[date] = Math.round(Number(val))
   }
   const historyDates = Object.keys(hrvByDate).sort()
   const hrvHistory = historyDates.map(date => hrvByDate[date])
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
-  const todayHRV = todayHRVRaw ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
+  const todayHRV = todayHRVRaw != null ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
   // Google Health can return more than one sleep session for the same calendar
@@ -950,9 +957,12 @@ export function parseGoogleHealthData(raw) {
   const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
   const todaySleep = normalizeSleepPoint(sleepPoints[0]) ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
-  const todaySpO2 = todaySpO2Raw ? Math.round(Number(todaySpO2Raw) * 10) / 10 : 97
+  // Same sensor-glitch range used by toLegacySpo2Minutes below (60-100%) — applied
+  // here too so a single bad daily aggregate can't override real intraday readings.
+  const todaySpO2Num = todaySpO2Raw != null ? Number(todaySpO2Raw) : null
+  const todaySpO2 = (todaySpO2Num != null && todaySpO2Num >= 60 && todaySpO2Num <= 100) ? Math.round(todaySpO2Num * 10) / 10 : 97
   const todayBRRaw = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.breathsPerMinute', 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.avg')
-  const todayBR = todayBRRaw ? Math.round(Number(todayBRRaw) * 10) / 10 : 14
+  const todayBR = todayBRRaw != null ? Math.round(Number(todayBRRaw) * 10) / 10 : 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
   const calories = Math.round(rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum'))
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
@@ -962,12 +972,14 @@ export function parseGoogleHealthData(raw) {
     return sum + (Number(z.sumInCardioHeartZone) || 0) + (Number(z.sumInPeakHeartZone) || 0) + (Number(z.sumInFatBurnHeartZone) || 0)
   }, 0)
 
-  // VO2 Max from Google Health's daily-vo2-max data type — the API returns
-  // these date-ranged lists newest-first (same as hrv/hr/sleep ranges above),
-  // so the most recent reading is dataPoints[0], not the last element.
-  const vo2MaxRaw = pick(cardioFitness?.dataPoints?.[0], 'dailyVo2Max.vo2Max', 'dailyVo2Max.value')
-  const vo2Max = (vo2MaxRaw ? Math.round(vo2MaxRaw) : 0) || getUserVO2Max()
-  const vo2MaxRange = vo2MaxRaw ? String(Math.round(vo2MaxRaw)) : null
+  // VO2 Max from Google Health's daily-vo2-max data type, spanning the last 7 days —
+  // sort by date explicitly rather than assuming the API's return order, since it's
+  // a multi-day range (unlike the single-day hrv/spo2/br queries above).
+  const latestCardioFitness = [...(cardioFitness?.dataPoints ?? [])]
+    .sort((a, b) => String(pointDate(b)).localeCompare(String(pointDate(a))))[0]
+  const vo2MaxRaw = pick(latestCardioFitness, 'dailyVo2Max.vo2Max', 'dailyVo2Max.value')
+  const vo2Max = vo2MaxRaw != null ? Math.round(Number(vo2MaxRaw)) : getUserVO2Max()
+  const vo2MaxRange = vo2MaxRaw != null ? String(Math.round(Number(vo2MaxRaw))) : null
 
   // Skin temperature nightly deviation in °C relative to personal baseline
   const skinTempPoint = skinTemp?.dataPoints?.[0]?.dailySleepTemperatureDerivations
@@ -993,7 +1005,7 @@ export function parseGoogleHealthData(raw) {
     const date = pointDate(w)
     const grams = pick(w, 'weight.weightGrams', 'weight.kilograms', 'weight.value')
     const kg = w.weight?.weightGrams != null ? grams / 1000 : grams
-    if (date && kg) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
+    if (date && kg != null) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
   }
 
   const activityLogs = parseActivityLogs(raw.activityLogs, hrIntraday)
