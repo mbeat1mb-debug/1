@@ -1128,7 +1128,10 @@ export function getUserBodyFatPct() {
   try {
     const history = getBodyWeightHistory()
     for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i].fatPct != null && history[i].fatPct > 0) return history[i].fatPct
+      // Device readings come back as long floats (e.g. 23.392322011365373) —
+      // round to one decimal since that's the precision a body fat scale
+      // actually measures to.
+      if (history[i].fatPct != null && history[i].fatPct > 0) return Math.round(history[i].fatPct * 10) / 10
     }
     const v = parseFloat(localStorage.getItem('user_body_fat_pct') || '0')
     return isNaN(v) || v <= 0 ? null : v
