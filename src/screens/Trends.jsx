@@ -9,17 +9,17 @@ import { getHistory } from '../lib/db'
 
 function BackButton({ onNav }) {
   return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
       </svg>
     </button>
   )
 }
 
-const CARD = { background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }
-const TITLE = 'text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3'
-const EMPTY = 'text-gray-600 text-sm italic'
+const CARD = { background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }
+const TITLE = 'text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3'
+const EMPTY = 'text-[#b3a890] text-sm italic'
 
 function formatMonthDay(dateStr) {
   if (!dateStr) return ''
@@ -39,10 +39,10 @@ function ScatterTooltip({ active, payload }) {
   const d = payload[0]?.payload
   if (!d) return null
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-      <p className="text-gray-400 text-xs mb-1">{d.dateLabel}</p>
+    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+      <p className="text-[#9a8f7e] text-xs mb-1">{d.dateLabel}</p>
       <p style={{ color: d.dotColor }} className="font-semibold">Recovery: {d.recovery}%</p>
-      <p className="text-gray-300 font-semibold">Strain: {d.strain}</p>
+      <p className="text-[#5c5648] font-semibold">Strain: {d.strain}</p>
     </div>
   )
 }
@@ -50,8 +50,8 @@ function ScatterTooltip({ active, payload }) {
 function HRVTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-      <p className="text-gray-400 text-xs mb-1">{label}</p>
+    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+      <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="font-semibold">
           {p.name === 'ma7' ? 'MA7: ' : ''}{Math.round(p.value ?? 0)} ms
@@ -64,8 +64,8 @@ function HRVTooltip({ active, payload, label }) {
 function BRTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-      <p className="text-gray-400 text-xs mb-1">{label}</p>
+    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+      <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
       <p style={{ color: '#06b6d4' }} className="font-semibold">{Math.round(payload[0]?.value ?? 0)} br/min</p>
     </div>
   )
@@ -188,7 +188,7 @@ export default function Trends({ data, onNav }) {
     return rows.map(d => ({
       label: dayLabel(d.date, todayStr),
       dev: d.skinTempDev,
-      barColor: d.skinTempDev <= 0 ? '#00c9a7' : d.skinTempDev <= 0.3 ? '#f59e0b' : '#ef4444',
+      barColor: d.skinTempDev <= 0 ? '#3E9C7E' : d.skinTempDev <= 0.3 ? '#D9A23F' : '#ef4444',
     }))
   }, [dbHistory, todayStr])
 
@@ -217,12 +217,12 @@ export default function Trends({ data, onNav }) {
   const hasMA7 = hrvChartData.some(p => p.ma7 != null)
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4">
+    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
 
       <div className="pt-2 flex items-center gap-3">
         <BackButton onNav={onNav} />
         <div>
-          <p className="text-gray-500 text-xs uppercase tracking-wider">Trends</p>
+          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Trends</p>
           <h1 className="text-xl font-bold">30-Day History</h1>
         </div>
       </div>
@@ -236,17 +236,17 @@ export default function Trends({ data, onNav }) {
             <ScatterChart margin={{ top: 8, right: 16, left: -16, bottom: 8 }}>
               <XAxis
                 type="number" dataKey="strain" name="Strain"
-                domain={[0, 21]} label={{ value: 'Strain', position: 'insideBottom', offset: -2, fill: '#555', fontSize: 10 }}
-                tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false}
+                domain={[0, 21]} label={{ value: 'Strain', position: 'insideBottom', offset: -2, fill: '#9a8f7e', fontSize: 10 }}
+                tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false}
               />
               <YAxis
                 type="number" dataKey="recovery" name="Recovery"
                 domain={[0, 100]} unit="%"
-                tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false}
+                tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false}
               />
               <ZAxis range={[32, 32]} />
-              <ReferenceLine x={10} stroke="#333" strokeDasharray="3 3" />
-              <ReferenceLine y={50} stroke="#333" strokeDasharray="3 3" />
+              <ReferenceLine x={10} stroke="#ece3d4" strokeDasharray="3 3" />
+              <ReferenceLine y={50} stroke="#ece3d4" strokeDasharray="3 3" />
               <RechartTooltip content={<ScatterTooltip />} />
               <Scatter data={scatterPoints} isAnimationActive={false}>
                 {scatterPoints.map((pt, i) => (
@@ -258,14 +258,14 @@ export default function Trends({ data, onNav }) {
         )}
         <div className="grid grid-cols-2 gap-1 mt-2">
           {[
-            { label: 'Optimal', sub: 'High recovery · High strain', color: '#00c9a7' },
+            { label: 'Optimal', sub: 'High recovery · High strain', color: '#3E9C7E' },
             { label: 'Overreaching', sub: 'Low recovery · High strain', color: '#ef4444' },
-            { label: 'Recovery', sub: 'High recovery · Low strain', color: '#3b82f6' },
-            { label: 'Undertraining', sub: 'Low recovery · Low strain', color: '#888' },
+            { label: 'Recovery', sub: 'High recovery · Low strain', color: '#9B7FD4' },
+            { label: 'Undertraining', sub: 'Low recovery · Low strain', color: '#9a8f7e' },
           ].map(q => (
-            <div key={q.label} className="rounded-lg px-2 py-1.5" style={{ background: '#181818' }}>
+            <div key={q.label} className="rounded-lg px-2 py-1.5" style={{ background: '#F6F1E9' }}>
               <p className="text-[10px] font-semibold" style={{ color: q.color }}>{q.label}</p>
-              <p className="text-[9px] text-gray-600">{q.sub}</p>
+              <p className="text-[9px] text-[#b3a890]">{q.sub}</p>
             </div>
           ))}
         </div>
@@ -276,7 +276,7 @@ export default function Trends({ data, onNav }) {
         {recoveryChartData.length < 3 ? (
           <p className={EMPTY}>Need more data to show trend.</p>
         ) : (
-          <LineGraph data={recoveryChartData} dataKey="recovery" color="#00c9a7" unit="%" height={100} />
+          <LineGraph data={recoveryChartData} dataKey="recovery" color="#3E9C7E" unit="%" height={100} />
         )}
       </div>
 
@@ -285,8 +285,8 @@ export default function Trends({ data, onNav }) {
           <p className={TITLE} style={{ marginBottom: 0 }}>HRV Trend</p>
           {todayHRV != null && (
             <div className="text-right">
-              <p className="text-[10px] text-gray-600">Today vs norm</p>
-              <p className="text-xs font-semibold" style={{ color: todayHRV >= hrvNorm ? '#00c9a7' : '#f59e0b' }}>
+              <p className="text-[10px] text-[#b3a890]">Today vs norm</p>
+              <p className="text-xs font-semibold" style={{ color: todayHRV >= hrvNorm ? '#3E9C7E' : '#D9A23F' }}>
                 {todayHRV} ms / {hrvNorm} ms
               </p>
             </div>
@@ -297,8 +297,8 @@ export default function Trends({ data, onNav }) {
         ) : (
           <ResponsiveContainer width="100%" height={110}>
             <LineChart data={hrvChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
               <ReferenceLine y={hrvNorm} stroke="#C9A84C" strokeDasharray="4 3" label={{ value: `Norm ${hrvNorm}`, position: 'right', fill: '#C9A84C', fontSize: 9 }} />
               <RechartTooltip content={<HRVTooltip />} />
               <Line type="monotone" dataKey="hrv" stroke="#a78bfa" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#a78bfa' }} />
@@ -312,15 +312,15 @@ export default function Trends({ data, onNav }) {
           <div className="flex items-center gap-4 mt-2">
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-0.5 rounded" style={{ background: '#a78bfa' }} />
-              <p className="text-[10px] text-gray-500">Daily</p>
+              <p className="text-[10px] text-[#9a8f7e]">Daily</p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-0.5 rounded" style={{ background: '#c4b5fd', opacity: 0.7 }} />
-              <p className="text-[10px] text-gray-500">7-day MA</p>
+              <p className="text-[10px] text-[#9a8f7e]">7-day MA</p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-0.5 rounded" style={{ background: '#C9A84C' }} />
-              <p className="text-[10px] text-gray-500">Age norm</p>
+              <p className="text-[10px] text-[#9a8f7e]">Age norm</p>
             </div>
           </div>
         )}
@@ -333,14 +333,14 @@ export default function Trends({ data, onNav }) {
         ) : (
           <ResponsiveContainer width="100%" height={100}>
             <LineChart data={rhrChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={60} stroke="#444" strokeDasharray="3 3" label={{ value: '60', position: 'right', fill: '#555', fontSize: 9 }} />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <ReferenceLine y={60} stroke="#ece3d4" strokeDasharray="3 3" label={{ value: '60', position: 'right', fill: '#9a8f7e', fontSize: 9 }} />
               <RechartTooltip content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 return (
-                  <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-                    <p className="text-gray-400 text-xs mb-1">{label}</p>
+                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
                     <p style={{ color: '#ef4444' }} className="font-semibold">{Math.round(payload[0]?.value ?? 0)} bpm</p>
                   </div>
                 )
@@ -349,7 +349,7 @@ export default function Trends({ data, onNav }) {
             </LineChart>
           </ResponsiveContainer>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Reference at 60 bpm — below is athletic range.</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Reference at 60 bpm — below is athletic range.</p>
       </div>
 
       <div className="rounded-2xl p-4" style={CARD}>
@@ -358,22 +358,22 @@ export default function Trends({ data, onNav }) {
           <div>
             <p className={EMPTY}>Need at least 2 cardio fitness updates to show a trend.</p>
             {vo2ChartData.length === 1 && (
-              <p className="text-gray-300 text-sm mt-2">Current: {vo2ChartData[0].vo2Max} ml/kg/min</p>
+              <p className="text-[#5c5648] text-sm mt-2">Current: {vo2ChartData[0].vo2Max} ml/kg/min</p>
             )}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={120}>
             <LineChart data={vo2ChartData} margin={{ top: 4, right: 40, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={vo2Norms[0]} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'Fair', position: 'right', fill: '#f59e0b', fontSize: 9 }} />
-              <ReferenceLine y={vo2Norms[1]} stroke="#3b82f6" strokeDasharray="3 3" label={{ value: 'Good', position: 'right', fill: '#3b82f6', fontSize: 9 }} />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <ReferenceLine y={vo2Norms[0]} stroke="#D9A23F" strokeDasharray="3 3" label={{ value: 'Fair', position: 'right', fill: '#D9A23F', fontSize: 9 }} />
+              <ReferenceLine y={vo2Norms[1]} stroke="#9B7FD4" strokeDasharray="3 3" label={{ value: 'Good', position: 'right', fill: '#9B7FD4', fontSize: 9 }} />
               <ReferenceLine y={vo2Norms[2]} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#10b981', fontSize: 9 }} />
               <RechartTooltip content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 return (
-                  <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-                    <p className="text-gray-400 text-xs mb-1">{label}</p>
+                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
                     <p style={{ color: '#10b981' }} className="font-semibold">{payload[0]?.value} ml/kg/min</p>
                   </div>
                 )
@@ -400,16 +400,16 @@ export default function Trends({ data, onNav }) {
         ) : (
           <ResponsiveContainer width="100%" height={100}>
             <BarChart data={skinTempData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={0} stroke="#444" strokeDasharray="3 3" />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <ReferenceLine y={0} stroke="#ece3d4" strokeDasharray="3 3" />
               <RechartTooltip content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 const v = payload[0]?.value
                 return (
-                  <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-                    <p className="text-gray-400 text-xs mb-1">{label}</p>
-                    <p style={{ color: v <= 0 ? '#00c9a7' : v <= 0.3 ? '#f59e0b' : '#ef4444' }} className="font-semibold">
+                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
+                    <p style={{ color: v <= 0 ? '#3E9C7E' : v <= 0.3 ? '#D9A23F' : '#ef4444' }} className="font-semibold">
                       {v > 0 ? '+' : ''}{v?.toFixed(2)}°C
                     </p>
                   </div>
@@ -423,7 +423,7 @@ export default function Trends({ data, onNav }) {
             </BarChart>
           </ResponsiveContainer>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Green (≤0°C) = cooler baseline, favorable for recovery. Amber/red = elevated, may signal stress or illness.</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Green (≤0°C) = cooler baseline, favorable for recovery. Amber/red = elevated, may signal stress or illness.</p>
       </div>
 
       <div className="rounded-2xl p-4" style={CARD}>
@@ -433,24 +433,24 @@ export default function Trends({ data, onNav }) {
         ) : (
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={azmWeeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={150} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'WHO 150', position: 'right', fill: '#f59e0b', fontSize: 9 }} />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <ReferenceLine y={150} stroke="#D9A23F" strokeDasharray="3 3" label={{ value: 'WHO 150', position: 'right', fill: '#D9A23F', fontSize: 9 }} />
               <ReferenceLine y={300} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#10b981', fontSize: 9 }} />
               <RechartTooltip content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 return (
-                  <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-sm">
-                    <p className="text-gray-400 text-xs mb-1">{label}</p>
-                    <p style={{ color: '#f59e0b' }} className="font-semibold">{payload[0]?.value} min</p>
+                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
+                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
+                    <p style={{ color: '#D9A23F' }} className="font-semibold">{payload[0]?.value} min</p>
                   </div>
                 )
               }} />
-              <Bar dataKey="azm" fill="#f59e0b" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="azm" fill="#D9A23F" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">WHO recommends 150 min/week moderate or 75 min vigorous. 300+ min = excellent.</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">WHO recommends 150 min/week moderate or 75 min vigorous. 300+ min = excellent.</p>
       </div>
 
       <div className="rounded-2xl p-4" style={CARD}>
@@ -460,15 +460,15 @@ export default function Trends({ data, onNav }) {
         ) : (
           <ResponsiveContainer width="100%" height={100}>
             <LineChart data={brChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={18} stroke="#444" strokeDasharray="3 3" label={{ value: '18', position: 'right', fill: '#555', fontSize: 9 }} />
+              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <ReferenceLine y={18} stroke="#ece3d4" strokeDasharray="3 3" label={{ value: '18', position: 'right', fill: '#9a8f7e', fontSize: 9 }} />
               <RechartTooltip content={<BRTooltip />} />
               <Line type="monotone" dataKey="br" stroke="#06b6d4" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#06b6d4' }} />
             </LineChart>
           </ResponsiveContainer>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Normal: 12–18 br/min during sleep. Above 18 may indicate stress, illness, or elevated load.</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Normal: 12–18 br/min during sleep. Above 18 may indicate stress, illness, or elevated load.</p>
       </div>
 
     </div>

@@ -26,12 +26,12 @@ export default function AlertBanner({ alerts = [], onCoach }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400">{top.message}</p>
+          <p className="text-xs text-[#9a8f7e]">{top.message}</p>
           <p className="text-xs font-medium mt-1" style={{ color }}>{top.action}</p>
         </div>
         <button
           onClick={() => setDismissed(new Set([...dismissed, top.id]))}
-          className="text-gray-600 text-lg leading-none mt-0.5 flex-shrink-0"
+          className="text-[#b3a890] text-lg leading-none mt-0.5 flex-shrink-0"
         >
           ×
         </button>

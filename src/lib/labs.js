@@ -45,8 +45,8 @@ export const LAB_MARKERS = [
       return 'Low'
     },
     color(v) {
-      if (v >= 4.0) return '#00c9a7'
-      if (v >= 3.5) return '#f59e0b'
+      if (v >= 4.0) return '#3E9C7E'
+      if (v >= 3.5) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -63,8 +63,8 @@ export const LAB_MARKERS = [
       return 'Elevated'
     },
     color(v) {
-      if (v <= 1.2) return '#00c9a7'
-      if (v <= 1.5) return '#f59e0b'
+      if (v <= 1.2) return '#3E9C7E'
+      if (v <= 1.5) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -81,8 +81,8 @@ export const LAB_MARKERS = [
       return 'Low'
     },
     color(v) {
-      if (v >= 25 && v <= 40) return '#00c9a7'
-      if (v >= 20) return '#f59e0b'
+      if (v >= 25 && v <= 40) return '#3E9C7E'
+      if (v >= 20) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -99,8 +99,8 @@ export const LAB_MARKERS = [
       return 'Low'
     },
     color(v) {
-      if (v >= 80 && v <= 96) return '#00c9a7'
-      if (v > 96 || v < 80) return '#f59e0b'
+      if (v >= 80 && v <= 96) return '#3E9C7E'
+      if (v > 96 || v < 80) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -117,8 +117,8 @@ export const LAB_MARKERS = [
       return 'Elevated'
     },
     color(v) {
-      if (v <= 13) return '#00c9a7'
-      if (v <= 14.5) return '#f59e0b'
+      if (v <= 13) return '#3E9C7E'
+      if (v <= 14.5) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -135,8 +135,8 @@ export const LAB_MARKERS = [
       return 'Elevated'
     },
     color(v) {
-      if (v < 70) return '#00c9a7'
-      if (v <= 120) return '#f59e0b'
+      if (v < 70) return '#3E9C7E'
+      if (v <= 120) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -153,8 +153,8 @@ export const LAB_MARKERS = [
       return 'Elevated'
     },
     color(v) {
-      if (v >= 4.5 && v <= 7.5) return '#00c9a7'
-      if (v <= 9.0) return '#f59e0b'
+      if (v >= 4.5 && v <= 7.5) return '#3E9C7E'
+      if (v <= 9.0) return '#D9A23F'
       return '#ef4444'
     },
   },
@@ -183,8 +183,8 @@ export const LAB_MARKERS = [
       return 'Very High';
     },
     color(v) {
-      if (v < 100) return '#00c9a7';
-      if (v < 130) return '#f59e0b';
+      if (v < 100) return '#3E9C7E';
+      if (v < 130) return '#D9A23F';
       if (v < 160) return '#f97316';
       return '#ef4444';
     },
@@ -208,8 +208,8 @@ export const LAB_MARKERS = [
       return 'Low';
     },
     color(v) {
-      if (v > 60) return '#00c9a7';
-      if (v >= 40) return '#f59e0b';
+      if (v > 60) return '#3E9C7E';
+      if (v >= 40) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -230,8 +230,8 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 200) return '#00c9a7';
-      if (v < 240) return '#f59e0b';
+      if (v < 200) return '#3E9C7E';
+      if (v < 240) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -256,9 +256,9 @@ export const LAB_MARKERS = [
       return 'Very High';
     },
     color(v) {
-      if (v < 100) return '#00c9a7';
-      if (v < 150) return '#3b82f6';
-      if (v < 200) return '#f59e0b';
+      if (v < 100) return '#3E9C7E';
+      if (v < 150) return '#9B7FD4';
+      if (v < 200) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -282,9 +282,9 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 80) return '#00c9a7';
-      if (v < 100) return '#3b82f6';
-      if (v < 130) return '#f59e0b';
+      if (v < 80) return '#3E9C7E';
+      if (v < 100) return '#9B7FD4';
+      if (v < 130) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -306,8 +306,8 @@ export const LAB_MARKERS = [
       return 'High Risk';
     },
     color(v) {
-      if (v < 30) return '#00c9a7';
-      if (v < 50) return '#f59e0b';
+      if (v < 30) return '#3E9C7E';
+      if (v < 50) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -327,9 +327,9 @@ export const LAB_MARKERS = [
       return 'Diabetes Range';
     },
     color(v) {
-      if (v < 85) return '#00c9a7';
-      if (v < 100) return '#3b82f6';
-      if (v < 126) return '#f59e0b';
+      if (v < 85) return '#3E9C7E';
+      if (v < 100) return '#9B7FD4';
+      if (v < 126) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -352,9 +352,9 @@ export const LAB_MARKERS = [
       return 'Diabetes Range';
     },
     color(v) {
-      if (v < 5.4) return '#00c9a7';
-      if (v < 5.7) return '#3b82f6';
-      if (v < 6.5) return '#f59e0b';
+      if (v < 5.4) return '#3E9C7E';
+      if (v < 5.7) return '#9B7FD4';
+      if (v < 6.5) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -377,9 +377,9 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 6) return '#00c9a7';
-      if (v < 10) return '#3b82f6';
-      if (v < 20) return '#f59e0b';
+      if (v < 6) return '#3E9C7E';
+      if (v < 10) return '#9B7FD4';
+      if (v < 20) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -402,8 +402,8 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 5.5) return '#00c9a7';
-      if (v < 7) return '#3b82f6';
+      if (v < 5.5) return '#3E9C7E';
+      if (v < 7) return '#9B7FD4';
       return '#ef4444';
     },
   },
@@ -430,9 +430,9 @@ export const LAB_MARKERS = [
       return 'Very High';
     },
     color(v) {
-      if (v < 0.5) return '#00c9a7';
-      if (v < 1) return '#3b82f6';
-      if (v < 3) return '#f59e0b';
+      if (v < 0.5) return '#3E9C7E';
+      if (v < 1) return '#9B7FD4';
+      if (v < 3) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -455,9 +455,9 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 8) return '#00c9a7';
-      if (v < 12) return '#3b82f6';
-      if (v < 15) return '#f59e0b';
+      if (v < 8) return '#3E9C7E';
+      if (v < 12) return '#9B7FD4';
+      if (v < 15) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -483,9 +483,9 @@ export const LAB_MARKERS = [
       return 'Deficient';
     },
     color(v) {
-      if (v > 50) return '#00c9a7';
-      if (v >= 30) return '#3b82f6';
-      if (v >= 20) return '#f59e0b';
+      if (v > 50) return '#3E9C7E';
+      if (v >= 30) return '#9B7FD4';
+      if (v >= 20) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -506,8 +506,8 @@ export const LAB_MARKERS = [
       return 'Deficient';
     },
     color(v) {
-      if (v >= 400) return '#00c9a7';
-      if (v >= 200) return '#f59e0b';
+      if (v >= 400) return '#3E9C7E';
+      if (v >= 200) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -528,8 +528,8 @@ export const LAB_MARKERS = [
       return 'Low';
     },
     color(v) {
-      if (v >= 2.0 && v <= 2.5) return '#00c9a7';
-      if (v >= 1.7) return '#f59e0b';
+      if (v >= 2.0 && v <= 2.5) return '#3E9C7E';
+      if (v >= 1.7) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -553,8 +553,8 @@ export const LAB_MARKERS = [
     },
     color(v) {
       if (v < 15 || v > 300) return '#ef4444';
-      if (v > 200) return '#f59e0b';
-      return '#00c9a7';
+      if (v > 200) return '#D9A23F';
+      return '#3E9C7E';
     },
   },
   {
@@ -576,9 +576,9 @@ export const LAB_MARKERS = [
       return 'High Risk';
     },
     color(v) {
-      if (v > 8) return '#00c9a7';
-      if (v >= 5) return '#3b82f6';
-      if (v >= 4) return '#f59e0b';
+      if (v > 8) return '#3E9C7E';
+      if (v >= 5) return '#9B7FD4';
+      if (v >= 4) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -603,9 +603,9 @@ export const LAB_MARKERS = [
       return 'Low';
     },
     color(v) {
-      if (v > 700) return '#00c9a7';
-      if (v >= 400) return '#3b82f6';
-      if (v >= 300) return '#f59e0b';
+      if (v > 700) return '#3E9C7E';
+      if (v >= 400) return '#9B7FD4';
+      if (v >= 300) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -628,9 +628,9 @@ export const LAB_MARKERS = [
       return 'Low';
     },
     color(v) {
-      if (v > 250) return '#00c9a7';
-      if (v > 150) return '#3b82f6';
-      if (v > 80) return '#f59e0b';
+      if (v > 250) return '#3E9C7E';
+      if (v > 150) return '#9B7FD4';
+      if (v > 80) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -652,8 +652,8 @@ export const LAB_MARKERS = [
       return 'Low';
     },
     color(v) {
-      if (v >= 100 && v <= 250) return '#00c9a7';
-      if (v >= 75) return '#f59e0b';
+      if (v >= 100 && v <= 250) return '#3E9C7E';
+      if (v >= 75) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -674,8 +674,8 @@ export const LAB_MARKERS = [
       return 'Elevated';
     },
     color(v) {
-      if (v >= 6 && v <= 15) return '#00c9a7';
-      if (v <= 23) return '#3b82f6';
+      if (v >= 6 && v <= 15) return '#3E9C7E';
+      if (v <= 23) return '#9B7FD4';
       return '#ef4444';
     },
   },
@@ -700,9 +700,9 @@ export const LAB_MARKERS = [
       return 'Elevated';
     },
     color(v) {
-      if (v < 20) return '#00c9a7';
-      if (v < 35) return '#3b82f6';
-      if (v < 55) return '#f59e0b';
+      if (v < 20) return '#3E9C7E';
+      if (v < 35) return '#9B7FD4';
+      if (v < 55) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -725,9 +725,9 @@ export const LAB_MARKERS = [
       return 'Elevated';
     },
     color(v) {
-      if (v < 20) return '#00c9a7';
-      if (v < 35) return '#3b82f6';
-      if (v < 55) return '#f59e0b';
+      if (v < 20) return '#3E9C7E';
+      if (v < 35) return '#9B7FD4';
+      if (v < 55) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -750,9 +750,9 @@ export const LAB_MARKERS = [
       return 'High';
     },
     color(v) {
-      if (v < 20) return '#00c9a7';
-      if (v < 40) return '#3b82f6';
-      if (v < 80) return '#f59e0b';
+      if (v < 20) return '#3E9C7E';
+      if (v < 40) return '#9B7FD4';
+      if (v < 80) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -776,9 +776,9 @@ export const LAB_MARKERS = [
       return 'Severe CKD';
     },
     color(v) {
-      if (v > 90) return '#00c9a7';
-      if (v >= 60) return '#3b82f6';
-      if (v >= 45) return '#f59e0b';
+      if (v > 90) return '#3E9C7E';
+      if (v >= 60) return '#9B7FD4';
+      if (v >= 45) return '#D9A23F';
       return '#ef4444';
     },
   },
@@ -800,9 +800,9 @@ export const LAB_MARKERS = [
       return 'High (Hypothyroid?)';
     },
     color(v) {
-      if (v >= 0.5 && v <= 2.5) return '#00c9a7';
-      if (v >= 0.4 && v <= 4.5) return '#3b82f6';
-      return '#f59e0b';
+      if (v >= 0.5 && v <= 2.5) return '#3E9C7E';
+      if (v >= 0.4 && v <= 4.5) return '#9B7FD4';
+      return '#D9A23F';
     },
   },
 ];

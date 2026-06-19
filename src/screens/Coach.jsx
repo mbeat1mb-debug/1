@@ -200,21 +200,21 @@ function WeeklyReport({ data, apiKey }) {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Report</p>
-        {report && <span className="text-xs text-gray-600">{report.generatedAt}</span>}
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Report</p>
+        {report && <span className="text-xs text-[#b3a890]">{report.generatedAt}</span>}
       </div>
       {report ? (
-        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{report.text}</p>
+        <p className="text-sm text-[#5c5648] leading-relaxed whitespace-pre-line">{report.text}</p>
       ) : (
-        <p className="text-sm text-gray-600">Get a full AI analysis of your week — what went well, what to improve, one focus for next week.</p>
+        <p className="text-sm text-[#9a8f7e]">Get a full AI analysis of your week — what went well, what to improve, one focus for next week.</p>
       )}
       <button
         onClick={generate}
         disabled={generating || !apiKey}
         className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-        style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+        style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
       >
         {generating ? 'Generating…' : report ? 'Regenerate Report' : 'Generate This Week\'s Report'}
       </button>
@@ -279,33 +279,33 @@ export default function Coach({ data, onNav }) {
 
   if (!hasKey || showKeyInput) {
     return (
-      <div className="px-4 pt-safe pb-28 space-y-4">
+      <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
         <div className="pt-2 flex items-center gap-3">
           {onNav && (
-            <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+            <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
           <div>
-            <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
-            <h1 className="text-xl font-bold">Set Up Coaching</h1>
+            <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">AI Coach</p>
+            <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>Set Up Coaching</h1>
           </div>
         </div>
-        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#111', border: '1px solid #00c9a733' }}>
-          <p className="text-gray-300 text-sm">
+        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-[#5c5648] text-sm">
             Coaching uses Claude AI to answer questions about your specific health data.
             You need a free Anthropic API key — you pay only for what you use (~$0.01–0.05/day for daily use).
           </p>
-          <ol className="space-y-2 text-sm text-gray-400">
-            <li>1. Go to <span className="text-white">console.anthropic.com</span></li>
+          <ol className="space-y-2 text-sm text-[#9a8f7e]">
+            <li>1. Go to <span className="text-[#1a1a1a]">console.anthropic.com</span></li>
             <li>2. Create account → API Keys → Create Key</li>
             <li>3. Paste it below</li>
           </ol>
           <input
             type="password"
-            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
+            className="w-full bg-[#F6F1E9] border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
             placeholder="sk-ant-..."
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
@@ -314,7 +314,7 @@ export default function Coach({ data, onNav }) {
           <button
             onClick={() => saveKey(keyInput)}
             className="w-full py-3 rounded-xl font-bold text-sm"
-            style={{ background: '#00c9a7', color: '#000' }}
+            style={{ background: '#3E9C7E', color: '#fff' }}
           >
             Save & Start Coaching
           </button>
@@ -324,36 +324,36 @@ export default function Coach({ data, onNav }) {
   }
 
   return (
-    <div className="flex flex-col pt-safe" style={{ height: '100dvh' }}>
-      <div className="px-4 pt-2 pb-3 flex items-center justify-between" style={{ borderBottom: '1px solid #1a1a1a' }}>
+    <div className="flex flex-col pt-safe" style={{ height: '100dvh', background: '#F6F1E9' }}>
+      <div className="px-4 pt-2 pb-3 flex items-center justify-between" style={{ borderBottom: '1px solid #ece3d4' }}>
         <div className="flex items-center gap-3">
           {onNav && (
-            <button onClick={() => onNav('home')} className="w-8 h-8 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-4 h-4">
+            <button onClick={() => onNav('home')} className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
           <div>
-            <p className="text-gray-500 text-xs uppercase tracking-wider">AI Coach</p>
-            <h1 className="text-lg font-bold">Ask anything</h1>
+            <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">AI Coach</p>
+            <h1 className="text-lg font-bold" style={{ color: '#1a1a1a' }}>Ask anything</h1>
           </div>
         </div>
-        <button onClick={() => { setKeyInput(apiKey); setShowKeyInput(true) }} className="text-xs text-gray-600 px-2 py-1 rounded-lg bg-[#1a1a1a]">
+        <button onClick={() => { setKeyInput(apiKey); setShowKeyInput(true) }} className="text-xs text-[#9a8f7e] px-2 py-1 rounded-lg bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           API Key
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex px-4 pt-3 gap-4 overflow-x-auto" style={{ borderBottom: '1px solid #1a1a1a' }}>
+      <div className="flex px-4 pt-3 gap-4 overflow-x-auto" style={{ borderBottom: '1px solid #ece3d4' }}>
         {[['chat', 'Chat'], ['report', 'Weekly'], ['morning', 'Morning'], ['evening', 'Evening']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
             className="pb-2 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
             style={{
-              color: activeTab === id ? '#00c9a7' : '#555',
-              borderBottom: activeTab === id ? '2px solid #00c9a7' : '2px solid transparent',
+              color: activeTab === id ? '#3E9C7E' : '#9a8f7e',
+              borderBottom: activeTab === id ? '2px solid #3E9C7E' : '2px solid transparent',
             }}
           >
             {label}
@@ -383,14 +383,14 @@ export default function Coach({ data, onNav }) {
       {activeTab === 'chat' && <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32">
         {messages.length === 0 && (
           <div className="space-y-3">
-            <p className="text-gray-500 text-sm text-center pt-4">Your coach knows today's data. Ask anything.</p>
+            <p className="text-[#9a8f7e] text-sm text-center pt-4">Your coach knows today's data. Ask anything.</p>
             <div className="grid grid-cols-2 gap-2">
               {STARTERS.map(s => (
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-left px-3 py-3 rounded-xl text-xs text-gray-300 transition-opacity active:opacity-60"
-                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                  className="text-left px-3 py-3 rounded-xl text-xs text-[#5c5648] transition-opacity active:opacity-60"
+                  style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
                 >
                   {s}
                 </button>
@@ -404,8 +404,8 @@ export default function Coach({ data, onNav }) {
             <div
               className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
               style={{
-                background: m.role === 'user' ? '#00c9a7' : '#1a1a1a',
-                color: m.role === 'user' ? '#000' : '#e5e7eb',
+                background: m.role === 'user' ? '#3E9C7E' : '#fff',
+                color: m.role === 'user' ? '#fff' : '#1a1a1a',
                 borderBottomRightRadius: m.role === 'user' ? 4 : undefined,
                 borderBottomLeftRadius: m.role === 'assistant' ? 4 : undefined,
               }}
@@ -417,10 +417,10 @@ export default function Coach({ data, onNav }) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl px-4 py-3" style={{ background: '#1a1a1a', borderBottomLeftRadius: 4 }}>
+            <div className="rounded-2xl px-4 py-3" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderBottomLeftRadius: 4 }}>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-gray-600"
+                  <div key={i} className="w-2 h-2 rounded-full bg-[#cabfa9]"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
                 ))}
               </div>
@@ -434,11 +434,11 @@ export default function Coach({ data, onNav }) {
       {activeTab === 'chat' &&
       <div
         className="fixed bottom-0 left-0 right-0 px-4 pb-safe pt-2"
-        style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(12px)', borderTop: '1px solid #1a1a1a' }}
+        style={{ background: 'rgba(246,241,233,0.95)', backdropFilter: 'blur(12px)', borderTop: '1px solid #ece3d4' }}
       >
         <div className="flex gap-2 items-end pb-16">
           <textarea
-            className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-4 py-3 text-white text-sm outline-none resize-none focus:border-[#00c9a7]"
+            className="flex-1 bg-white border border-[#ece3d4] rounded-2xl px-4 py-3 text-[#1a1a1a] text-sm outline-none resize-none focus:border-[#3E9C7E]"
             rows={1}
             placeholder="Ask your coach..."
             value={input}
@@ -450,9 +450,9 @@ export default function Coach({ data, onNav }) {
             onClick={() => send()}
             disabled={!input.trim() || loading}
             className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity disabled:opacity-40"
-            style={{ background: '#00c9a7' }}
+            style={{ background: '#3E9C7E' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth={2.5} className="w-5 h-5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m-7 7l7-7 7 7" />
             </svg>
           </button>

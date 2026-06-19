@@ -106,7 +106,7 @@ export function detectAlerts(data) {
 }
 
 export function getAlertColor(severity) {
-  return severity === 'danger' ? '#ef4444' : '#f59e0b'
+  return severity === 'danger' ? '#ef4444' : '#D9A23F'
 }
 
 // ── Alert calibration ───────────────────────────────────────────────────────

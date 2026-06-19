@@ -1,7 +1,7 @@
 import { useState, useEffect, useId } from 'react'
 
 export default function ScoreRing({
-  score, max = 100, color = '#00c9a7',
+  score, max = 100, color = '#3E9C7E',
   size = 140, strokeWidth = 10,
   label, sublabel, unit = '',
 }) {
@@ -39,7 +39,7 @@ export default function ScoreRing({
   }, [score])
 
   // Gradient: 70-unit lighter shade → full color
-  const hex = (color || '#00c9a7').replace('#', '').padEnd(6, '0')
+  const hex = (color || '#3E9C7E').replace('#', '').padEnd(6, '0')
   const pr = parseInt(hex.slice(0, 2), 16)
   const pg = parseInt(hex.slice(2, 4), 16)
   const pb = parseInt(hex.slice(4, 6), 16)
@@ -57,7 +57,7 @@ export default function ScoreRing({
           </linearGradient>
         </defs>
         {/* Track */}
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke="#1e1e1e" strokeWidth={strokeWidth} />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke="#EAE2D2" strokeWidth={strokeWidth} />
         {/* Animated fill arc */}
         <circle
           cx={cx} cy={cx} r={r}
@@ -72,8 +72,8 @@ export default function ScoreRing({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="font-bold text-white leading-none"
-          style={{ fontSize: size * 0.22, fontVariantNumeric: 'tabular-nums' }}
+          className="font-bold leading-none"
+          style={{ fontSize: size * 0.22, fontVariantNumeric: 'tabular-nums', color: '#1a1a1a' }}
         >
           {display}{unit}
         </span>
@@ -83,7 +83,7 @@ export default function ScoreRing({
           </span>
         )}
         {sublabel && (
-          <span className="text-gray-500 mt-0.5" style={{ fontSize: size * 0.075 }}>
+          <span className="mt-0.5" style={{ fontSize: size * 0.075, color: '#9a8f7e' }}>
             {sublabel}
           </span>
         )}

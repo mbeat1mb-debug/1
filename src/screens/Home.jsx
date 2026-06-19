@@ -24,9 +24,9 @@ import { getEntryForDate, getAllTags } from '../lib/storage'
 function Pill({ label, value, unit = '' }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: '#4a4a4a' }}>{label}</span>
-      <span className="font-bold leading-tight tabular" style={{ fontSize: 15, color: '#e8e8e8' }}>
-        {value}{unit && <span className="font-normal ml-0.5" style={{ fontSize: 11, color: '#444' }}>{unit}</span>}
+      <span className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: '#9a8f7e' }}>{label}</span>
+      <span className="font-bold leading-tight tabular" style={{ fontSize: 15, color: '#1a1a1a' }}>
+        {value}{unit && <span className="font-normal ml-0.5" style={{ fontSize: 11, color: '#9a8f7e' }}>{unit}</span>}
       </span>
     </div>
   )
@@ -34,7 +34,7 @@ function Pill({ label, value, unit = '' }) {
 
 function VelocityBadge({ value }) {
   if (value === null || value === undefined) return null
-  const color = value > 0 ? '#00c9a7' : value < 0 ? '#ef4444' : '#888'
+  const color = value > 0 ? '#3E9C7E' : value < 0 ? '#ef4444' : '#9a8f7e'
   const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '→'
   return (
     <span className="text-xs font-bold ml-1" style={{ color }}>
@@ -48,8 +48,8 @@ function GripIcon() {
     <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
       {[6, 10, 14].map(y => (
         <g key={y}>
-          <circle cx={8} cy={y} r={1.2} fill="#555" />
-          <circle cx={16} cy={y} r={1.2} fill="#555" />
+          <circle cx={8} cy={y} r={1.2} fill="#b3a890" />
+          <circle cx={16} cy={y} r={1.2} fill="#b3a890" />
         </g>
       ))}
     </svg>
@@ -66,7 +66,7 @@ function RecoveryContent({ data }) {
   return (
     <>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recovery</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Recovery</span>
         <div className="flex items-center gap-1">
           <VelocityBadge value={recoveryVelocity} />
           <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: color + '22', color }}>{label}</span>
@@ -88,7 +88,7 @@ function RecoveryContent({ data }) {
 
 function StrainContent({ data }) {
   const { strainScore = 0, calories = 0, activeMinutes = 0, steps = 0, trainingLoad, strainVelocity } = data
-  const tsbColor = trainingLoad ? getTrainingLoadColor(trainingLoad.tsb) : '#3b82f6'
+  const tsbColor = trainingLoad ? getTrainingLoadColor(trainingLoad.tsb) : '#D98E3F'
   const heightCm = getUserHeightCm()
   const units = getUserUnits()
   const distanceKm = calculateDistance(steps, heightCm)
@@ -98,14 +98,14 @@ function StrainContent({ data }) {
   return (
     <>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Strain</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Strain</span>
         <div className="flex items-center gap-1">
           <VelocityBadge value={strainVelocity} />
-          <span className="text-xs text-gray-500">0 – 21</span>
+          <span className="text-xs text-[#9a8f7e]">0 – 21</span>
         </div>
       </div>
       <div className="flex items-center gap-5">
-        <ScoreRing score={strainScore} max={21} color="#3b82f6" size={100} strokeWidth={9} />
+        <ScoreRing score={strainScore} max={21} color="#D98E3F" size={100} strokeWidth={9} />
         <div className="flex-1 space-y-3">
           <Pill label="Calories" value={calories.toLocaleString()} unit="kcal" />
           <Pill label="Active" value={activeMinutes} unit="min" />
@@ -114,7 +114,7 @@ function StrainContent({ data }) {
             : <Pill label="Steps" value={steps.toLocaleString()} />}
           {trainingLoad && (
             <div className="flex flex-col">
-              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Form</span>
+              <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider">Form</span>
               <span className="text-sm font-semibold" style={{ color: tsbColor }}>{trainingLoad.form}</span>
             </div>
           )}
@@ -126,12 +126,12 @@ function StrainContent({ data }) {
 
 function SleepContent({ data }) {
   const { sleepScore = 0, todaySleep, todayBR = 0 } = data
-  const sleepColor = sleepScore >= 75 ? '#8b5cf6' : sleepScore >= 50 ? '#f59e0b' : '#ef4444'
+  const sleepColor = sleepScore >= 75 ? '#9B7FD4' : sleepScore >= 50 ? '#D98E3F' : '#ef4444'
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
   return (
     <>
       <div className="mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Sleep</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Sleep</span>
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={sleepScore} color={sleepColor} size={100} strokeWidth={9} unit="%" />
@@ -152,13 +152,13 @@ function StressContent({ data }) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Stress Monitor</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Stress Monitor</span>
         <div className="flex items-baseline gap-2 mt-2">
           <span className="text-3xl font-bold" style={{ color }}>{stressScore}</span>
           <span className="text-sm font-bold" style={{ color }}>{label}</span>
           <VelocityBadge value={stressVelocity !== undefined ? -stressVelocity : null} />
         </div>
-        <span className="text-xs text-gray-600 mt-1 block">HRV vs 14-day baseline</span>
+        <span className="text-xs text-[#9a8f7e] mt-1 block">HRV vs 14-day baseline</span>
       </div>
       <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: color + '15' }}>
         <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} className="w-8 h-8">
@@ -173,8 +173,8 @@ function RecordsContent() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Records & History</span>
-        <p className="text-gray-300 text-sm mt-1">PRs, streaks, 90-day calendar</p>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Records & History</span>
+        <p className="text-[#5c5648] text-sm mt-1">PRs, streaks, 90-day calendar</p>
       </div>
       <span className="text-2xl">🏆</span>
     </div>
@@ -195,16 +195,16 @@ function ChronosContent({ data }) {
     hrvHistory,
   }) : null
   const diff = physAge !== null ? physAge - userAge : null
-  const color = diff === null ? '#888' : diff <= -3 ? '#00c9a7' : diff <= 0 ? '#3b82f6' : diff <= 3 ? '#f59e0b' : '#ef4444'
+  const color = diff === null ? '#9a8f7e' : diff <= -3 ? '#3E9C7E' : diff <= 0 ? '#9B7FD4' : diff <= 3 ? '#D98E3F' : '#ef4444'
 
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Chronos</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Chronos</span>
         {physAge !== null ? (
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold" style={{ color }}>{physAge}</span>
-            <span className="text-sm text-gray-400">body age</span>
+            <span className="text-sm text-[#9a8f7e]">body age</span>
             {diff !== null && (
               <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: color + '20', color }}>
                 {diff < 0 ? `${Math.abs(diff)}y younger` : diff > 0 ? `${diff}y older` : 'On track'}
@@ -212,7 +212,7 @@ function ChronosContent({ data }) {
             )}
           </div>
         ) : (
-          <p className="text-gray-300 text-sm mt-1">Biological age & pace of aging</p>
+          <p className="text-[#5c5648] text-sm mt-1">Biological age & pace of aging</p>
         )}
       </div>
       <span className="text-2xl">⏳</span>
@@ -226,8 +226,8 @@ function WeeklyPatternContent({ data }) {
     return (
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Pattern</span>
-          <p className="text-gray-600 text-sm mt-1">Needs 4+ weeks of synced data</p>
+          <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Pattern</span>
+          <p className="text-[#9a8f7e] text-sm mt-1">Needs 4+ weeks of synced data</p>
         </div>
         <span className="text-2xl">📊</span>
       </div>
@@ -241,12 +241,12 @@ function WeeklyPatternContent({ data }) {
   return (
     <>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Weekly Pattern</span>
-        <span className="text-xs text-gray-600">Avg Recovery</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Pattern</span>
+        <span className="text-xs text-[#9a8f7e]">Avg Recovery</span>
       </div>
       <div className="flex items-end gap-1 h-12">
         {weeklyPattern.map(d => {
-          const color = d.avgRecovery != null ? getRecoveryColor(d.avgRecovery) : '#333'
+          const color = d.avgRecovery != null ? getRecoveryColor(d.avgRecovery) : '#cabfa9'
           const height = d.avgRecovery != null ? Math.max(16, (d.avgRecovery / maxVal) * 44) : 6
           return (
             <div key={d.day} className="flex flex-col items-center flex-1 gap-1">
@@ -254,16 +254,16 @@ function WeeklyPatternContent({ data }) {
                 className="w-full rounded-sm transition-all"
                 style={{ height: `${height}px`, background: color + (d.count ? 'cc' : '44') }}
               />
-              <span className="text-[9px] text-gray-600">{d.day}</span>
+              <span className="text-[9px] text-[#9a8f7e]">{d.day}</span>
             </div>
           )
         })}
       </div>
       {best && worst && best.day !== worst.day && (
-        <p className="text-xs text-gray-600 mt-2">
-          Best: <span className="text-white">{best.day} ({best.avgRecovery}%)</span>
+        <p className="text-xs text-[#9a8f7e] mt-2">
+          Best: <span className="text-[#1a1a1a]">{best.day} ({best.avgRecovery}%)</span>
           {' · '}
-          Worst: <span className="text-white">{worst.day} ({worst.avgRecovery}%)</span>
+          Worst: <span className="text-[#1a1a1a]">{worst.day} ({worst.avgRecovery}%)</span>
         </p>
       )}
     </>
@@ -282,18 +282,18 @@ function JournalContent() {
     return (
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Journal</span>
+          <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Journal</span>
           <div className="flex items-center gap-2 mt-1">
             {topEmojis.length > 0 && <span className="text-base leading-none">{topEmojis.join('')}</span>}
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-[#9a8f7e]">
               {loggedIds.length > 0 ? `${loggedIds.length} logged` : ''}
               {loggedIds.length > 0 && hasEnergy ? ' · ' : ''}
               {hasEnergy ? `energy ${entry.energy}/5` : ''}
             </span>
           </div>
         </div>
-        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00c9a720' }}>
-          <span className="text-sm" style={{ color: '#00c9a7' }}>✓</span>
+        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#3E9C7E20' }}>
+          <span className="text-sm" style={{ color: '#3E9C7E' }}>✓</span>
         </div>
       </div>
     )
@@ -302,10 +302,10 @@ function JournalContent() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Journal</span>
-        <p className="text-gray-500 text-sm mt-1">Nothing logged today</p>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Journal</span>
+        <p className="text-[#9a8f7e] text-sm mt-1">Nothing logged today</p>
       </div>
-      <span className="text-sm font-medium flex-shrink-0" style={{ color: '#00c9a7' }}>+</span>
+      <span className="text-sm font-medium flex-shrink-0" style={{ color: '#3E9C7E' }}>+</span>
     </div>
   )
 }
@@ -320,22 +320,22 @@ function TrendsContent({ data }) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Trends</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Trends</span>
         <div className="flex items-center gap-3 mt-2">
           {avgRec7 != null && (
             <div>
-              <span className="text-[10px] text-gray-600 uppercase tracking-wider block">7d Avg Recovery</span>
+              <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">7d Avg Recovery</span>
               <span className="text-xl font-bold" style={{ color: getRecoveryColor(avgRec7) }}>{avgRec7}%</span>
             </div>
           )}
           {scatterCount > 0 && (
             <div>
-              <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Days Tracked</span>
-              <span className="text-xl font-bold text-white">{scatterCount}</span>
+              <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">Days Tracked</span>
+              <span className="text-xl font-bold text-[#1a1a1a]">{scatterCount}</span>
             </div>
           )}
         </div>
-        <p className="text-xs text-gray-600 mt-1">HRV, RHR, VO₂, Recovery × Strain</p>
+        <p className="text-xs text-[#9a8f7e] mt-1">HRV, RHR, VO₂, Recovery × Strain</p>
       </div>
       <span className="text-2xl">📈</span>
     </div>
@@ -353,8 +353,8 @@ function InsightsContent() {
     return (
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
-          <p className="text-gray-600 text-sm mt-1">Analyzing patterns…</p>
+          <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Insights</span>
+          <p className="text-[#9a8f7e] text-sm mt-1">Analyzing patterns…</p>
         </div>
         <span className="text-2xl">🔬</span>
       </div>
@@ -365,8 +365,8 @@ function InsightsContent() {
     return (
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
-          <p className="text-gray-600 text-sm mt-1">Log 14+ days to see patterns</p>
+          <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Insights</span>
+          <p className="text-[#9a8f7e] text-sm mt-1">Log 14+ days to see patterns</p>
         </div>
         <span className="text-2xl">🔬</span>
       </div>
@@ -376,16 +376,16 @@ function InsightsContent() {
   return (
     <>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Insights</span>
-        <span className="text-xs text-gray-600">vs avg recovery</span>
+        <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Insights</span>
+        <span className="text-xs text-[#9a8f7e]">vs avg recovery</span>
       </div>
       <div className="space-y-2">
         {correlations.slice(0, 3).map(c => {
           const isPositive = c.diff > 0
-          const color = isPositive ? '#00c9a7' : '#ef4444'
+          const color = isPositive ? '#3E9C7E' : '#ef4444'
           return (
             <div key={c.tagId} className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">{c.emoji} {c.label}</span>
+              <span className="text-sm text-[#5c5648]">{c.emoji} {c.label}</span>
               <span className="text-sm font-bold" style={{ color }}>
                 {isPositive ? '+' : ''}{c.diff}%
               </span>
@@ -420,30 +420,30 @@ function WeeklySummary({ data }) {
   ) / 10
   const totalStrain = thisWeek.filter(d => d.strain > 0).reduce((a, d) => a + d.strain, 0)
   const color = getRecoveryColor(avgRecovery)
-  const azmColor = weeklyAZM >= 300 ? '#00c9a7' : weeklyAZM >= 150 ? '#f59e0b' : '#ef4444'
+  const azmColor = weeklyAZM >= 300 ? '#3E9C7E' : weeklyAZM >= 150 ? '#D98E3F' : '#ef4444'
 
   return (
     <div className="mx-4 mb-1 rounded-2xl p-4" style={{ background: color + '08', border: `1px solid ${color}25` }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-bold tracking-widest uppercase" style={{ color }}>This Week</span>
-        <span className="text-xs text-gray-600">{thisWeek.length} days</span>
+        <span className="text-xs text-[#9a8f7e]">{thisWeek.length} days</span>
       </div>
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Recovery</span>
+          <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">Avg Recovery</span>
           <span className="text-xl font-bold" style={{ color }}>{avgRecovery}%</span>
         </div>
         <div>
-          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Best Day</span>
-          <span className="text-xl font-bold text-white">{bestDay}</span>
+          <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">Best Day</span>
+          <span className="text-xl font-bold text-[#1a1a1a]">{bestDay}</span>
         </div>
         <div>
-          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">Avg Sleep</span>
-          <span className="text-xl font-bold text-white">{avgSleepH > 0 ? `${avgSleepH}h` : '--'}</span>
+          <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">Avg Sleep</span>
+          <span className="text-xl font-bold text-[#1a1a1a]">{avgSleepH > 0 ? `${avgSleepH}h` : '--'}</span>
         </div>
         <div>
-          <span className="text-[10px] text-gray-600 uppercase tracking-wider block">AZM</span>
-          <span className="text-xl font-bold" style={{ color: weeklyAZM > 0 ? azmColor : '#555' }}>
+          <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider block">AZM</span>
+          <span className="text-xl font-bold" style={{ color: weeklyAZM > 0 ? azmColor : '#9a8f7e' }}>
             {weeklyAZM > 0 ? weeklyAZM : '--'}
           </span>
         </div>
@@ -462,15 +462,15 @@ function CalibrationBanner({ daysOfData }) {
     : 'Scores are reliable — fine-tuning with each new day.'
 
   return (
-    <div className="mx-4 mb-1 rounded-xl px-4 py-3" style={{ background: '#1a1600', border: '1px solid #f59e0b33' }}>
+    <div className="mx-4 mb-1 rounded-xl px-4 py-3" style={{ background: '#FBF0DC', border: '1px solid #D98E3F33' }}>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">Calibrating</span>
-        <span className="text-xs text-gray-600">{daysOfData} / 14 days</span>
+        <span className="text-xs text-[#9a8f7e]">{daysOfData} / 14 days</span>
       </div>
-      <div className="h-1.5 rounded-full bg-[#222] overflow-hidden mb-2">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: '#f59e0b' }} />
+      <div className="h-1.5 rounded-full bg-[#EAE2D2] overflow-hidden mb-2">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: '#D98E3F' }} />
       </div>
-      <p className="text-xs text-gray-500">{msg}</p>
+      <p className="text-xs text-[#9a8f7e]">{msg}</p>
     </div>
   )
 }
@@ -499,12 +499,12 @@ function SetupCard({ onNav }) {
   }
 
   return (
-    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Finish Setup</span>
+        <span className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest">Finish Setup</span>
         <button
           onClick={handleDismiss}
-          className="text-gray-600 text-lg leading-none px-1 transition-opacity active:opacity-50"
+          className="text-[#9a8f7e] text-lg leading-none px-1 transition-opacity active:opacity-50"
           aria-label="Dismiss setup card"
           style={{ lineHeight: 1 }}
         >
@@ -518,13 +518,13 @@ function SetupCard({ onNav }) {
             <div key={row.label} className="flex items-center gap-2">
               <span
                 className="text-sm font-bold w-4 text-center flex-shrink-0"
-                style={{ color: present ? '#00c9a7' : '#444' }}
+                style={{ color: present ? '#3E9C7E' : '#cabfa9' }}
               >
                 {present ? '✓' : '○'}
               </span>
               <span
                 className="text-sm"
-                style={{ color: present ? '#555' : '#ccc' }}
+                style={{ color: present ? '#9a8f7e' : '#1a1a1a' }}
               >
                 {row.label}
               </span>
@@ -535,7 +535,7 @@ function SetupCard({ onNav }) {
       <button
         onClick={() => onNav('settings')}
         className="text-xs font-semibold transition-opacity active:opacity-60"
-        style={{ color: '#00c9a7' }}
+        style={{ color: '#3E9C7E' }}
       >
         Open Settings →
       </button>
@@ -588,17 +588,17 @@ function ReadinessCard({ data }) {
 function getCardGlowColor(id, data) {
   switch (id) {
     case 'recovery':   return data.recoveryScore != null ? getRecoveryColor(data.recoveryScore) : null
-    case 'strain':     return '#3b82f6'
+    case 'strain':     return '#D98E3F'
     case 'sleep': {
       const s = data.sleepScore
       if (s == null) return null
-      return s >= 75 ? '#8b5cf6' : s >= 50 ? '#f59e0b' : '#ef4444'
+      return s >= 75 ? '#9B7FD4' : s >= 50 ? '#D98E3F' : '#ef4444'
     }
     case 'stress':     return data.stressScore != null ? getStressColor(data.stressScore) : null
     case 'journal':    return '#C9A84C'
-    case 'chronos':    return '#00c9a7'
+    case 'chronos':    return '#3E9C7E'
     case 'records':    return '#C9A84C'
-    case 'trends':     return '#3b82f6'
+    case 'trends':     return '#D98E3F'
     default:           return null
   }
 }
@@ -618,10 +618,10 @@ function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimi
 
   const glowColor = !editing ? getCardGlowColor(id, data) : null
   const cardStyle = {
-    background: 'linear-gradient(160deg, #141414, #0f0f0f)',
-    border: glowColor ? `1px solid ${glowColor}28` : '1px solid #1e1e1e',
+    background: '#fff',
+    border: glowColor ? `1px solid ${glowColor}28` : '1px solid #ece3d4',
     borderStyle: id === 'journal' ? 'dashed' : 'solid',
-    boxShadow: glowColor ? `0 0 24px ${glowColor}0e, 0 1px 0 ${glowColor}18 inset` : undefined,
+    boxShadow: glowColor ? `0 0 24px ${glowColor}0e, 0 1px 0 ${glowColor}18 inset, 0 4px 18px rgba(0,0,0,0.05)` : '0 4px 18px rgba(0,0,0,0.05)',
     animation: !editing ? `cardIn 0.38s cubic-bezier(0.33, 1, 0.68, 1) ${(idx ?? 0) * 50}ms both` : undefined,
   }
 
@@ -632,7 +632,7 @@ function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimi
           {editing && (
             <div
               className="flex items-center justify-center px-3 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none select-none"
-              style={{ background: '#1a1a1a', borderRight: '1px solid #222' }}
+              style={{ background: '#F6F1E9', borderRight: '1px solid #ece3d4' }}
               {...attributes}
               {...listeners}
             >
@@ -647,7 +647,7 @@ function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimi
             {minimized ? (
               <div className="flex items-center gap-2 py-0.5">
                 <span className="text-base">{meta?.emoji}</span>
-                <span className="text-sm font-semibold text-gray-400">{meta?.label}</span>
+                <span className="text-sm font-semibold text-[#9a8f7e]">{meta?.label}</span>
               </div>
             ) : (
               <Content data={data} />
@@ -657,11 +657,11 @@ function SortableCard({ id, idx, editing, onNav, data, minimized, onToggleMinimi
             <button
               onClick={e => { e.stopPropagation(); onToggleMinimized(id) }}
               className="flex items-center justify-center px-3 flex-shrink-0 transition-opacity active:opacity-60"
-              style={{ borderLeft: '1px solid #1a1a1a' }}
+              style={{ borderLeft: '1px solid #ece3d4' }}
               aria-label={minimized ? 'Expand' : 'Minimize'}
             >
               <svg
-                viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth={2.5}
+                viewBox="0 0 24 24" fill="none" stroke="#cabfa9" strokeWidth={2.5}
                 className="w-4 h-4 transition-transform duration-200"
                 style={{ transform: minimized ? 'rotate(0deg)' : 'rotate(180deg)' }}
               >
@@ -768,6 +768,8 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       style={{
+        background: '#F6F1E9',
+        minHeight: '100vh',
         transform: pullY > 0 ? `translateY(${pullY}px)` : undefined,
         transition: pullY === 0 ? 'transform 0.2s ease' : undefined,
       }}
@@ -780,19 +782,19 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
             top: 0,
             paddingTop: 'max(10px, env(safe-area-inset-top))',
             paddingBottom: 10,
-            background: 'rgba(0,0,0,0.88)',
+            background: 'rgba(246,241,233,0.88)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: '1px solid #1a1a1a',
+            borderBottom: '1px solid #ece3d4',
           }}
         >
           <span style={{ fontFamily: 'Georgia, serif', color: '#C9A84C', fontWeight: 700, fontSize: 18 }}>Σ</span>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full" style={{ background: recoveryColor }} />
-            <span className="text-sm font-bold text-white tabular">{data.recoveryScore || '--'}%</span>
-            <span className="text-xs text-gray-500">Recovery</span>
+            <span className="text-sm font-bold text-[#1a1a1a] tabular">{data.recoveryScore || '--'}%</span>
+            <span className="text-xs text-[#9a8f7e]">Recovery</span>
           </div>
-          <span className="text-[10px] text-gray-600">{lastSyncedAt || ''}</span>
+          <span className="text-[10px] text-[#9a8f7e]">{lastSyncedAt || ''}</span>
         </div>
       )}
       {(pullY > 0 || isSyncing) && (
@@ -801,7 +803,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
           style={{ opacity: isSyncing ? 1 : pullY / PULL_THRESHOLD, transition: 'opacity 0.15s ease' }}
         >
           <svg
-            viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth={2}
+            viewBox="0 0 24 24" fill="none" stroke="#3E9C7E" strokeWidth={2}
             className={`w-5 h-5 ${isSyncing ? 'spin' : ''}`}
             style={!isSyncing ? { transform: `rotate(${(pullY / PULL_THRESHOLD) * 180}deg)` } : undefined}
           >
@@ -812,16 +814,16 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       {/* Header */}
       <div className="flex items-center justify-between pt-2 pb-1 px-4">
         <div>
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
+          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
           <h1 className="text-xl font-bold" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</h1>
           {!editing && (
-            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: syncFailed ? '#f59e0b' : '#444' }}>
+            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: syncFailed ? '#D98E3F' : '#9a8f7e' }}>
               {isSyncing && (
                 <span
                   className="animate-pulse-ring inline-block rounded-full flex-shrink-0"
-                  style={{ width: 6, height: 6, background: '#00c9a7' }}
+                  style={{ width: 6, height: 6, background: '#3E9C7E' }}
                 />
               )}
               {isSyncing
@@ -834,7 +836,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
             </p>
           )}
           {!editing && localStorage.getItem('sync_debug_error') && (
-            <p className="text-[10px] mt-0.5 max-w-[220px] break-words" style={{ color: '#f59e0b' }}>
+            <p className="text-[10px] mt-0.5 max-w-[220px] break-words" style={{ color: '#D98E3F' }}>
               {localStorage.getItem('sync_debug_error')}
             </p>
           )}
@@ -844,11 +846,12 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
             <button
               onClick={onRefresh}
               disabled={isSyncing}
-              className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center"
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
               aria-label="Refresh data"
             >
               <svg
-                viewBox="0 0 24 24" fill="none" stroke={syncFailed ? '#f59e0b' : '#888'} strokeWidth={2}
+                viewBox="0 0 24 24" fill="none" stroke={syncFailed ? '#D98E3F' : '#7d7363'} strokeWidth={2}
                 className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
                 style={isSyncing ? { animationDirection: 'reverse' } : {}}
               >
@@ -860,20 +863,21 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
             onClick={() => editing ? finishEditing() : setEditing(true)}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
             style={{
-              background: editing ? '#00c9a7' : '#1a1a1a',
-              color: editing ? '#000' : '#888',
-              border: editing ? 'none' : '1px solid #2a2a2a',
+              background: editing ? '#3E9C7E' : '#fff',
+              color: editing ? '#fff' : '#7d7363',
+              border: editing ? 'none' : '1px solid #ece3d4',
+              boxShadow: editing ? undefined : '0 2px 8px rgba(0,0,0,0.06)',
             }}
           >
             {editing ? 'Done' : 'Edit Layout'}
           </button>
-          <button onClick={() => onNav('coach')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="AI Coach">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+          <button onClick={() => onNav('coach')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} aria-label="AI Coach">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </button>
-          <button onClick={() => onNav('settings')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center" aria-label="Settings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+          <button onClick={() => onNav('settings')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
               <circle cx="12" cy="12" r="3" />
               <path strokeLinecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
@@ -885,7 +889,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
       {!editing && <SetupCard onNav={onNav} />}
 
       {editing && (
-        <p className="text-center text-xs text-gray-600 pb-2">Hold grip to reorder · Chevron to minimize</p>
+        <p className="text-center text-xs text-[#9a8f7e] pb-2">Hold grip to reorder · Chevron to minimize</p>
       )}
 
       {/* Readiness headline */}
@@ -930,7 +934,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
         <DragOverlay>
           {activeId && ActiveContent ? (
-            <div className="rounded-2xl p-4 opacity-90 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid #00c9a755' }}>
+            <div className="rounded-2xl p-4 opacity-90 shadow-2xl" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E55' }}>
               <ActiveContent data={data} />
             </div>
           ) : null}

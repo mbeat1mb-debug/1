@@ -59,7 +59,7 @@ export default function BottomNav({ active, onChange }) {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 pb-safe"
-      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid #1a1a1a' }}
+      style={{ background: 'rgba(251,248,242,0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid #ece3d4' }}
     >
       <div className="relative flex items-center justify-around px-2 pt-2 pb-1">
         {/* Sliding active background pill */}
@@ -69,7 +69,7 @@ export default function BottomNav({ active, onChange }) {
             style={{
               width: `${100 / TABS.length}%`,
               left: `${(activeIdx / TABS.length) * 100}%`,
-              background: '#00c9a712',
+              background: '#3E9C7E12',
             }}
           />
         )}
@@ -81,7 +81,7 @@ export default function BottomNav({ active, onChange }) {
               key={id}
               onClick={() => handleTap(id)}
               className="relative flex flex-col items-center gap-0.5 px-2 py-1"
-              style={{ color: isActive ? '#00c9a7' : '#555', minWidth: 44, zIndex: 1 }}
+              style={{ color: isActive ? '#3E9C7E' : '#cabfa9', minWidth: 44, zIndex: 1 }}
             >
               <div style={{ transition: 'transform 0.15s ease', transform: isActive ? 'scale(1.1)' : 'scale(1)' }}>
                 <Icon active={isActive} />
@@ -91,7 +91,7 @@ export default function BottomNav({ active, onChange }) {
               {isActive && (
                 <span
                   className="nav-pip absolute -bottom-0.5 block rounded-full"
-                  style={{ width: 4, height: 4, background: '#00c9a7' }}
+                  style={{ width: 4, height: 4, background: '#3E9C7E' }}
                 />
               )}
             </button>

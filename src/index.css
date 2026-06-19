@@ -5,8 +5,8 @@
 * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 
 html, body {
-  background: #000;
-  color: #fff;
+  background: #F6F1E9;
+  color: #1a1a1a;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;

@@ -130,9 +130,9 @@ function PushNotificationsSection() {
 
   if (!pushSupported) {
     return (
-      <div className="rounded-2xl p-4 space-y-2" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-sm font-semibold text-white">Push Notifications</p>
-        <p className="text-xs text-gray-500">
+      <div className="rounded-2xl p-4 space-y-2" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-sm font-semibold text-[#1a1a1a]">Push Notifications</p>
+        <p className="text-xs text-[#9a8f7e]">
           Add this app to your Home Screen first (Share → Add to Home Screen), then push notifications will be available.
         </p>
       </div>
@@ -140,26 +140,26 @@ function PushNotificationsSection() {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-4" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">Push Notifications</p>
-          <p className="text-xs mt-0.5" style={{ color: subscribed ? '#00c9a7' : '#888' }}>
+          <p className="text-sm font-semibold text-[#1a1a1a]">Push Notifications</p>
+          <p className="text-xs mt-0.5" style={{ color: subscribed ? '#3E9C7E' : '#9a8f7e' }}>
             {subscribed ? '● Active — fires even when app is closed' : '○ Not set up'}
           </p>
         </div>
         {subscribed && (
-          <button onClick={handleUnsubscribe} className="text-xs text-red-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">
+          <button onClick={handleUnsubscribe} className="text-xs text-red-500 px-3 py-1.5 rounded-xl bg-[#F6F1E9]">
             Remove
           </button>
         )}
       </div>
 
       {subscriptionLost && (
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#1a0a0a', border: '1px solid #3a1a1a' }}>
-          <p className="text-xs text-red-400 font-semibold">Push notifications have stopped working</p>
-          <p className="text-[11px] text-gray-500">
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#ef444414', border: '1px solid #ef444440' }}>
+          <p className="text-xs text-red-500 font-semibold">Push notifications have stopped working</p>
+          <p className="text-[11px] text-[#9a8f7e]">
             Your browser subscription expired or was revoked — scheduled briefs and health alerts are no longer being delivered. Tap below to re-enable.
           </p>
           <button
@@ -176,11 +176,11 @@ function PushNotificationsSection() {
       {/* Morning toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-white">🌅 Morning Brief</span>
+          <span className="text-sm text-[#1a1a1a]">🌅 Morning Brief</span>
           <button
             onClick={() => setPrefs(p => ({ ...p, morningEnabled: !p.morningEnabled }))}
             className="w-10 h-6 rounded-full transition-colors relative"
-            style={{ background: prefs.morningEnabled ? '#00c9a7' : '#333' }}
+            style={{ background: prefs.morningEnabled ? '#3E9C7E' : '#EAE2D2' }}
           >
             <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
               style={{ left: prefs.morningEnabled ? '22px' : '4px' }} />
@@ -190,7 +190,7 @@ function PushNotificationsSection() {
           <select
             value={prefs.morningTime}
             onChange={e => setPrefs(p => ({ ...p, morningTime: e.target.value }))}
-            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+            className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
           >
             {MORNING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -200,11 +200,11 @@ function PushNotificationsSection() {
       {/* Evening toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-white">🌙 Nightly Wind-Down</span>
+          <span className="text-sm text-[#1a1a1a]">🌙 Nightly Wind-Down</span>
           <button
             onClick={() => setPrefs(p => ({ ...p, eveningEnabled: !p.eveningEnabled }))}
             className="w-10 h-6 rounded-full transition-colors relative"
-            style={{ background: prefs.eveningEnabled ? '#00c9a7' : '#333' }}
+            style={{ background: prefs.eveningEnabled ? '#3E9C7E' : '#EAE2D2' }}
           >
             <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
               style={{ left: prefs.eveningEnabled ? '22px' : '4px' }} />
@@ -214,7 +214,7 @@ function PushNotificationsSection() {
           <select
             value={prefs.eveningTime}
             onChange={e => setPrefs(p => ({ ...p, eveningTime: e.target.value }))}
-            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+            className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
           >
             {EVENING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -225,13 +225,13 @@ function PushNotificationsSection() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-sm text-white">💤 Bedtime Reminder</span>
-            <p className="text-[11px] text-gray-600 mt-0.5">30-min heads-up before your target bedtime</p>
+            <span className="text-sm text-[#1a1a1a]">💤 Bedtime Reminder</span>
+            <p className="text-[11px] text-[#b3a890] mt-0.5">30-min heads-up before your target bedtime</p>
           </div>
           <button
             onClick={() => setPrefs(p => ({ ...p, winddownEnabled: !p.winddownEnabled }))}
             className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
-            style={{ background: prefs.winddownEnabled ? '#8b5cf6' : '#333' }}
+            style={{ background: prefs.winddownEnabled ? '#8b5cf6' : '#EAE2D2' }}
           >
             <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
               style={{ left: prefs.winddownEnabled ? '22px' : '4px' }} />
@@ -242,15 +242,15 @@ function PushNotificationsSection() {
             <select
               value={prefs.winddownTime || '22:00'}
               onChange={e => setPrefs(p => ({ ...p, winddownTime: e.target.value }))}
-              className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+              className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
             >
               {WINDDOWN_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
-            <div className="rounded-xl p-3" style={{ background: '#1a0f2e', border: '1px solid #3a2a5e' }}>
-              <p className="text-xs text-purple-400 font-semibold mb-1">Requires Vercel Pro plan</p>
-              <p className="text-[11px] text-gray-600">Wind-down uses a 3rd cron job. Add to vercel.json:</p>
+            <div className="rounded-xl p-3" style={{ background: '#8b5cf614', border: '1px solid #8b5cf640' }}>
+              <p className="text-xs text-[#8b5cf6] font-semibold mb-1">Requires Vercel Pro plan</p>
+              <p className="text-[11px] text-[#b3a890]">Wind-down uses a 3rd cron job. Add to vercel.json:</p>
               {winddownCron && (
-                <pre className="text-[11px] font-mono text-green-400 mt-1 overflow-x-auto">
+                <pre className="text-[11px] font-mono text-[#3E9C7E] mt-1 overflow-x-auto" style={{ background: '#F6F1E9', borderRadius: '8px', padding: '8px' }}>
                   {`{"path": "/api/push-scheduled?type=winddown", "schedule": "${winddownCron}"}`}
                 </pre>
               )}
@@ -260,20 +260,20 @@ function PushNotificationsSection() {
       </div>
 
       {/* Health alerts */}
-      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
-        <p className="text-xs text-gray-500 uppercase tracking-wider pt-1">Health Alerts</p>
+      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
+        <p className="text-xs text-[#9a8f7e] uppercase tracking-wider pt-1">Health Alerts</p>
         {[
           { key: 'alertsEnabled', label: 'Illness & Red-Zone Alerts', desc: 'Pushes immediately when an illness signal or 3+ day low recovery streak is detected' },
         ].map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-white">{label}</span>
-              <p className="text-[11px] text-gray-600">{desc}</p>
+              <span className="text-sm text-[#1a1a1a]">{label}</span>
+              <p className="text-[11px] text-[#b3a890]">{desc}</p>
             </div>
             <button
               onClick={() => setPrefs(p => ({ ...p, [key]: p[key] !== false ? false : true }))}
               className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
-              style={{ background: prefs[key] !== false ? '#00c9a7' : '#333' }}
+              style={{ background: prefs[key] !== false ? '#3E9C7E' : '#EAE2D2' }}
             >
               <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
                 style={{ left: prefs[key] !== false ? '22px' : '4px' }} />
@@ -283,8 +283,8 @@ function PushNotificationsSection() {
       </div>
 
       {/* Data reminders */}
-      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #1a1a1a' }}>
-        <p className="text-xs text-gray-500 uppercase tracking-wider pt-1">Data Entry Reminders</p>
+      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
+        <p className="text-xs text-[#9a8f7e] uppercase tracking-wider pt-1">Data Entry Reminders</p>
         {[
           { key: 'bpReminderEnabled', label: 'Blood Pressure', desc: 'Reminds you Mon · Wed · Fri' },
           { key: 'bodyMetricsReminderEnabled', label: 'Waist & Grip Strength', desc: 'Reminds you monthly' },
@@ -292,13 +292,13 @@ function PushNotificationsSection() {
         ].map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-white">{label}</span>
-              <p className="text-[11px] text-gray-600">{desc}</p>
+              <span className="text-sm text-[#1a1a1a]">{label}</span>
+              <p className="text-[11px] text-[#b3a890]">{desc}</p>
             </div>
             <button
               onClick={() => setPrefs(p => ({ ...p, [key]: p[key] !== false ? false : true }))}
               className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
-              style={{ background: prefs[key] !== false ? '#00c9a7' : '#333' }}
+              style={{ background: prefs[key] !== false ? '#3E9C7E' : '#EAE2D2' }}
             >
               <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all"
                 style={{ left: prefs[key] !== false ? '22px' : '4px' }} />
@@ -309,11 +309,11 @@ function PushNotificationsSection() {
 
       {/* Timezone */}
       <div className="space-y-1.5">
-        <p className="text-xs text-gray-500 uppercase tracking-wider">Your Timezone</p>
+        <p className="text-xs text-[#9a8f7e] uppercase tracking-wider">Your Timezone</p>
         <select
           value={prefs.timezone}
           onChange={e => setPrefs(p => ({ ...p, timezone: e.target.value }))}
-          className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
         >
           {TIMEZONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -321,12 +321,12 @@ function PushNotificationsSection() {
 
       {/* Cron update warning */}
       {needsCronUpdate && (
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>
-          <p className="text-xs text-yellow-500 font-semibold">One more step to apply your times</p>
-          <p className="text-xs text-gray-500">
-            Update <span className="text-white font-mono">vercel.json</span> crons:
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
+          <p className="text-xs text-[#D9A23F] font-semibold">One more step to apply your times</p>
+          <p className="text-xs text-[#9a8f7e]">
+            Update <span className="text-[#1a1a1a] font-mono">vercel.json</span> crons:
           </p>
-          <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-green-400" style={{ background: '#0a0a0a' }}>
+          <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-[#3E9C7E]" style={{ background: '#F6F1E9' }}>
 {`"crons": [
   {"path": "/api/push-scheduled?type=morning", "schedule": "${morningCron}"},
   {"path": "/api/push-scheduled?type=evening", "schedule": "${eveningCron}"}
@@ -335,13 +335,13 @@ function PushNotificationsSection() {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
 
       <button
         onClick={subscribed ? handleSavePrefs : handleSubscribe}
         disabled={loading}
         className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-        style={{ background: saved ? '#00c9a7' : '#00c9a720', color: saved ? '#000' : '#00c9a7', border: '1px solid #00c9a733' }}
+        style={{ background: saved ? '#3E9C7E' : '#3E9C7E20', color: saved ? '#fff' : '#3E9C7E', border: '1px solid #3E9C7E33' }}
       >
         {loading ? 'Saving…' : saved ? '✓ Saved' : subscribed ? 'Update Schedule' : 'Enable Push Notifications'}
       </button>
@@ -349,14 +349,14 @@ function PushNotificationsSection() {
       {/* Setup guide */}
       <button
         onClick={() => setShowGuide(g => !g)}
-        className="w-full text-xs text-gray-600 text-left flex items-center justify-between"
+        className="w-full text-xs text-[#b3a890] text-left flex items-center justify-between"
       >
         <span>First-time setup guide</span>
         <span>{showGuide ? '▲' : '▼'}</span>
       </button>
       {showGuide && (
-        <div className="rounded-xl p-3 space-y-3" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">One-time Vercel setup</p>
+        <div className="rounded-xl p-3 space-y-3" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-wider">One-time Vercel setup</p>
           {[
             { step: '1', title: 'Generate VAPID keys', code: 'npx web-push generate-vapid-keys', desc: 'Run in your terminal. Copy both keys.' },
             { step: '2', title: 'Add to Vercel env vars', code: 'VAPID_PUBLIC_KEY\nVAPID_PRIVATE_KEY\nVAPID_SUBJECT=mailto:your@email.com', desc: 'Vercel Dashboard → Project → Settings → Environment Variables' },
@@ -366,11 +366,11 @@ function PushNotificationsSection() {
           ].map(s => (
             <div key={s.step} className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[10px] font-bold text-gray-400 flex-shrink-0">{s.step}</span>
-                <p className="text-xs font-semibold text-gray-300">{s.title}</p>
+                <span className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-[10px] font-bold text-[#9a8f7e] flex-shrink-0">{s.step}</span>
+                <p className="text-xs font-semibold text-[#5c5648]">{s.title}</p>
               </div>
-              {s.code && <pre className="text-[11px] font-mono text-green-400 rounded-lg p-2 overflow-x-auto ml-7" style={{ background: '#0a0a0a' }}>{s.code}</pre>}
-              <p className="text-[11px] text-gray-600 ml-7">{s.desc}</p>
+              {s.code && <pre className="text-[11px] font-mono text-[#3E9C7E] rounded-lg p-2 overflow-x-auto ml-7" style={{ background: '#fff' }}>{s.code}</pre>}
+              <p className="text-[11px] text-[#b3a890] ml-7">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -400,36 +400,36 @@ function PinKeypad({ onComplete, onCancel, label }) {
 
   return (
     <div className="pt-2 space-y-4">
-      <p className="text-sm text-gray-400 text-center">{label}</p>
+      <p className="text-sm text-[#9a8f7e] text-center">{label}</p>
       <div className="flex justify-center gap-4">
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="w-3 h-3 rounded-full transition-all duration-150"
-            style={{ background: i < digits.length ? '#00c9a7' : '#333' }} />
+            style={{ background: i < digits.length ? '#3E9C7E' : '#EAE2D2' }} />
         ))}
       </div>
       <div className="grid grid-cols-3 gap-2 max-w-[220px] mx-auto">
         {[1,2,3,4,5,6,7,8,9].map(n => (
           <button key={n} onClick={() => handleDigit(String(n))}
-            className="h-14 rounded-2xl text-xl font-light text-white active:opacity-60 transition-opacity"
-            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            className="h-14 rounded-2xl text-xl font-light text-[#1a1a1a] active:opacity-60 transition-opacity"
+            style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             {n}
           </button>
         ))}
         <div />
         <button onClick={() => handleDigit('0')}
-          className="h-14 rounded-2xl text-xl font-light text-white active:opacity-60 transition-opacity"
-          style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+          className="h-14 rounded-2xl text-xl font-light text-[#1a1a1a] active:opacity-60 transition-opacity"
+          style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           0
         </button>
         <button onClick={handleBack}
           className="h-14 rounded-2xl flex items-center justify-center active:opacity-60 transition-opacity">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1.5} className="w-5 h-5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={1.5} className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
           </svg>
         </button>
       </div>
-      {error && <p className="text-red-400 text-xs text-center">{error}</p>}
-      <button onClick={onCancel} className="w-full text-xs text-gray-600 py-1">Cancel</button>
+      {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+      <button onClick={onCancel} className="w-full text-xs text-[#b3a890] py-1">Cancel</button>
     </div>
   )
 }
@@ -499,28 +499,28 @@ function PinSection() {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">App PIN Lock</p>
-          <p className="text-xs mt-0.5" style={{ color: pinActive ? '#00c9a7' : '#888' }}>
+          <p className="text-sm font-semibold text-[#1a1a1a]">App PIN Lock</p>
+          <p className="text-xs mt-0.5" style={{ color: pinActive ? '#3E9C7E' : '#9a8f7e' }}>
             {pinActive ? '● Enabled — required on every open' : '○ Off'}
           </p>
         </div>
         {pinActive && !mode && (
           <div className="flex gap-2">
-            <button onClick={startChange} className="text-xs text-gray-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">Change</button>
-            <button onClick={handleRemove} className="text-xs text-red-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">Remove</button>
+            <button onClick={startChange} className="text-xs text-[#9a8f7e] px-3 py-1.5 rounded-xl bg-[#F6F1E9]">Change</button>
+            <button onClick={handleRemove} className="text-xs text-red-500 px-3 py-1.5 rounded-xl bg-[#F6F1E9]">Remove</button>
           </div>
         )}
       </div>
 
-      {msg && <p className="text-xs text-center" style={{ color: msg.includes('❌') || msg.includes("didn't") || msg.includes('Incorrect') ? '#ef4444' : '#00c9a7' }}>{msg}</p>}
+      {msg && <p className="text-xs text-center" style={{ color: msg.includes('❌') || msg.includes("didn't") || msg.includes('Incorrect') ? '#ef4444' : '#3E9C7E' }}>{msg}</p>}
 
       {!pinActive && !mode && (
         <button onClick={startCreate}
           className="w-full py-2.5 rounded-xl text-sm font-semibold"
-          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}>
+          style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}>
           Enable PIN Lock
         </button>
       )}
@@ -685,8 +685,8 @@ async function exportCSV() {
 // ── Data Freshness ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  ok:      { color: '#00c9a7', label: 'Current',  dot: '#00c9a7' },
-  due:     { color: '#f59e0b', label: 'Due soon', dot: '#f59e0b' },
+  ok:      { color: '#3E9C7E', label: 'Current',  dot: '#3E9C7E' },
+  due:     { color: '#D9A23F', label: 'Due soon', dot: '#D9A23F' },
   overdue: { color: '#ef4444', label: 'Overdue',  dot: '#ef4444' },
   never:   { color: '#ef4444', label: 'Never logged', dot: '#ef4444' },
 }
@@ -699,14 +699,14 @@ function DataFreshnessSection() {
   }, [])
 
   const needsAttention = metrics.filter(m => m.status !== 'ok')
-  const headerColor = needsAttention.length === 0 ? '#00c9a7' : needsAttention.some(m => m.status === 'overdue' || m.status === 'never') ? '#ef4444' : '#f59e0b'
+  const headerColor = needsAttention.length === 0 ? '#3E9C7E' : needsAttention.some(m => m.status === 'overdue' || m.status === 'never') ? '#ef4444' : '#D9A23F'
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: `1px solid ${headerColor}28` }}>
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">Data Freshness</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-sm font-semibold text-[#1a1a1a]">Data Freshness</p>
+          <p className="text-xs text-[#9a8f7e] mt-0.5">
             {needsAttention.length === 0 ? 'All metrics are up to date' : `${needsAttention.length} metric${needsAttention.length > 1 ? 's' : ''} need attention`}
           </p>
         </div>
@@ -717,12 +717,12 @@ function DataFreshnessSection() {
         {metrics.map(m => {
           const cfg = STATUS_CONFIG[m.status]
           return (
-            <div key={m.id} className="flex items-center justify-between py-2" style={{ borderTop: '1px solid #1a1a1a' }}>
+            <div key={m.id} className="flex items-center justify-between py-2" style={{ borderTop: '1px solid #ece3d4' }}>
               <div className="flex items-center gap-2.5">
                 <span className="text-lg leading-none">{m.emoji}</span>
                 <div>
-                  <p className="text-sm text-gray-200">{m.label}</p>
-                  <p className="text-[11px] text-gray-600 mt-0.5">
+                  <p className="text-sm text-[#1a1a1a]">{m.label}</p>
+                  <p className="text-[11px] text-[#b3a890] mt-0.5">
                     {m.status === 'never'
                       ? m.action
                       : m.status === 'ok'
@@ -1088,36 +1088,36 @@ export default function Settings({ onBack }) {
   }
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4">
+    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
       <div className="pt-2 flex items-center gap-3">
-        <button onClick={onBack} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <button onClick={onBack} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-xl font-bold">Settings</h1>
+        <h1 className="text-xl font-bold text-[#1a1a1a]">Settings</h1>
       </div>
 
       {/* Connection status */}
-      <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: '#111', border: `1px solid ${connected ? '#00c9a733' : '#333'}` }}>
+      <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: connected ? '#00c9a7' : '#555' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: connected ? '#3E9C7E' : '#cabfa9' }} />
           <div>
-            <p className="text-sm font-semibold text-white">Google Health</p>
-            <p className="text-xs text-gray-500">{connected ? 'Connected' : 'Not connected'}</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">Google Health</p>
+            <p className="text-xs text-[#9a8f7e]">{connected ? 'Connected' : 'Not connected'}</p>
           </div>
         </div>
         {connected && (
-          <button onClick={handleDisconnect} className="text-xs text-red-400 px-3 py-1.5 rounded-xl bg-[#1a1a1a]">
+          <button onClick={handleDisconnect} className="text-xs text-red-500 px-3 py-1.5 rounded-xl bg-[#F6F1E9]">
             Disconnect
           </button>
         )}
       </div>
 
       {connected && (
-        <div className="rounded-2xl p-4 flex items-center justify-between gap-3" style={{ background: '#111', border: '1px solid #222' }}>
-          <p className="text-xs text-gray-500">{debugCopyMsg || 'Copy the raw data from your last sync (for troubleshooting)'}</p>
-          <button onClick={handleCopyDebugData} className="text-xs text-gray-300 px-3 py-1.5 rounded-xl bg-[#1a1a1a] flex-shrink-0">
+        <div className="rounded-2xl p-4 flex items-center justify-between gap-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs text-[#9a8f7e]">{debugCopyMsg || 'Copy the raw data from your last sync (for troubleshooting)'}</p>
+          <button onClick={handleCopyDebugData} className="text-xs text-[#5c5648] px-3 py-1.5 rounded-xl bg-[#F6F1E9] flex-shrink-0">
             Copy debug data
           </button>
         </div>
@@ -1125,23 +1125,23 @@ export default function Settings({ onBack }) {
 
       {/* Google Health credentials */}
       {!connected && (
-        <div className="rounded-2xl p-4 space-y-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <div>
-            <p className="text-sm font-semibold text-white mb-1">Connect Google Health</p>
-            <p className="text-xs text-gray-500">You'll need a Google Cloud project with the Health API enabled</p>
+            <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Connect Google Health</p>
+            <p className="text-xs text-[#9a8f7e]">You'll need a Google Cloud project with the Health API enabled</p>
           </div>
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-gray-400 mb-1.5 uppercase tracking-wider">Steps to get your Client ID:</p>
-              <ol className="space-y-1 text-xs text-gray-500">
-                <li>1. Go to <span className="text-white">console.cloud.google.com</span> → create a project</li>
-                <li>2. Enable the <span className="text-white">Google Health API</span></li>
+              <p className="text-xs text-[#9a8f7e] mb-1.5 uppercase tracking-wider">Steps to get your Client ID:</p>
+              <ol className="space-y-1 text-xs text-[#9a8f7e]">
+                <li>1. Go to <span className="text-[#1a1a1a]">console.cloud.google.com</span> → create a project</li>
+                <li>2. Enable the <span className="text-[#1a1a1a]">Google Health API</span></li>
                 <li>3. Create an OAuth 2.0 Client ID, set the redirect URI to your Vercel app URL</li>
-                <li>4. Copy the <span className="text-white">Client ID</span> below</li>
+                <li>4. Copy the <span className="text-[#1a1a1a]">Client ID</span> below</li>
               </ol>
             </div>
             <input
-              className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
+              className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
               placeholder="Google Client ID (e.g. 1234-abc.apps.googleusercontent.com)"
               value={clientId}
               onChange={e => setClientId(e.target.value)}
@@ -1150,7 +1150,7 @@ export default function Settings({ onBack }) {
               onClick={saveAndConnect}
               disabled={!clientId.trim()}
               className="w-full py-3 rounded-xl font-bold text-sm transition-opacity disabled:opacity-40"
-              style={{ background: '#00c9a7', color: '#000' }}
+              style={{ background: '#3E9C7E', color: '#fff' }}
             >
               Connect to Google Health
             </button>
@@ -1162,15 +1162,15 @@ export default function Settings({ onBack }) {
       <PinSection />
 
       {/* Age */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">Your Age</p>
-          <p className="text-xs text-gray-500">Used for max HR zones and physiological age calculations.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Your Age</p>
+          <p className="text-xs text-[#9a8f7e]">Used for max HR zones and physiological age calculations.</p>
         </div>
         <input
           type="number"
           min={15} max={100}
-          className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
+          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
           placeholder="39"
           value={userAge}
           onChange={e => setUserAge(e.target.value)}
@@ -1178,19 +1178,19 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Height & Weight */}
-      <div className="rounded-2xl p-4 space-y-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-white">Height & Weight</p>
-            <p className="text-xs text-gray-500 mt-0.5">Used for BMI, distance, and biological age.</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">Height & Weight</p>
+            <p className="text-xs text-[#9a8f7e] mt-0.5">Used for BMI, distance, and biological age.</p>
           </div>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #333' }}>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #ece3d4' }}>
             {['imperial', 'metric'].map(u => (
               <button
                 key={u}
                 onClick={() => setUnits(u)}
                 className="px-3 py-1 text-xs font-semibold capitalize transition-colors"
-                style={{ background: units === u ? '#00c9a7' : '#1a1a1a', color: units === u ? '#000' : '#888' }}
+                style={{ background: units === u ? '#3E9C7E' : '#F6F1E9', color: units === u ? '#fff' : '#9a8f7e' }}
               >
                 {u}
               </button>
@@ -1201,72 +1201,72 @@ export default function Settings({ onBack }) {
         {units === 'imperial' ? (
           <div className="flex gap-3">
             <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-1.5">Height</p>
+              <p className="text-xs text-[#9a8f7e] mb-1.5">Height</p>
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={3} max={8}
-                  className="w-14 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-14 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="5" value={heightFt} onChange={e => setHeightFt(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">ft</span>
+                <span className="text-xs text-[#b3a890]">ft</span>
                 <input
                   type="number" min={0} max={11}
-                  className="w-14 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-14 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="10" value={heightIn} onChange={e => setHeightIn(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">in</span>
+                <span className="text-xs text-[#b3a890]">in</span>
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-1.5">Weight</p>
+              <p className="text-xs text-[#9a8f7e] mb-1.5">Weight</p>
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={50} max={600}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="176" value={weightLbs} onChange={e => setWeightLbs(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">lbs</span>
+                <span className="text-xs text-[#b3a890]">lbs</span>
               </div>
             </div>
           </div>
         ) : (
           <div className="flex gap-3">
             <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-1.5">Height</p>
+              <p className="text-xs text-[#9a8f7e] mb-1.5">Height</p>
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={100} max={250}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="178" value={heightCm} onChange={e => setHeightCm(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">cm</span>
+                <span className="text-xs text-[#b3a890]">cm</span>
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-1.5">Weight</p>
+              <p className="text-xs text-[#9a8f7e] mb-1.5">Weight</p>
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={30} max={300}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7]"
+                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="80" value={weightKg} onChange={e => setWeightKg(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">kg</span>
+                <span className="text-xs text-[#b3a890]">kg</span>
               </div>
             </div>
           </div>
         )}
 
         <div>
-          <p className="text-xs text-gray-500 mb-1.5">Body Fat %</p>
+          <p className="text-xs text-[#9a8f7e] mb-1.5">Body Fat %</p>
           <div className="flex gap-2 items-center">
             <input
               type="number" min={3} max={60} step={0.1}
-              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
               placeholder="18"
               value={bodyFatPct}
               onChange={e => setBodyFatPct(e.target.value)}
             />
-            <span className="text-xs text-gray-600">%</span>
+            <span className="text-xs text-[#b3a890]">%</span>
             {bodyFatPct && !isNaN(parseFloat(bodyFatPct)) && (
               <span className="text-xs font-semibold" style={{ color: getBodyFatColor(parseFloat(bodyFatPct)) }}>
                 {getBodyFatLabel(parseFloat(bodyFatPct))}
@@ -1277,7 +1277,7 @@ export default function Settings({ onBack }) {
 
         {previewBMI && (
           <p className="text-xs">
-            <span className="text-gray-500">BMI: </span>
+            <span className="text-[#9a8f7e]">BMI: </span>
             <span className="font-bold" style={{ color: getBMIColor(previewBMI) }}>
               {previewBMI} — {getBMILabel(previewBMI)}
             </span>
@@ -1286,30 +1286,30 @@ export default function Settings({ onBack }) {
 
         {/* Waist Circumference */}
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Waist Circumference</p>
-          <p className="text-[11px] text-gray-600 mb-1.5">Measure around your belly button — used for visceral fat risk</p>
+          <p className="text-xs text-[#9a8f7e] mb-0.5">Waist Circumference</p>
+          <p className="text-[11px] text-[#b3a890] mb-1.5">Measure around your belly button — used for visceral fat risk</p>
           <div className="flex gap-2 items-center">
             {units === 'imperial' ? (
               <>
                 <input
                   type="number" min={20} max={80} step={0.5}
-                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="34"
                   value={waistIn}
                   onChange={e => setWaistIn(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">inches</span>
+                <span className="text-xs text-[#b3a890]">inches</span>
               </>
             ) : (
               <>
                 <input
                   type="number" min={50} max={200} step={0.5}
-                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="87"
                   value={waistCmVal}
                   onChange={e => setWaistCmVal(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">cm</span>
+                <span className="text-xs text-[#b3a890]">cm</span>
               </>
             )}
           </div>
@@ -1317,30 +1317,30 @@ export default function Settings({ onBack }) {
 
         {/* Grip Strength */}
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Grip Strength (dominant hand)</p>
-          <p className="text-[11px] text-gray-600 mb-1.5">Use a hand dynamometer — one of the best longevity predictors</p>
+          <p className="text-xs text-[#9a8f7e] mb-0.5">Grip Strength (dominant hand)</p>
+          <p className="text-[11px] text-[#b3a890] mb-1.5">Use a hand dynamometer — one of the best longevity predictors</p>
           <div className="flex gap-2 items-center">
             {units === 'imperial' ? (
               <>
                 <input
                   type="number" min={20} max={200} step={1}
-                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="95"
                   value={gripLbs}
                   onChange={e => setGripLbs(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">lbs</span>
+                <span className="text-xs text-[#b3a890]">lbs</span>
               </>
             ) : (
               <>
                 <input
                   type="number" min={10} max={100} step={0.5}
-                  className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="43"
                   value={gripKgVal}
                   onChange={e => setGripKgVal(e.target.value)}
                 />
-                <span className="text-xs text-gray-600">kg</span>
+                <span className="text-xs text-[#b3a890]">kg</span>
               </>
             )}
           </div>
@@ -1348,42 +1348,42 @@ export default function Settings({ onBack }) {
 
         {/* VO2 Max */}
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">VO2 Max (mL/kg/min)</p>
-          <p className="text-[11px] text-gray-600 mb-1.5">From Google Health app, Garmin, or lab test</p>
+          <p className="text-xs text-[#9a8f7e] mb-0.5">VO2 Max (mL/kg/min)</p>
+          <p className="text-[11px] text-[#b3a890] mb-1.5">From Google Health app, Garmin, or lab test</p>
           <div className="flex gap-2 items-center">
             <input
               type="number" min={10} max={90} step={1}
-              className="w-20 bg-[#1a1a1a] border rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
-              style={{ borderColor: vo2MaxError ? '#ef4444' : '#333' }}
+              className="w-20 bg-white border rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+              style={{ borderColor: vo2MaxError ? '#ef4444' : '#ece3d4' }}
               placeholder="e.g. 46"
               value={vo2MaxVal}
               onChange={e => { setVo2MaxVal(e.target.value); setVo2MaxError('') }}
             />
-            <span className="text-xs text-gray-600">mL/kg/min</span>
+            <span className="text-xs text-[#b3a890]">mL/kg/min</span>
           </div>
           {vo2MaxError && <p className="text-[11px] mt-1" style={{ color: '#ef4444' }}>{vo2MaxError}</p>}
         </div>
       </div>
 
       {/* Lifestyle factors */}
-      <div className="rounded-2xl p-4 space-y-5" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white">Lifestyle Factors</p>
-          <p className="text-xs text-gray-500 mt-0.5">Factored into your biological age calculation.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a]">Lifestyle Factors</p>
+          <p className="text-xs text-[#9a8f7e] mt-0.5">Factored into your biological age calculation.</p>
         </div>
 
         {/* Smoking */}
         <div className="space-y-2">
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Smoking</p>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #333' }}>
+          <p className="text-xs text-[#9a8f7e] uppercase tracking-wider">Smoking</p>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #ece3d4' }}>
             {[['never', 'Never'], ['former', 'Former'], ['current', 'Current']].map(([val, label]) => (
               <button
                 key={val}
                 onClick={() => setSmoking(val)}
                 className="flex-1 py-2 text-xs font-semibold transition-colors"
                 style={{
-                  background: smoking === val ? (val === 'never' ? '#00c9a7' : val === 'former' ? '#f59e0b' : '#ef4444') : '#1a1a1a',
-                  color: smoking === val ? '#000' : '#888',
+                  background: smoking === val ? (val === 'never' ? '#3E9C7E' : val === 'former' ? '#D9A23F' : '#ef4444') : '#F6F1E9',
+                  color: smoking === val ? '#fff' : '#9a8f7e',
                 }}
               >
                 {label}
@@ -1394,16 +1394,16 @@ export default function Settings({ onBack }) {
 
         {/* Alcohol */}
         <div className="space-y-2">
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Alcohol (drinks/week)</p>
+          <p className="text-xs text-[#9a8f7e] uppercase tracking-wider">Alcohol (drinks/week)</p>
           <div className="flex gap-2 items-center">
             <input
               type="number" min={0} max={50}
-              className="w-20 bg-[#1a1a1a] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#00c9a7] text-center"
+              className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
               placeholder="0"
               value={alcoholWeek}
               onChange={e => setAlcoholWeek(e.target.value)}
             />
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-[#9a8f7e]">
               {alcoholWeek === '' ? '' : parseInt(alcoholWeek) === 0 ? 'None' : parseInt(alcoholWeek) < 7 ? 'Light' : parseInt(alcoholWeek) < 14 ? 'Moderate' : 'Heavy'}
             </span>
           </div>
@@ -1411,8 +1411,8 @@ export default function Settings({ onBack }) {
 
         {/* Blood pressure note */}
         <div className="space-y-1">
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Blood Pressure</p>
-          <p className="text-xs text-gray-600">Log readings a few times a week in the <span className="text-gray-400">Journal</span> tab. A rolling average is used in your biological age calculation.</p>
+          <p className="text-xs text-[#9a8f7e] uppercase tracking-wider">Blood Pressure</p>
+          <p className="text-xs text-[#b3a890]">Log readings a few times a week in the <span className="text-[#9a8f7e]">Journal</span> tab. A rolling average is used in your biological age calculation.</p>
         </div>
       </div>
 
@@ -1420,25 +1420,25 @@ export default function Settings({ onBack }) {
       <LabResultsSection />
 
       {/* Claude API key */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">AI Coach (Claude)</p>
-          <p className="text-xs text-gray-500">Optional. Powers the coach tab. ~$0.01–0.05/day.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">AI Coach (Claude)</p>
+          <p className="text-xs text-[#9a8f7e]">Optional. Powers the coach tab. ~$0.01–0.05/day.</p>
         </div>
         <input
           type="password"
-          className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#00c9a7]"
+          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
           placeholder="sk-ant-..."
           value={claudeKey}
           onChange={e => setClaudeKey(e.target.value)}
         />
-        <p className="text-xs text-gray-600">Get one at console.anthropic.com → API Keys</p>
+        <p className="text-xs text-[#b3a890]">Get one at console.anthropic.com → API Keys</p>
       </div>
 
       <button
         onClick={saveSettings}
         className="w-full py-4 rounded-2xl font-bold text-sm transition-all"
-        style={{ background: saved ? '#00c9a7' : '#00c9a720', color: saved ? '#000' : '#00c9a7', border: '1px solid #00c9a7' }}
+        style={{ background: saved ? '#3E9C7E' : '#3E9C7E20', color: saved ? '#fff' : '#3E9C7E', border: '1px solid #3E9C7E' }}
       >
         {saved ? '✓ Saved' : 'Save Settings'}
       </button>
@@ -1450,14 +1450,14 @@ export default function Settings({ onBack }) {
       <PushNotificationsSection />
 
       {/* Apple Health Import */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">Apple Health — Body Composition</p>
-          <p className="text-xs text-gray-500">Import weight and body fat % history from your Hume scale (or any Apple Health source) directly into Soma.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Apple Health — Body Composition</p>
+          <p className="text-xs text-[#9a8f7e]">Import weight and body fat % history from your Hume scale (or any Apple Health source) directly into Soma.</p>
         </div>
 
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">How to export</p>
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+          <p className="text-[11px] font-semibold text-[#9a8f7e] uppercase tracking-wider">How to export</p>
           {[
             'Open the Health app on iPhone',
             'Tap your profile photo → Export All Health Data',
@@ -1465,8 +1465,8 @@ export default function Settings({ onBack }) {
             'Open Files → tap the zip → navigate to export.xml',
             'Tap the share icon → choose this app or pick the file below',
           ].map((s, i) => (
-            <p key={i} className="text-[11px] text-gray-600">
-              <span className="text-gray-500 font-semibold">{i + 1}.</span> {s}
+            <p key={i} className="text-[11px] text-[#b3a890]">
+              <span className="text-[#9a8f7e] font-semibold">{i + 1}.</span> {s}
             </p>
           ))}
         </div>
@@ -1482,48 +1482,48 @@ export default function Settings({ onBack }) {
           onClick={() => ahInputRef.current?.click()}
           disabled={ahImporting}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+          style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
         >
           {ahImporting ? 'Parsing…  (large files may take a moment)' : '↑ Select Apple Health export.xml'}
         </button>
         {ahMsg && (
-          <p className="text-xs text-center" style={{ color: ahMsg.startsWith('Error') || ahMsg.startsWith('No') ? '#f59e0b' : '#00c9a7' }}>
+          <p className="text-xs text-center" style={{ color: ahMsg.startsWith('Error') || ahMsg.startsWith('No') ? '#D9A23F' : '#3E9C7E' }}>
             {ahMsg}
           </p>
         )}
 
-        <div className="rounded-xl p-3" style={{ background: '#0d1a0d', border: '1px solid #1a2e1a' }}>
-          <p className="text-[11px] text-gray-500">
-            <span className="text-green-500 font-semibold">Note:</span> This imports weight and body fat % only. For full body composition data (VFI, skeletal muscle, etc.) use the Hume Health import below.
+        <div className="rounded-xl p-3" style={{ background: '#3E9C7E14', border: '1px solid #3E9C7E33' }}>
+          <p className="text-[11px] text-[#9a8f7e]">
+            <span className="text-[#3E9C7E] font-semibold">Note:</span> This imports weight and body fat % only. For full body composition data (VFI, skeletal muscle, etc.) use the Hume Health import below.
           </p>
         </div>
       </div>
 
       {/* Hume Health Import */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">Hume Health — Full Body Composition</p>
-          <p className="text-xs text-gray-500">Screenshot your Hume progress report and import all body composition metrics directly into Soma's biological age algorithm.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Hume Health — Full Body Composition</p>
+          <p className="text-xs text-[#9a8f7e]">Screenshot your Hume progress report and import all body composition metrics directly into Soma's biological age algorithm.</p>
         </div>
 
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">What gets imported</p>
+        <div className="rounded-xl p-3 space-y-2" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+          <p className="text-[11px] font-semibold text-[#9a8f7e] uppercase tracking-wider">What gets imported</p>
           {[
             'Weight, Body Fat %, Lean Mass → BMI / FFMI scoring',
             'Visceral Fat Index → replaces waist circumference in algorithm',
             'Skeletal Muscle Mass → anti-sarcopenia scoring (Janssen JAMA 2000)',
             'Body Water %, BMR → stored for reference',
           ].map((s, i) => (
-            <p key={i} className="text-[11px] text-gray-600">· {s}</p>
+            <p key={i} className="text-[11px] text-[#b3a890]">· {s}</p>
           ))}
         </div>
 
-        <div className="rounded-xl p-3 space-y-1" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">How to import</p>
-          <p className="text-[11px] text-gray-600">1. In Hume app → Progress Report → scroll through all screens</p>
-          <p className="text-[11px] text-gray-600">2. Screenshot each screen (4 screenshots covers everything)</p>
-          <p className="text-[11px] text-gray-600">3. Select all screenshots below — Claude reads them all at once</p>
-          <p className="text-[11px] text-gray-600 mt-1">Requires a Claude API key (set above in API Keys section)</p>
+        <div className="rounded-xl p-3 space-y-1" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+          <p className="text-[11px] font-semibold text-[#9a8f7e] uppercase tracking-wider">How to import</p>
+          <p className="text-[11px] text-[#b3a890]">1. In Hume app → Progress Report → scroll through all screens</p>
+          <p className="text-[11px] text-[#b3a890]">2. Screenshot each screen (4 screenshots covers everything)</p>
+          <p className="text-[11px] text-[#b3a890]">3. Select all screenshots below — Claude reads them all at once</p>
+          <p className="text-[11px] text-[#b3a890] mt-1">Requires a Claude API key (set above in API Keys section)</p>
         </div>
 
         <input
@@ -1538,22 +1538,22 @@ export default function Settings({ onBack }) {
           onClick={() => humeInputRef.current?.click()}
           disabled={humeImporting}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-          style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+          style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
         >
           {humeImporting ? 'Reading screenshots…' : '↑ Select Hume Screenshots (select all at once)'}
         </button>
         {humeMsg && (
-          <p className="text-xs text-center" style={{ color: humeMsg.startsWith('Error') ? '#f59e0b' : '#00c9a7' }}>
+          <p className="text-xs text-center" style={{ color: humeMsg.startsWith('Error') ? '#D9A23F' : '#3E9C7E' }}>
             {humeMsg}
           </p>
         )}
       </div>
 
       {/* Data import / export */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
-          <p className="text-sm font-semibold text-white mb-1">Data</p>
-          <p className="text-xs text-gray-500">Import blood pressure or lab results from CSV, or export your full history.</p>
+          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Data</p>
+          <p className="text-xs text-[#9a8f7e]">Import blood pressure or lab results from CSV, or export your full history.</p>
         </div>
 
         {/* Import */}
@@ -1562,20 +1562,20 @@ export default function Settings({ onBack }) {
           onClick={() => csvInputRef.current?.click()}
           disabled={importing}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-          style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+          style={{ background: '#F6F1E9', color: '#9a8f7e', border: '1px solid #ece3d4' }}
         >
           {importing ? 'Importing…' : '⬆ Import CSV (BP or Labs)'}
         </button>
         {importMsg && (
-          <p className="text-xs text-center" style={{ color: importMsg.startsWith('Error') ? '#ef4444' : '#00c9a7' }}>
+          <p className="text-xs text-center" style={{ color: importMsg.startsWith('Error') ? '#ef4444' : '#3E9C7E' }}>
             {importMsg}
           </p>
         )}
 
         {/* Template hint */}
-        <div className="rounded-xl p-3 space-y-1" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Accepted formats</p>
-          <pre className="text-[11px] font-mono text-gray-600 leading-relaxed">{`BP:   date,systolic,diastolic
+        <div className="rounded-xl p-3 space-y-1" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+          <p className="text-[11px] text-[#9a8f7e] font-semibold uppercase tracking-wider">Accepted formats</p>
+          <pre className="text-[11px] font-mono text-[#b3a890] leading-relaxed">{`BP:   date,systolic,diastolic
 Labs: marker,value,date`}</pre>
         </div>
 
@@ -1584,18 +1584,18 @@ Labs: marker,value,date`}</pre>
           onClick={handleExport}
           disabled={exporting}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-          style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+          style={{ background: '#F6F1E9', color: '#9a8f7e', border: '1px solid #ece3d4' }}
         >
           {exporting ? 'Preparing…' : '⬇ Export Health History (CSV)'}
         </button>
 
         {/* Cloud Backup */}
-        <div className="pt-2" style={{ borderTop: '1px solid #222' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Cloud Backup</p>
-          <p className="text-xs text-gray-600 mb-3">
+        <div className="pt-2" style={{ borderTop: '1px solid #ece3d4' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-wider mb-1">Cloud Backup</p>
+          <p className="text-xs text-[#b3a890] mb-3">
             Save all settings and health history to the cloud so a browser wipe won't lose your data.
             {lastBackup && (
-              <span className="block mt-1 text-gray-500">
+              <span className="block mt-1 text-[#9a8f7e]">
                 Last backed up: {new Date(lastBackup).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </span>
             )}
@@ -1605,7 +1605,7 @@ Labs: marker,value,date`}</pre>
               onClick={handleBackup}
               disabled={backupBusy}
               className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-              style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a7' }}
+              style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E' }}
             >
               {backupBusy ? '…' : '☁ Backup Now'}
             </button>
@@ -1613,13 +1613,13 @@ Labs: marker,value,date`}</pre>
               onClick={handleRestore}
               disabled={backupBusy}
               className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-              style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333' }}
+              style={{ background: '#F6F1E9', color: '#9a8f7e', border: '1px solid #ece3d4' }}
             >
               {backupBusy ? '…' : '⬇ Restore'}
             </button>
           </div>
           {backupMsg && (
-            <p className="text-xs text-center mt-2" style={{ color: backupMsg.startsWith('Error') ? '#ef4444' : '#00c9a7' }}>
+            <p className="text-xs text-center mt-2" style={{ color: backupMsg.startsWith('Error') ? '#ef4444' : '#3E9C7E' }}>
               {backupMsg}
             </p>
           )}
@@ -1630,36 +1630,36 @@ Labs: marker,value,date`}</pre>
       <DataFreshnessSection />
 
       {/* Note on data source */}
-      <div className="rounded-2xl p-4" style={{ background: '#1a1000', border: '1px solid #3a2a00' }}>
-        <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wider mb-2">Note</p>
-        <p className="text-xs text-gray-500">
+      <div className="rounded-2xl p-4" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
+        <p className="text-xs text-[#D9A23F] font-semibold uppercase tracking-wider mb-2">Note</p>
+        <p className="text-xs text-[#9a8f7e]">
           This app syncs through the Google Health API. If a sync ever fails after reconnecting, check that your Google Cloud OAuth credentials are still valid — your data and settings will not be affected.
         </p>
       </div>
 
       {/* Native app upgrade */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#111', border: '1px solid #222' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Upgrade to Native App</p>
-        <p className="text-xs text-gray-500">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Upgrade to Native App</p>
+        <p className="text-xs text-[#9a8f7e]">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
         {[
           { icon: '🏠', label: 'Home Screen Widget', desc: 'Recovery ring on your home screen without opening the app' },
           { icon: '🍎', label: 'Apple Health Write-Back', desc: 'Push your Soma recovery/strain scores into the Apple Health app' },
           { icon: '🔄', label: 'Background Sync', desc: 'Data refreshes at 6am — numbers waiting before you open it' },
         ].map(f => (
-          <div key={f.label} className="flex items-start gap-3 py-2" style={{ borderTop: '1px solid #1a1a1a' }}>
+          <div key={f.label} className="flex items-start gap-3 py-2" style={{ borderTop: '1px solid #ece3d4' }}>
             <span className="text-xl">{f.icon}</span>
             <div>
-              <p className="text-sm text-gray-300 font-medium">{f.label}</p>
-              <p className="text-xs text-gray-600">{f.desc}</p>
+              <p className="text-sm text-[#5c5648] font-medium">{f.label}</p>
+              <p className="text-xs text-[#b3a890]">{f.desc}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* About */}
-      <div className="rounded-2xl p-4" style={{ background: '#111', border: '1px solid #222' }}>
+      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</p>
-        <p className="text-xs text-gray-600">σῶμα · Your body, understood. Data stays on your device. No third-party servers. Built for personal use only.</p>
+        <p className="text-xs text-[#b3a890]">σῶμα · Your body, understood. Data stays on your device. No third-party servers. Built for personal use only.</p>
       </div>
     </div>
   )

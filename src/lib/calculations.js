@@ -158,8 +158,8 @@ export function calculateRecovery({ hrv, rhr, sleep, spo2, br, skinTempDev, hrvH
 }
 
 export function getRecoveryColor(score) {
-  if (score >= 67) return '#00c9a7'
-  if (score >= 34) return '#f59e0b'
+  if (score >= 67) return '#3E9C7E'
+  if (score >= 34) return '#D9A23F'
   return '#ef4444'
 }
 
@@ -191,8 +191,8 @@ export function getStressLabel(score) {
 }
 
 export function getStressColor(score) {
-  if (score <= 30) return '#00c9a7'
-  if (score <= 60) return '#f59e0b'
+  if (score <= 30) return '#3E9C7E'
+  if (score <= 60) return '#D9A23F'
   return '#ef4444'
 }
 
@@ -1099,9 +1099,9 @@ export function calculateTrainingLoad(strainHistory) {
 }
 
 export function getTrainingLoadColor(tsb) {
-  if (tsb >= 5) return '#00c9a7'
-  if (tsb >= -5) return '#3b82f6'
-  if (tsb >= -15) return '#f59e0b'
+  if (tsb >= 5) return '#3E9C7E'
+  if (tsb >= -5) return '#D98E3F'
+  if (tsb >= -15) return '#D9A23F'
   return '#ef4444'
 }
 
@@ -1217,9 +1217,9 @@ export function getBMILabel(bmi) {
 }
 
 export function getBMIColor(bmi) {
-  if (bmi < 18.5) return '#f59e0b'
-  if (bmi < 25) return '#00c9a7'
-  if (bmi < 30) return '#f59e0b'
+  if (bmi < 18.5) return '#D9A23F'
+  if (bmi < 25) return '#3E9C7E'
+  if (bmi < 30) return '#D9A23F'
   return '#ef4444'
 }
 
@@ -1352,9 +1352,9 @@ export function getBodyFatLabel(pct) {
 }
 
 export function getBodyFatColor(pct) {
-  if (pct < 6) return '#f59e0b'   // very lean — below healthy floor
-  if (pct < 18) return '#00c9a7'  // athletic / fitness — optimal
-  if (pct < 25) return '#f59e0b'  // acceptable
+  if (pct < 6) return '#D9A23F'   // very lean — below healthy floor
+  if (pct < 18) return '#3E9C7E'  // athletic / fitness — optimal
+  if (pct < 25) return '#D9A23F'  // acceptable
   return '#ef4444'                // high
 }
 
@@ -1584,10 +1584,10 @@ export function getTrainingStatus(trainingLoad, strainVelocity) {
   const { tsb, atl, ctl } = trainingLoad
   const trending = strainVelocity ?? 0
   if (tsb < -25) return { status: 'Overreaching', color: '#ef4444', desc: 'Excessive fatigue — reduce load now.' }
-  if (tsb < -10 && trending > 0) return { status: 'Productive', color: '#3b82f6', desc: 'Adapting to load — fitness building.' }
-  if (tsb >= 5 && atl < ctl && trending < 0) return { status: 'Detraining', color: '#f59e0b', desc: 'Load too low — fitness may decline.' }
-  if (tsb >= 5 && trending > 0) return { status: 'Peaking', color: '#00c9a7', desc: 'Fresh and building — peak performance window.' }
-  if (tsb >= 5) return { status: 'Recovery', color: '#00c9a7', desc: 'Well rested — ready to train hard.' }
+  if (tsb < -10 && trending > 0) return { status: 'Productive', color: '#9B7FD4', desc: 'Adapting to load — fitness building.' }
+  if (tsb >= 5 && atl < ctl && trending < 0) return { status: 'Detraining', color: '#D9A23F', desc: 'Load too low — fitness may decline.' }
+  if (tsb >= 5 && trending > 0) return { status: 'Peaking', color: '#3E9C7E', desc: 'Fresh and building — peak performance window.' }
+  if (tsb >= 5) return { status: 'Recovery', color: '#3E9C7E', desc: 'Well rested — ready to train hard.' }
   return { status: 'Maintaining', color: '#8b5cf6', desc: 'Balanced — sustaining current fitness.' }
 }
 
@@ -1637,20 +1637,20 @@ export function getVO2MortalityContext(vo2max, age) {
     age <= 69 ? [17, 23, 30, 37] :
                [15, 20, 26, 33]
   if (vo2max <= l)  return { category: 'Low Fitness',    note: 'Highest all-cause mortality risk',                color: '#ef4444', mult: null }
-  if (vo2max <= ba) return { category: 'Below Average',  note: '~2× lower all-cause mortality vs Low fitness',   color: '#f59e0b', mult: 2   }
-  if (vo2max <= aa) return { category: 'Above Average',  note: '~3× lower all-cause mortality vs Low fitness',   color: '#3b82f6', mult: 3   }
-  if (vo2max <= h)  return { category: 'High Fitness',   note: '~3.7× lower all-cause mortality vs Low fitness', color: '#00c9a7', mult: 3.7 }
-  return              { category: 'Elite Fitness',     note: '~5× lower all-cause mortality vs Low fitness',   color: '#00c9a7', mult: 5   }
+  if (vo2max <= ba) return { category: 'Below Average',  note: '~2× lower all-cause mortality vs Low fitness',   color: '#D9A23F', mult: 2   }
+  if (vo2max <= aa) return { category: 'Above Average',  note: '~3× lower all-cause mortality vs Low fitness',   color: '#9B7FD4', mult: 3   }
+  if (vo2max <= h)  return { category: 'High Fitness',   note: '~3.7× lower all-cause mortality vs Low fitness', color: '#3E9C7E', mult: 3.7 }
+  return              { category: 'Elite Fitness',     note: '~5× lower all-cause mortality vs Low fitness',   color: '#3E9C7E', mult: 5   }
 }
 
 // RHR mortality risk context
 // Source: HUNT study (Woodward et al.) and multiple large cohort meta-analyses
 export function getRHRMortalityContext(rhr) {
   if (!rhr || rhr <= 0) return null
-  if (rhr < 60) return { label: 'Athletic', detail: 'Lowest all-cause mortality risk',                        color: '#00c9a7' }
-  if (rhr < 70) return { label: 'Optimal',  detail: 'Low mortality risk',                                     color: '#00c9a7' }
-  if (rhr < 80) return { label: 'Normal',   detail: 'Average mortality risk',                                 color: '#3b82f6' }
-  if (rhr < 90) return { label: 'Elevated', detail: '~1.5× higher all-cause mortality vs <60 bpm (HUNT)',     color: '#f59e0b' }
+  if (rhr < 60) return { label: 'Athletic', detail: 'Lowest all-cause mortality risk',                        color: '#3E9C7E' }
+  if (rhr < 70) return { label: 'Optimal',  detail: 'Low mortality risk',                                     color: '#3E9C7E' }
+  if (rhr < 80) return { label: 'Normal',   detail: 'Average mortality risk',                                 color: '#9B7FD4' }
+  if (rhr < 90) return { label: 'Elevated', detail: '~1.5× higher all-cause mortality vs <60 bpm (HUNT)',     color: '#D9A23F' }
   return              { label: 'High',      detail: '~2.8× higher all-cause mortality vs <60 bpm (HUNT)',     color: '#ef4444' }
 }
 
@@ -1683,11 +1683,11 @@ export function calculateReadiness({ recoveryScore = 0, recoveryVelocity = 0, sl
   // Tier assignment — Primed requires all signals green
   let headline, color
   if (recoveryScore >= 67 && sleepDebt < 1 && tsb > -15 && stressScore < 60 && recoveryVelocity >= -2) {
-    headline = 'Primed'; color = '#00c9a7'
+    headline = 'Primed'; color = '#3E9C7E'
   } else if (recoveryScore >= 34 || (recoveryScore >= 50 && sleepDebt < 2)) {
-    headline = 'Balanced'; color = '#3b82f6'
+    headline = 'Balanced'; color = '#9B7FD4'
   } else if (recoveryScore >= 15) {
-    headline = 'Strained'; color = '#f59e0b'
+    headline = 'Strained'; color = '#D9A23F'
   } else {
     headline = 'Run Down'; color = '#ef4444'
   }

@@ -34,7 +34,7 @@ function DeltaChip({ value, unit, lowerIsBetter = false }) {
   if (value == null) return null
   const improved = lowerIsBetter ? value < 0 : value > 0
   const neutral = value === 0
-  const color = neutral ? '#555' : improved ? '#00c9a7' : '#ef4444'
+  const color = neutral ? '#9a8f7e' : improved ? '#3E9C7E' : '#ef4444'
   const sign = value > 0 ? '+' : ''
   return (
     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2" style={{ background: color + '18', color }}>
@@ -52,8 +52,9 @@ function RangeSelector({ value, onChange }) {
           onClick={() => onChange(r.label)}
           className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
           style={{
-            background: value === r.label ? '#00c9a7' : '#1a1a1a',
-            color: value === r.label ? '#000' : '#666',
+            background: value === r.label ? '#3E9C7E' : '#fff',
+            color: value === r.label ? '#fff' : '#9a8f7e',
+            boxShadow: value === r.label ? 'none' : '0 4px 18px rgba(0,0,0,0.05)',
           }}
         >
           {r.label}
@@ -65,16 +66,16 @@ function RangeSelector({ value, onChange }) {
 
 function VitalCard({ title, emoji, children, count, emptyMsg = 'No data yet — log in Settings' }) {
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-base leading-none">{emoji}</span>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">{title}</p>
         </div>
-        {count != null && <p className="text-[10px] text-gray-600">{count} entries</p>}
+        {count != null && <p className="text-[10px] text-[#b3a890]">{count} entries</p>}
       </div>
       {count === 0 ? (
-        <p className="text-xs text-gray-600">{emptyMsg}</p>
+        <p className="text-xs text-[#b3a890]">{emptyMsg}</p>
       ) : children}
     </div>
   )
@@ -82,9 +83,9 @@ function VitalCard({ title, emoji, children, count, emptyMsg = 'No data yet — 
 
 function StatRow({ label, value, unit }) {
   return (
-    <div className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-semibold text-white">{value != null ? `${value}${unit}` : '—'}</p>
+    <div className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
+      <p className="text-xs text-[#9a8f7e]">{label}</p>
+      <p className="text-sm font-semibold text-[#1a1a1a]">{value != null ? `${value}${unit}` : '—'}</p>
     </div>
   )
 }
@@ -183,18 +184,18 @@ export default function Vitals({ data, onNav }) {
   const vo2Delta = delta(vo2Latest?.vo2Max, vo2First?.vo2Max)
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4">
+    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
 
       {/* Header */}
       <div className="pt-2 flex items-center gap-3">
-        <button onClick={() => onNav('chronos')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+        <button onClick={() => onNav('chronos')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
           <h1 className="text-xl font-bold">Vitals History</h1>
-          <p className="text-xs text-gray-600">Manually tracked measurements</p>
+          <p className="text-xs text-[#b3a890]">Manually tracked measurements</p>
         </div>
       </div>
 
@@ -204,16 +205,16 @@ export default function Vitals({ data, onNav }) {
       {/* Blood Pressure */}
       <VitalCard title="Blood Pressure" emoji="🩺" count={bpFiltered.length}>
         <div className="flex items-baseline gap-2 mb-1">
-          <p className="text-3xl font-bold text-white">
+          <p className="text-3xl font-bold text-[#1a1a1a]">
             {bpLatest ? `${bpLatest.sys}/${bpLatest.dia}` : '—'}
           </p>
-          <span className="text-sm text-gray-500">mmHg</span>
+          <span className="text-sm text-[#9a8f7e]">mmHg</span>
           {bpSysDelta != null && (
             <DeltaChip value={bpSysDelta} unit="" lowerIsBetter />
           )}
         </div>
         {avgSys != null && (
-          <p className="text-[11px] text-gray-600 mb-3">10-reading avg: {avgSys}/{avgDia} mmHg</p>
+          <p className="text-[11px] text-[#b3a890] mb-3">10-reading avg: {avgSys}/{avgDia} mmHg</p>
         )}
         {bpChartData.length >= 2 && (
           <DualLineGraph
@@ -221,27 +222,27 @@ export default function Vitals({ data, onNav }) {
             dataKey1="sys"
             dataKey2="dia"
             color1="#ef4444"
-            color2="#3b82f6"
+            color2="#9B7FD4"
             unit=" mmHg"
             height={100}
             reference1={120}
             reference2={80}
           />
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Red = systolic · Blue = diastolic · Dashed at 120/80</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Red = systolic · Blue = diastolic · Dashed at 120/80</p>
       </VitalCard>
 
       {/* Body Weight */}
       <VitalCard title="Body Weight" emoji="⚖️" count={weightFiltered.length}>
         <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-3xl font-bold text-white">
+          <p className="text-3xl font-bold text-[#1a1a1a]">
             {weightDisplay(weightLatest?.kg) ?? '—'}
           </p>
-          <span className="text-sm text-gray-500">{imperial ? 'lbs' : 'kg'}</span>
+          <span className="text-sm text-[#9a8f7e]">{imperial ? 'lbs' : 'kg'}</span>
           {weightDelta != null && <DeltaChip value={weightDelta} unit={imperial ? ' lbs' : ' kg'} lowerIsBetter />}
         </div>
         {weightChartData.length >= 2 && (
-          <LineGraph data={weightChartData} dataKey="weight" color="#3b82f6" unit={imperial ? ' lbs' : ' kg'} height={90} />
+          <LineGraph data={weightChartData} dataKey="weight" color="#9B7FD4" unit={imperial ? ' lbs' : ' kg'} height={90} />
         )}
       </VitalCard>
 
@@ -249,27 +250,27 @@ export default function Vitals({ data, onNav }) {
       {bfFiltered.length > 0 && (
         <VitalCard title="Body Composition" emoji="🔬" count={bfFiltered.length}>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Body Fat</p>
-              <p className="text-xl font-bold text-white">{bfLatest?.fatPct ?? '—'}<span className="text-xs text-gray-500 ml-1">%</span></p>
+            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-0.5">Body Fat</p>
+              <p className="text-xl font-bold text-[#1a1a1a]">{bfLatest?.fatPct ?? '—'}<span className="text-xs text-[#9a8f7e] ml-1">%</span></p>
               {bfDelta != null && <DeltaChip value={bfDelta} unit="%" lowerIsBetter />}
             </div>
-            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Lean Mass</p>
-              <p className="text-xl font-bold text-white">{leanDisplay(leanLatest) ?? '—'}<span className="text-xs text-gray-500 ml-1">{imperial ? 'lbs' : 'kg'}</span></p>
+            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-0.5">Lean Mass</p>
+              <p className="text-xl font-bold text-[#1a1a1a]">{leanDisplay(leanLatest) ?? '—'}<span className="text-xs text-[#9a8f7e] ml-1">{imperial ? 'lbs' : 'kg'}</span></p>
               {leanDelta != null && <DeltaChip value={leanDelta} unit={imperial ? ' lbs' : ' kg'} lowerIsBetter={false} />}
             </div>
           </div>
           {bfChartData.length >= 2 && (
             <>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Body Fat % Trend</p>
-              <LineGraph data={bfChartData} dataKey="fatPct" color="#f59e0b" unit="%" height={80} />
+              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-1.5">Body Fat % Trend</p>
+              <LineGraph data={bfChartData} dataKey="fatPct" color="#D9A23F" unit="%" height={80} />
             </>
           )}
           {leanChartData.length >= 2 && (
             <div className="mt-3">
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Lean Mass Trend</p>
-              <LineGraph data={leanChartData} dataKey="lean" color="#00c9a7" unit={weightUnit} height={80} />
+              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-1.5">Lean Mass Trend</p>
+              <LineGraph data={leanChartData} dataKey="lean" color="#3E9C7E" unit={weightUnit} height={80} />
             </div>
           )}
         </VitalCard>
@@ -278,39 +279,39 @@ export default function Vitals({ data, onNav }) {
       {/* Waist Circumference */}
       <VitalCard title="Waist Circumference" emoji="📏" count={waistFiltered.length}>
         <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-3xl font-bold text-white">
+          <p className="text-3xl font-bold text-[#1a1a1a]">
             {waistDisplay(waistLatest?.cm) ?? '—'}
           </p>
-          <span className="text-sm text-gray-500">{imperial ? 'in' : 'cm'}</span>
+          <span className="text-sm text-[#9a8f7e]">{imperial ? 'in' : 'cm'}</span>
           {waistDelta != null && <DeltaChip value={waistDelta} unit={waistUnit} lowerIsBetter />}
         </div>
         {waistChartData.length >= 2 && (
-          <LineGraph data={waistChartData} dataKey="waist" color="#f59e0b" unit={waistUnit} height={90} reference={waistRef} />
+          <LineGraph data={waistChartData} dataKey="waist" color="#D9A23F" unit={waistUnit} height={90} reference={waistRef} />
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Dashed line = {waistRef}{waistUnit.trim()} metabolic risk threshold (men)</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Dashed line = {waistRef}{waistUnit.trim()} metabolic risk threshold (men)</p>
       </VitalCard>
 
       {/* Grip Strength */}
       <VitalCard title="Grip Strength" emoji="✊" count={gripFiltered.length}>
         <div className="flex items-baseline gap-2 mb-3">
-          <p className="text-3xl font-bold text-white">
+          <p className="text-3xl font-bold text-[#1a1a1a]">
             {gripDisplay(gripLatest?.kg) ?? '—'}
           </p>
-          <span className="text-sm text-gray-500">{imperial ? 'lbs' : 'kg'}</span>
+          <span className="text-sm text-[#9a8f7e]">{imperial ? 'lbs' : 'kg'}</span>
           {gripDelta != null && <DeltaChip value={gripDelta} unit={gripUnit} lowerIsBetter={false} />}
         </div>
         {gripChartData.length >= 2 && (
-          <LineGraph data={gripChartData} dataKey="grip" color="#00c9a7" unit={gripUnit} height={90} reference={gripNormDisplay} />
+          <LineGraph data={gripChartData} dataKey="grip" color="#3E9C7E" unit={gripUnit} height={90} reference={gripNormDisplay} />
         )}
-        <p className="text-[10px] text-gray-600 mt-2">Dashed line = age-adjusted norm for men (Dodds 2014)</p>
+        <p className="text-[10px] text-[#b3a890] mt-2">Dashed line = age-adjusted norm for men (Dodds 2014)</p>
       </VitalCard>
 
       {/* Divider: Fitbit-derived */}
       {(rhrFiltered.length > 0 || hrvFiltered.length > 0 || vo2Filtered.length > 0) && (
         <div className="flex items-center gap-3 py-1">
-          <div className="flex-1 h-px" style={{ background: '#1e1e1e' }} />
-          <p className="text-[10px] text-gray-600 uppercase tracking-widest">From Fitbit Air</p>
-          <div className="flex-1 h-px" style={{ background: '#1e1e1e' }} />
+          <div className="flex-1 h-px" style={{ background: '#ece3d4' }} />
+          <p className="text-[10px] text-[#b3a890] uppercase tracking-widest">From Fitbit Air</p>
+          <div className="flex-1 h-px" style={{ background: '#ece3d4' }} />
         </div>
       )}
 
@@ -318,14 +319,14 @@ export default function Vitals({ data, onNav }) {
       {rhrFiltered.length > 0 && (
         <VitalCard title="Resting Heart Rate" emoji="❤️" count={rhrFiltered.length}>
           <div className="flex items-baseline gap-2 mb-3">
-            <p className="text-3xl font-bold text-white">{rhrLatest?.rhr ?? '—'}</p>
-            <span className="text-sm text-gray-500">bpm</span>
+            <p className="text-3xl font-bold text-[#1a1a1a]">{rhrLatest?.rhr ?? '—'}</p>
+            <span className="text-sm text-[#9a8f7e]">bpm</span>
             {rhrDelta != null && <DeltaChip value={rhrDelta} unit=" bpm" lowerIsBetter />}
           </div>
           {rhrChartData.length >= 2 && (
             <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={90} reference={60} />
           )}
-          <p className="text-[10px] text-gray-600 mt-2">Dashed = 60 bpm · Lower is generally better at rest</p>
+          <p className="text-[10px] text-[#b3a890] mt-2">Dashed = 60 bpm · Lower is generally better at rest</p>
         </VitalCard>
       )}
 
@@ -333,14 +334,14 @@ export default function Vitals({ data, onNav }) {
       {hrvFiltered.length > 0 && (
         <VitalCard title="HRV Baseline" emoji="⚡" count={hrvFiltered.length}>
           <div className="flex items-baseline gap-2 mb-3">
-            <p className="text-3xl font-bold text-white">{hrvLatest?.hrv ?? '—'}</p>
-            <span className="text-sm text-gray-500">ms</span>
+            <p className="text-3xl font-bold text-[#1a1a1a]">{hrvLatest?.hrv ?? '—'}</p>
+            <span className="text-sm text-[#9a8f7e]">ms</span>
             {hrvDelta != null && <DeltaChip value={hrvDelta} unit=" ms" lowerIsBetter={false} />}
           </div>
           {hrvChartData.length >= 2 && (
-            <LineGraph data={hrvChartData} dataKey="hrv" color="#00c9a7" unit=" ms" height={90} />
+            <LineGraph data={hrvChartData} dataKey="hrv" color="#3E9C7E" unit=" ms" height={90} />
           )}
-          <p className="text-[10px] text-gray-600 mt-2">Higher is better · Fitbit overnight rmsSD</p>
+          <p className="text-[10px] text-[#b3a890] mt-2">Higher is better · Fitbit overnight rmsSD</p>
         </VitalCard>
       )}
 
@@ -348,23 +349,23 @@ export default function Vitals({ data, onNav }) {
       {vo2Filtered.length > 0 && (
         <VitalCard title="VO₂ Max" emoji="🫁" count={vo2Filtered.length}>
           <div className="flex items-baseline gap-2 mb-3">
-            <p className="text-3xl font-bold text-white">{vo2Latest?.vo2Max ?? '—'}</p>
-            <span className="text-sm text-gray-500">ml/kg/min</span>
+            <p className="text-3xl font-bold text-[#1a1a1a]">{vo2Latest?.vo2Max ?? '—'}</p>
+            <span className="text-sm text-[#9a8f7e]">ml/kg/min</span>
             {vo2Delta != null && <DeltaChip value={vo2Delta} unit="" lowerIsBetter={false} />}
           </div>
           {vo2ChartData.length >= 2 && (
             <LineGraph data={vo2ChartData} dataKey="vo2" color="#a78bfa" unit=" ml/kg/min" height={90} />
           )}
-          <p className="text-[10px] text-gray-600 mt-2">Estimated by Fitbit · Higher is better</p>
+          <p className="text-[10px] text-[#b3a890] mt-2">Estimated by Fitbit · Higher is better</p>
         </VitalCard>
       )}
 
       {/* Empty state when no data at all */}
       {bpAll.length === 0 && weightAll.length === 0 && gripAll.length === 0 && waistAll.length === 0 && (
-        <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid #222' }}>
+        <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-2xl mb-2">📊</p>
-          <p className="text-sm font-semibold text-gray-300 mb-1">No vitals logged yet</p>
-          <p className="text-xs text-gray-600">Open Settings to log your first blood pressure, weight, grip strength, and waist measurements.</p>
+          <p className="text-sm font-semibold text-[#5c5648] mb-1">No vitals logged yet</p>
+          <p className="text-xs text-[#b3a890]">Open Settings to log your first blood pressure, weight, grip strength, and waist measurements.</p>
         </div>
       )}
 

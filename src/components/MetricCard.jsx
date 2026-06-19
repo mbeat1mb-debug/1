@@ -3,22 +3,22 @@ export default function MetricCard({ label, value, unit = '', sub, color, onClic
     <button
       onClick={onClick}
       className="flex flex-col rounded-2xl p-4 text-left w-full card-tap"
-      style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}
+      style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}
     >
-      <span className="text-[9px] uppercase tracking-widest mb-2" style={{ color: '#4a4a4a' }}>{label}</span>
+      <span className="text-[9px] uppercase tracking-widest mb-2" style={{ color: '#9a8f7e' }}>{label}</span>
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold" style={{ color: color || '#e8e8e8' }}>{value}</span>
-        {unit && <span className="text-sm" style={{ color: '#444' }}>{unit}</span>}
+        <span className="text-2xl font-bold" style={{ color: color || '#1a1a1a' }}>{value}</span>
+        {unit && <span className="text-sm" style={{ color: '#9a8f7e' }}>{unit}</span>}
       </div>
-      {sub && <span className="text-xs mt-1" style={{ color: '#3a3a3a' }}>{sub}</span>}
+      {sub && <span className="text-xs mt-1" style={{ color: '#b3a890' }}>{sub}</span>}
     </button>
   )
 }
 
 export function StatRow({ label, value, unit = '', color }) {
   return (
-    <div className="flex items-center justify-between py-3.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
-      <span className="text-sm" style={{ color: '#777' }}>{label}</span>
+    <div className="flex items-center justify-between py-3.5" style={{ borderBottom: '1px solid #ece3d4' }}>
+      <span className="text-sm" style={{ color: '#7d7363' }}>{label}</span>
       <div className="flex items-center gap-2.5">
         {color && (
           <span
@@ -27,8 +27,8 @@ export function StatRow({ label, value, unit = '', color }) {
           />
         )}
         <div className="flex items-baseline gap-1">
-          <span className="text-base font-bold" style={{ color: color || '#e8e8e8' }}>{value}</span>
-          {unit && <span className="text-xs" style={{ color: '#555' }}>{unit}</span>}
+          <span className="text-base font-bold" style={{ color: color || '#1a1a1a' }}>{value}</span>
+          {unit && <span className="text-xs" style={{ color: '#9a8f7e' }}>{unit}</span>}
         </div>
       </div>
     </div>

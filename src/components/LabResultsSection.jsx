@@ -199,16 +199,16 @@ export default function LabResultsSection() {
 
   return (
     <div
-      style={{ background: '#111', border: '1px solid #222' }}
+      style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}
       className="rounded-2xl p-6 flex flex-col gap-5"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold text-white tracking-tight">
+          <h2 className="text-lg font-semibold text-[#1a1a1a] tracking-tight">
             Lab Results
           </h2>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[#9a8f7e]">
             Upload a PDF from your doctor or enter values by hand. Updates your
             biological age and healthspan score.
           </p>
@@ -220,9 +220,9 @@ export default function LabResultsSection() {
           onClick={() => pdfInputRef.current?.click()}
           disabled={pdfImporting}
           style={{
-            background: pdfImporting ? '#1a1a1a' : '#00c9a715',
-            border: '1px solid #00c9a740',
-            color: '#00c9a7',
+            background: pdfImporting ? '#EAE2D2' : '#3E9C7E15',
+            border: '1px solid #3E9C7E40',
+            color: '#3E9C7E',
           }}
           className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80 active:scale-95 disabled:opacity-40"
         >
@@ -255,9 +255,9 @@ export default function LabResultsSection() {
       {pdfMsg && (
         <div
           style={{
-            background: pdfMsg.startsWith('Found') ? '#00c9a715' : '#ef444415',
-            border: `1px solid ${pdfMsg.startsWith('Found') ? '#00c9a740' : '#ef444440'}`,
-            color: pdfMsg.startsWith('Found') ? '#00c9a7' : '#ef4444',
+            background: pdfMsg.startsWith('Found') ? '#3E9C7E15' : '#ef444415',
+            border: `1px solid ${pdfMsg.startsWith('Found') ? '#3E9C7E40' : '#ef444440'}`,
+            color: pdfMsg.startsWith('Found') ? '#3E9C7E' : '#ef4444',
           }}
           className="rounded-xl px-4 py-3 text-sm flex items-start gap-2"
         >
@@ -270,7 +270,7 @@ export default function LabResultsSection() {
       <div className="flex items-center gap-3">
         <label
           htmlFor="lab-test-date"
-          className="text-sm text-gray-400 whitespace-nowrap"
+          className="text-sm text-[#9a8f7e] whitespace-nowrap"
         >
           Test Date
         </label>
@@ -280,12 +280,11 @@ export default function LabResultsSection() {
           value={testDate}
           onChange={(e) => handleDateChange(e.target.value)}
           style={{
-            background: '#1a1a1a',
-            border: '1px solid #333',
-            color: '#e5e7eb',
-            colorScheme: 'dark',
+            background: '#F6F1E9',
+            border: '1px solid #ece3d4',
+            color: '#1a1a1a',
           }}
-          className="rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#00c9a7] transition-colors"
+          className="rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#3E9C7E] transition-colors"
         />
       </div>
 
@@ -301,7 +300,7 @@ export default function LabResultsSection() {
           return (
             <div
               key={group}
-              style={{ background: '#1a1a1a', border: '1px solid #222' }}
+              style={{ background: '#F6F1E9', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
               className="rounded-xl overflow-hidden"
             >
               <button
@@ -310,12 +309,12 @@ export default function LabResultsSection() {
                 className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/[0.03] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-200">
+                  <span className="text-sm font-medium text-[#1a1a1a]">
                     {group}
                   </span>
                   {filled > 0 && (
                     <span
-                      style={{ background: '#00c9a720', color: '#00c9a7' }}
+                      style={{ background: '#3E9C7E20', color: '#3E9C7E' }}
                       className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                     >
                       {filled}/{total} filled
@@ -327,7 +326,7 @@ export default function LabResultsSection() {
                   height="16"
                   viewBox="0 0 16 16"
                   fill="none"
-                  className={`text-gray-500 transition-transform duration-200 ${
+                  className={`text-[#9a8f7e] transition-transform duration-200 ${
                     isOpen ? 'rotate-180' : ''
                   }`}
                 >
@@ -343,8 +342,8 @@ export default function LabResultsSection() {
 
               {isOpen && (
                 <div
-                  style={{ borderTop: '1px solid #222' }}
-                  className="flex flex-col divide-y divide-[#222]"
+                  style={{ borderTop: '1px solid #ece3d4' }}
+                  className="flex flex-col divide-y divide-[#ece3d4]"
                 >
                   {markers.map((marker) => {
                     const raw = draft[marker.key];
@@ -352,7 +351,7 @@ export default function LabResultsSection() {
                     const numVal = hasValue ? parseFloat(raw) : null;
                     const isValidNum = numVal != null && !isNaN(numVal);
                     const markerColor =
-                      isValidNum ? marker.color(numVal) : '#333';
+                      isValidNum ? marker.color(numVal) : '#cabfa9';
                     const gradeLabel =
                       isValidNum ? marker.grade(numVal) : null;
 
@@ -363,7 +362,7 @@ export default function LabResultsSection() {
                       >
                         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-300 leading-tight">
+                            <span className="text-sm text-[#1a1a1a] leading-tight">
                               {marker.label}
                             </span>
                             {gradeLabel && (
@@ -379,7 +378,7 @@ export default function LabResultsSection() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-gray-600 leading-tight">
+                          <span className="text-[10px] text-[#b3a890] leading-tight">
                             {marker.ref}
                           </span>
                         </div>
@@ -394,15 +393,15 @@ export default function LabResultsSection() {
                               handleChange(marker.key, e.target.value)
                             }
                             style={{
-                              background: '#0d0d0d',
-                              border: `1px solid ${isValidNum ? markerColor : '#2a2a2a'}`,
-                              color: isValidNum ? markerColor : '#9ca3af',
+                              background: '#F6F1E9',
+                              border: `1px solid ${isValidNum ? markerColor : '#ece3d4'}`,
+                              color: isValidNum ? markerColor : '#9a8f7e',
                               width: '7rem',
                               transition: 'border-color 0.15s, color 0.15s',
                             }}
-                            className="rounded-lg px-2.5 py-1.5 text-sm text-right focus:outline-none focus:border-[#00c9a7] placeholder:text-gray-700"
+                            className="rounded-lg px-2.5 py-1.5 text-sm text-right focus:outline-none focus:border-[#3E9C7E] placeholder:text-[#cabfa9]"
                           />
-                          <span className="text-xs text-gray-600 w-12 leading-tight">
+                          <span className="text-xs text-[#b3a890] w-12 leading-tight">
                             {marker.unit}
                           </span>
                         </div>
@@ -424,14 +423,14 @@ export default function LabResultsSection() {
           style={
             savedState
               ? {
-                  background: '#00c9a7',
-                  color: '#0d0d0d',
-                  border: '1px solid #00c9a7',
+                  background: '#3E9C7E',
+                  color: '#fff',
+                  border: '1px solid #3E9C7E',
                 }
               : {
                   background: 'transparent',
-                  color: '#00c9a7',
-                  border: '1px solid #00c9a7',
+                  color: '#3E9C7E',
+                  border: '1px solid #3E9C7E',
                 }
           }
           className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-95"

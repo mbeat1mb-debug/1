@@ -37,12 +37,12 @@ export function getTimeOfDay() {
 }
 
 function StatPill({ label, value, unit = '', up }) {
-  const color = up === undefined ? '#ffffff' : up ? '#00c9a7' : '#ef4444'
+  const color = up === undefined ? '#1a1a1a' : up ? '#3E9C7E' : '#ef4444'
   return (
     <div className="flex flex-col items-center">
-      <span className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">{label}</span>
+      <span className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">{label}</span>
       <span className="text-base font-bold" style={{ color }}>
-        {value}<span className="text-[11px] text-gray-500 ml-0.5">{unit}</span>
+        {value}<span className="text-[11px] text-[#b3a890] ml-0.5">{unit}</span>
       </span>
     </div>
   )
@@ -123,7 +123,7 @@ export default function DailyReport({ data, type }) {
   }, [type, recoveryScore, todayHRV, todayRHR, strainScore, steps, calories, stressScore, sleepDebt, brief, cacheKey])
 
   const isMorning = type === 'morning'
-  const accentColor = isMorning ? recoveryColor : '#3b82f6'
+  const accentColor = isMorning ? recoveryColor : '#9B7FD4'
   const title = isMorning ? 'MORNING BRIEF' : 'NIGHTLY WIND-DOWN'
 
   return (
@@ -134,7 +134,7 @@ export default function DailyReport({ data, type }) {
           <span className="text-sm">{isMorning ? '🌅' : '🌙'}</span>
           <span className="text-xs font-bold tracking-widest uppercase" style={{ color: accentColor }}>{title}</span>
         </div>
-        <span className="text-xs text-gray-600">
+        <span className="text-xs text-[#9a8f7e]">
           {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
         </span>
       </div>
@@ -154,8 +154,8 @@ export default function DailyReport({ data, type }) {
                 <StatPill label="Sleep" value={sleepHours} />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
-              <span className="text-xs text-gray-500">Target strain today</span>
+            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#F6F1E9' }}>
+              <span className="text-xs text-[#9a8f7e]">Target strain today</span>
               <span className="text-sm font-bold" style={{ color: accentColor }}>{optimalStrain}</span>
             </div>
           </>
@@ -169,15 +169,15 @@ export default function DailyReport({ data, type }) {
             </div>
             <div className="space-y-1.5">
               {optimalSleepWindow && (
-                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
-                  <span className="text-xs text-gray-500">Target bedtime</span>
-                  <span className="text-sm font-bold text-white">{optimalSleepWindow.bedtime}</span>
+                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#F6F1E9' }}>
+                  <span className="text-xs text-[#9a8f7e]">Target bedtime</span>
+                  <span className="text-sm font-bold text-[#1a1a1a]">{optimalSleepWindow.bedtime}</span>
                 </div>
               )}
               {sleepDebt > 0 && (
-                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'linear-gradient(145deg, #1c1c1c, #171717)' }}>
-                  <span className="text-xs text-gray-500">Sleep debt</span>
-                  <span className="text-sm font-bold" style={{ color: sleepDebt >= 3 ? '#ef4444' : '#f59e0b' }}>{sleepDebt}h</span>
+                <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#F6F1E9' }}>
+                  <span className="text-xs text-[#9a8f7e]">Sleep debt</span>
+                  <span className="text-sm font-bold" style={{ color: sleepDebt >= 3 ? '#ef4444' : '#D9A23F' }}>{sleepDebt}h</span>
                 </div>
               )}
             </div>
@@ -188,27 +188,27 @@ export default function DailyReport({ data, type }) {
         {loading && (
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accentColor }} />
-            <span className="text-xs text-gray-600">Generating brief…</span>
+            <span className="text-xs text-[#9a8f7e]">Generating brief…</span>
           </div>
         )}
         {brief && !loading && (
-          <p className="text-xs text-gray-300 leading-relaxed border-t pt-2" style={{ borderColor: accentColor + '25' }}>
+          <p className="text-xs text-[#5c5648] leading-relaxed border-t pt-2" style={{ borderColor: accentColor + '25' }}>
             {brief}
           </p>
         )}
         {!brief && !loading && !apiKey && (
-          <div className="border-t pt-2" style={{ borderColor: '#222' }}>
+          <div className="border-t pt-2" style={{ borderColor: '#ece3d4' }}>
             {topCorr ? (
-              <p className="text-xs text-gray-400">
-                {topCorr.emoji} <span className="text-white">{topCorr.label}</span>
+              <p className="text-xs text-[#9a8f7e]">
+                {topCorr.emoji} <span className="text-[#1a1a1a]">{topCorr.label}</span>
                 {' → '}
-                <span style={{ color: topCorr.diff > 0 ? '#00c9a7' : '#ef4444' }}>
+                <span style={{ color: topCorr.diff > 0 ? '#3E9C7E' : '#ef4444' }}>
                   {topCorr.diff > 0 ? '+' : ''}{topCorr.diff}% recovery
                 </span>
-                <span className="text-gray-600"> vs days without</span>
+                <span className="text-[#9a8f7e]"> vs days without</span>
               </p>
             ) : (
-              <p className="text-xs text-gray-600">Add a Claude API key in Settings to get AI insights.</p>
+              <p className="text-xs text-[#9a8f7e]">Add a Claude API key in Settings to get AI insights.</p>
             )}
           </div>
         )}

@@ -5,43 +5,105 @@ import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
 function BackButton({ onNav }) {
   return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={2} className="w-5 h-5">
+    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
       </svg>
     </button>
   )
 }
 
+const ORB_PALETTES = {
+  '#3E9C7E': ['#bdf0d6', '#5fc79a', '#2f8a6b', '#1c5c47', '#0e3528', 'rgba(10,40,30,', 'rgba(0,20,14,'],
+  '#9B7FD4': ['#e0d4f7', '#a98fe0', '#7457b8', '#473585', '#241a4d', 'rgba(20,10,40,', 'rgba(10,5,25,'],
+  '#D98E3F': ['#ffe2b0', '#f0ab50', '#c97a28', '#8a4f14', '#4d2a0a', 'rgba(40,20,5,', 'rgba(25,12,3,'],
+  '#ef4444': ['#ffc9c0', '#e8665a', '#b8362c', '#7a1f18', '#42100c', 'rgba(40,5,5,', 'rgba(25,3,3,'],
+}
+
 function BioAgeOrb({ physAge, chronAge }) {
   const diff = physAge - chronAge
-  const color = diff <= -3 ? '#00c9a7' : diff <= 0 ? '#3b82f6' : diff <= 3 ? '#f59e0b' : '#ef4444'
+  const color = diff <= -3 ? '#3E9C7E' : diff <= 0 ? '#9B7FD4' : diff <= 3 ? '#D98E3F' : '#ef4444'
   const diffText = diff < 0
     ? `${Math.abs(diff)} years younger`
     : diff > 0
     ? `${diff} years older`
     : 'Same as calendar age'
+  const canvasRef = (el) => {
+    if (!el || el.dataset.drawn === color) return
+    el.dataset.drawn = color
+    const ctx = el.getContext('2d')
+    const w = el.width, h = el.height, cx = w / 2, cy = h / 2, r = w / 2
+    const [hi, mid, deep, dark, edge, darkSpeckle, vignette] = ORB_PALETTES[color] || ORB_PALETTES['#3E9C7E']
+
+    const base = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.32, r * 0.05, cx, cy, r)
+    base.addColorStop(0, hi)
+    base.addColorStop(0.28, mid)
+    base.addColorStop(0.55, deep)
+    base.addColorStop(0.8, dark)
+    base.addColorStop(1, edge)
+    ctx.fillStyle = base
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.clip()
+
+    let seed = 42
+    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280 }
+
+    for (let i = 0; i < 900; i++) {
+      const a = rand() * Math.PI * 2
+      const d = Math.sqrt(rand()) * r
+      const x = cx + Math.cos(a) * d
+      const y = cy + Math.sin(a) * d
+      const distFromHot = Math.hypot(x - (cx - r * 0.28), y - (cy - r * 0.32)) / r
+      const brightness = Math.max(0, 1 - distFromHot * 1.1)
+      const size = 0.4 + rand() * 1.8
+      const alpha = 0.08 + brightness * 0.55 * rand()
+      ctx.beginPath()
+      ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`
+      ctx.arc(x, y, size, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    for (let i = 0; i < 70; i++) {
+      const a = rand() * Math.PI * 2
+      const d = Math.sqrt(rand()) * r * 0.75
+      const x = cx + Math.cos(a) * d
+      const y = cy + Math.sin(a) * d
+      ctx.beginPath()
+      ctx.fillStyle = `${darkSpeckle}${(0.15 + rand() * 0.25).toFixed(3)})`
+      ctx.arc(x, y, 1.2 + rand() * 3, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    const vign = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r)
+    vign.addColorStop(0, 'rgba(0,0,0,0)')
+    vign.addColorStop(1, `${vignette}0.35)`)
+    ctx.fillStyle = vign
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.restore()
+  }
   return (
     <div className="flex flex-col items-center py-4">
       <div
-        className="relative flex items-center justify-center"
-        style={{
-          width: 220, height: 220, borderRadius: '50%',
-          background: `radial-gradient(circle at 30% 28%, ${color}90 0%, ${color}50 22%, ${color}22 48%, ${color}08 68%, transparent)`,
-          border: `1px solid ${color}55`,
-          boxShadow: `0 0 45px ${color}50, 0 0 90px ${color}28, 0 0 180px ${color}12, inset 0 0 50px ${color}18`,
-        }}
+        className="relative"
+        style={{ width: 220, height: 220, borderRadius: '50%', boxShadow: `0 0 70px 10px ${color}59, 0 20px 50px rgba(0,0,0,0.12)` }}
       >
-        <div style={{ position: 'absolute', width: 95, height: 65, borderRadius: '50%', background: `radial-gradient(ellipse, ${color}70, transparent 70%)`, top: 32, left: 36, filter: 'blur(10px)' }} />
-        <div className="text-center z-10">
-          <p className="text-6xl font-bold text-white" style={{ lineHeight: 1 }}>{physAge}</p>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] mt-2" style={{ color }}>SOMA AGE</p>
+        <canvas ref={canvasRef} width={220} height={220} style={{ position: 'absolute', top: 0, left: 0, borderRadius: '50%' }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+          <p className="text-6xl font-bold text-white" style={{ lineHeight: 1, textShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>{physAge}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] mt-2 text-white" style={{ opacity: 0.92 }}>SOMA AGE</p>
+          <p className="text-[13px] font-bold mt-2.5 text-white" style={{ opacity: 0.92 }}>{diffText}</p>
         </div>
       </div>
-      <div className="mt-4 px-5 py-2 rounded-full" style={{ background: color + '20', border: `1px solid ${color}40` }}>
-        <p className="text-sm font-bold" style={{ color }}>{diffText}</p>
-      </div>
-      <p className="text-xs text-gray-600 mt-2">vs {chronAge} calendar age · wearable estimate ±3y</p>
+      <p className="text-xs text-[#9a8f7e] mt-4">vs {chronAge} calendar age · wearable estimate ±3y</p>
     </div>
   )
 }
@@ -49,14 +111,14 @@ function BioAgeOrb({ physAge, chronAge }) {
 function ConfidenceBadge({ confidence }) {
   if (!confidence) return null
   const { present, total, missingNames } = confidence
-  const color = present === total ? '#00c9a7' : present >= total - 1 ? '#3b82f6' : present >= total / 2 ? '#f59e0b' : '#ef4444'
+  const color = present === total ? '#3E9C7E' : present >= total - 1 ? '#9B7FD4' : present >= total / 2 ? '#D98E3F' : '#ef4444'
   return (
     <div className="rounded-xl px-4 py-2.5 -mt-1 mb-1" style={{ background: color + '12', border: `1px solid ${color}30` }}>
       <p className="text-xs font-semibold" style={{ color }}>
         {present}/{total} domains using real data
       </p>
       {missingNames.length > 0 && (
-        <p className="text-[11px] text-gray-600 mt-0.5">Missing: {missingNames.join(', ')} — those domains default to 0</p>
+        <p className="text-[11px] text-[#9a8f7e] mt-0.5">Missing: {missingNames.join(', ')} — those domains default to 0</p>
       )}
     </div>
   )
@@ -64,36 +126,40 @@ function ConfidenceBadge({ confidence }) {
 
 function PaceSlider({ pace, physAge, chronAge }) {
   const rate = pace?.rate ?? (chronAge > 0 ? physAge / chronAge : 1.0)
-  const paceColor = rate <= 0.85 ? '#00c9a7' : rate <= 1.05 ? '#3b82f6' : rate <= 1.3 ? '#f59e0b' : '#ef4444'
+  const paceColor = rate <= 0.85 ? '#3E9C7E' : rate <= 1.05 ? '#9B7FD4' : rate <= 1.3 ? '#D98E3F' : '#ef4444'
   const paceLabel = rate <= 0.8 ? 'Slowing significantly' : rate <= 0.95 ? 'Slowing' : rate <= 1.05 ? 'On track' : rate <= 1.3 ? 'Slightly fast' : 'Accelerated'
   const minRate = 0.5, maxRate = 1.8
-  const pct = Math.min(96, Math.max(4, ((rate - minRate) / (maxRate - minRate)) * 100))
+  const total = 44
+  const currentIdx = Math.round(Math.min(43, Math.max(0, ((rate - minRate) / (maxRate - minRate)) * (total - 1))))
   return (
-    <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-      <div className="flex items-baseline justify-between mb-1">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Pace of Aging</p>
-        <span className="text-2xl font-bold" style={{ color: paceColor }}>{rate.toFixed(1)}x</span>
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Pace of Aging</p>
+      <p className="text-[32px] font-bold mt-1.5 text-[#1a1a1a]">{rate.toFixed(1)}x</p>
+      <div className="flex items-end gap-[3px] mt-5" style={{ height: 30 }}>
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-[1px]"
+            style={{
+              height: i % 4 === 0 || i === currentIdx ? '100%' : '55%',
+              width: i === currentIdx ? 3 : undefined,
+              background: i === currentIdx ? '#3E9C7E' : i % 4 === 0 ? '#cbbfa3' : '#E3D9C4',
+            }}
+          />
+        ))}
       </div>
-      <p className="text-sm font-medium mb-5" style={{ color: paceColor }}>{paceLabel}</p>
-      <div className="relative pt-2 mb-3 mx-1">
-        <div className="h-2 rounded-full" style={{ background: 'linear-gradient(to right, #00c9a7, #3b82f6 35%, #f59e0b 65%, #ef4444)' }} />
-        <div className="absolute top-0 flex justify-center" style={{ left: `calc(${pct}% - 5px)` }}>
-          <svg width="10" height="8"><polygon points="5,0 0,8 10,8" fill="white"/></svg>
-        </div>
-        <div className="absolute top-1 bottom-0 w-px opacity-30" style={{ background: 'white', left: `${((1.0 - minRate) / (maxRate - minRate)) * 100}%` }} />
+      <div className="flex justify-between mt-2">
+        <span className="text-[11px] font-bold text-[#b3a890]">1.0x</span>
+        <span className="text-[11px] font-bold text-[#b3a890]">Fast →</span>
       </div>
-      <div className="flex justify-between">
-        <span className="text-xs text-gray-500">← Slow</span>
-        <span className="text-xs text-gray-600">1.0× normal</span>
-        <span className="text-xs text-gray-500">Fast →</span>
-      </div>
+      <p className="text-sm font-medium mt-3" style={{ color: paceColor }}>{paceLabel}</p>
       {pace && (
-        <p className="text-xs text-gray-600 mt-3">
+        <p className="text-xs text-[#9a8f7e] mt-2">
           Bio age {pace.bioAgeDelta < 0 ? '↓' : '↑'} {Math.abs(pace.bioAgeDelta).toFixed(1)}y over {Math.round(pace.calDays / 30)}mo · longitudinal tracking
         </p>
       )}
       {!pace && (
-        <p className="text-xs text-gray-600 mt-3">Longitudinal pace unlocks after 30+ days of tracking.</p>
+        <p className="text-xs text-[#9a8f7e] mt-2">Longitudinal pace unlocks after 30+ days of tracking.</p>
       )}
     </div>
   )
@@ -101,7 +167,7 @@ function PaceSlider({ pace, physAge, chronAge }) {
 
 function InsightCard({ physAge, chronAge, pace }) {
   const diff = physAge - chronAge
-  const color = diff <= 0 ? '#00c9a7' : '#f59e0b'
+  const color = diff <= 0 ? '#3E9C7E' : '#D98E3F'
   let headline, body
   if (pace && pace.bioAgeDelta < -0.5) {
     headline = 'Trending Younger'
@@ -119,7 +185,7 @@ function InsightCard({ physAge, chronAge, pace }) {
   return (
     <div className="rounded-2xl p-4" style={{ background: color + '12', border: `1px solid ${color}30` }}>
       <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color }}>{headline}</p>
-      <p className="text-sm text-gray-300 leading-relaxed">{body}</p>
+      <p className="text-sm text-[#5c5648] leading-relaxed">{body}</p>
     </div>
   )
 }
@@ -142,20 +208,20 @@ function BioAgeTrendChart({ chronAge }) {
   }, [chronAge])
   if (data.length < 2) return null
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between mb-1">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Age Trend</p>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Age Trend</p>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-gray-500 flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#00c9a7' }} /> Soma Age
+          <span className="text-[10px] text-[#9a8f7e] flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#3E9C7E' }} /> Soma Age
           </span>
-          <span className="text-[10px] text-gray-500 flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#555' }} /> Calendar
+          <span className="text-[10px] text-[#9a8f7e] flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#9a8f7e' }} /> Calendar
           </span>
         </div>
       </div>
-      <p className="text-[10px] text-gray-600 mb-3">Biological vs chronological age over time</p>
-      <DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#00c9a7" color2="#555" unit="y" height={110} />
+      <p className="text-[10px] text-[#9a8f7e] mb-3">Biological vs chronological age over time</p>
+      <DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#3E9C7E" color2="#9a8f7e" unit="y" height={110} />
     </div>
   )
 }
@@ -166,15 +232,15 @@ function MetricFactorCard({ label, value, displayValue, unit, contribution, min,
   const markerPct = higherBetter
     ? Math.min(96, Math.max(4, rawPct))
     : Math.min(96, Math.max(4, 100 - rawPct))
-  const color = contribution < 0 ? '#00c9a7' : contribution === 0 ? '#3b82f6' : contribution <= 2 ? '#f59e0b' : '#ef4444'
+  const color = contribution < 0 ? '#3E9C7E' : contribution === 0 ? '#9B7FD4' : contribution <= 2 ? '#D98E3F' : '#ef4444'
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{label}</p>
+    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">{label}</p>
       <div className="relative pt-2 mb-2 mx-1">
         <div className="h-2 rounded-full" style={{
           background: higherBetter
-            ? 'linear-gradient(to right, #ef4444, #f59e0b 40%, #00c9a7)'
-            : 'linear-gradient(to right, #00c9a7, #f59e0b 60%, #ef4444)',
+            ? 'linear-gradient(to right, #ef4444, #D98E3F 40%, #3E9C7E)'
+            : 'linear-gradient(to right, #3E9C7E, #D98E3F 60%, #ef4444)',
         }} />
         <div className="absolute top-0 flex justify-center" style={{ left: `calc(${markerPct}% - 5px)` }}>
           <svg width="10" height="8"><polygon points="5,0 0,8 10,8" fill="white"/></svg>
@@ -182,16 +248,16 @@ function MetricFactorCard({ label, value, displayValue, unit, contribution, min,
       </div>
       <div className="flex items-end justify-between mt-1">
         <div>
-          <span className="text-base font-bold text-white">{displayValue ?? value}{unit}</span>
-          {sublabel && <p className="text-[10px] text-gray-500 mt-0.5">{sublabel}</p>}
+          <span className="text-base font-bold text-[#1a1a1a]">{displayValue ?? value}{unit}</span>
+          {sublabel && <p className="text-[10px] text-[#9a8f7e] mt-0.5">{sublabel}</p>}
         </div>
         <span className="text-base font-bold" style={{ color }}>
           {contribution < 0 ? '' : contribution > 0 ? '+' : ''}{contribution}y
         </span>
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-gray-600">{higherBetter ? min : max}{unit}</span>
-        <span className="text-[10px] text-gray-600">{higherBetter ? max : min}{unit}</span>
+        <span className="text-[10px] text-[#9a8f7e]">{higherBetter ? min : max}{unit}</span>
+        <span className="text-[10px] text-[#9a8f7e]">{higherBetter ? max : min}{unit}</span>
       </div>
     </div>
   )
@@ -216,21 +282,21 @@ function TopPriorities({ opportunities }) {
   if (!opportunities || opportunities.length === 0) return null
   const top3 = opportunities.slice(0, 3)
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Priorities</p>
+    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Top Priorities</p>
       <div className="space-y-0">
         {top3.map((c, i) => (
           <div
             key={c.label}
             className="flex items-start gap-3 py-3"
-            style={i < top3.length - 1 ? { borderBottom: '1px solid #1a1a1a' } : {}}
+            style={i < top3.length - 1 ? { borderBottom: '1px solid #ece3d4' } : {}}
           >
             <span className="text-base font-bold flex-shrink-0 w-14 text-right" style={{ color: '#ef4444' }}>
               +{c.contribution}y
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white leading-tight">{c.label}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{getActionTip(c.label)}</p>
+              <p className="text-sm font-medium text-[#1a1a1a] leading-tight">{c.label}</p>
+              <p className="text-xs text-[#9a8f7e] mt-0.5">{getActionTip(c.label)}</p>
             </div>
           </div>
         ))}
@@ -241,10 +307,10 @@ function TopPriorities({ opportunities }) {
 
 function MetricContribution({ label, value, unit, contribution, color, sublabel }) {
   return (
-    <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #1a1a1a' }}>
+    <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #ece3d4' }}>
       <div>
-        <p className="text-sm text-white">{label}</p>
-        <p className="text-xs text-gray-500">{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
+        <p className="text-sm text-[#1a1a1a]">{label}</p>
+        <p className="text-xs text-[#9a8f7e]">{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
       </div>
       <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ background: color + '20', color }}>
         {contribution > 0 ? '+' : ''}{contribution}y
@@ -560,25 +626,25 @@ export default function Chronos({ data, onNav }) {
   })
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4">
+    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
       <div className="pt-2 flex items-center gap-3">
         {onNav && <BackButton onNav={onNav} />}
         <div>
-          <p className="text-gray-500 text-xs uppercase tracking-wider">Chronos</p>
-          <h1 className="text-xl font-bold">Your biological age</h1>
+          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Chronos</p>
+          <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>Your biological age</h1>
         </div>
       </div>
 
       {!ageIsSet ? (
-        <div className="rounded-2xl p-6 text-center" style={{ background: '#111', border: '1px solid #333' }}>
+        <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-2xl mb-3">⏳</p>
-          <p className="text-gray-300 text-sm font-medium">Set your age to get started</p>
-          <p className="text-xs text-gray-600 mt-1 mb-4">Biological age needs your calendar age as a baseline.</p>
+          <p className="text-[#5c5648] text-sm font-medium">Set your age to get started</p>
+          <p className="text-xs text-[#9a8f7e] mt-1 mb-4">Biological age needs your calendar age as a baseline.</p>
           {onNav && (
             <button
               onClick={() => onNav('settings')}
               className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#00c9a720', color: '#00c9a7', border: '1px solid #00c9a733' }}
+              style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
             >
               Open Settings
             </button>
@@ -592,28 +658,28 @@ export default function Chronos({ data, onNav }) {
           <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
           <BioAgeTrendChart chronAge={userAge} />
           {phenoAge !== null ? (
-            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+            <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge</p>
-                  <p className="text-[10px] text-gray-600 mt-0.5">Levine Formula · validated clinical model</p>
+                  <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge</p>
+                  <p className="text-[10px] text-[#9a8f7e] mt-0.5">Levine Formula · validated clinical model</p>
                 </div>
-                <span className="text-2xl font-bold" style={{ color: phenoAge < userAge ? '#00c9a7' : phenoAge < userAge + 5 ? '#f59e0b' : '#ef4444' }}>
+                <span className="text-2xl font-bold" style={{ color: phenoAge < userAge ? '#3E9C7E' : phenoAge < userAge + 5 ? '#D98E3F' : '#ef4444' }}>
                   {Math.round(phenoAge)}y
                 </span>
               </div>
             </div>
           ) : phenoProgress ? (
-            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+            <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">PhenoAge — bloodwork panel</p>
-                <span className="text-xs font-bold text-gray-400">{phenoProgress.present}/{phenoProgress.total} markers</span>
+                <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge — bloodwork panel</p>
+                <span className="text-xs font-bold text-[#9a8f7e]">{phenoProgress.present}/{phenoProgress.total} markers</span>
               </div>
-              <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#222' }}>
-                <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#3b82f6' }} />
+              <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#EAE2D2' }}>
+                <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#9B7FD4' }} />
               </div>
               {phenoProgress.missingNames.length > 0 && (
-                <p className="text-[10px] text-gray-600">Still needed: {phenoProgress.missingNames.join(', ')}</p>
+                <p className="text-[10px] text-[#9a8f7e]">Still needed: {phenoProgress.missingNames.join(', ')}</p>
               )}
             </div>
           ) : null}
@@ -624,39 +690,39 @@ export default function Chronos({ data, onNav }) {
       <button
         onClick={() => onNav('vitals')}
         className="w-full flex items-center justify-between px-4 py-3 rounded-2xl"
-        style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}
+        style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}
       >
         <div className="flex items-center gap-2.5">
           <span className="text-lg">📊</span>
           <div className="text-left">
-            <p className="text-sm font-semibold text-white">Vitals History</p>
-            <p className="text-xs text-gray-600">BP · Weight · Grip · Waist · HRV · RHR</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">Vitals History</p>
+            <p className="text-xs text-[#9a8f7e]">BP · Weight · Grip · Waist · HRV · RHR</p>
           </div>
         </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9a8f7e" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Body Composition</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Body Composition</p>
 
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {weightKg > 0 && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Weight</p>
-                <p className="text-xl font-bold text-white">
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Weight</p>
+                <p className="text-xl font-bold text-[#1a1a1a]">
                   {units === 'imperial' ? Math.round(weightKg * 2.2046) : Math.round(weightKg * 10) / 10}
                 </p>
-                <p className="text-[10px] text-gray-600">{units === 'imperial' ? 'lbs' : 'kg'}</p>
+                <p className="text-[10px] text-[#9a8f7e]">{units === 'imperial' ? 'lbs' : 'kg'}</p>
               </div>
             )}
             {bodyFatPct !== null && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Body Fat</p>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Body Fat</p>
                 <p className="text-xl font-bold" style={{ color: getBodyFatColor(bodyFatPct) }}>
                   {bodyFatPct}%
                 </p>
@@ -666,8 +732,8 @@ export default function Chronos({ data, onNav }) {
               </div>
             )}
             {bmi !== null && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">BMI</p>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">BMI</p>
                 <p className="text-xl font-bold" style={{ color: getBMIColor(bmi) }}>{bmi}</p>
                 <p className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</p>
               </div>
@@ -677,18 +743,18 @@ export default function Chronos({ data, onNav }) {
           {/* Lean / fat mass */}
           {leanMass !== null && (
             <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Lean Mass</p>
-                <p className="text-base font-bold text-white">
+              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Lean Mass</p>
+                <p className="text-base font-bold text-[#1a1a1a]">
                   {units === 'imperial' ? Math.round(leanMass * 2.2046) : leanMass}
-                  <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
+                  <span className="text-xs text-[#9a8f7e] ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
                 </p>
               </div>
-              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Fat Mass</p>
-                <p className="text-base font-bold text-white">
+              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Fat Mass</p>
+                <p className="text-base font-bold text-[#1a1a1a]">
                   {units === 'imperial' ? Math.round(fatMass * 2.2046) : fatMass}
-                  <span className="text-xs text-gray-600 ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
+                  <span className="text-xs text-[#9a8f7e] ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
                 </p>
               </div>
             </div>
@@ -697,113 +763,113 @@ export default function Chronos({ data, onNav }) {
           {/* Weight trend chart */}
           {weightChartData.length >= 2 && (
             <>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Weight Trend</p>
-              <LineGraph data={weightChartData} dataKey="weight" color="#3b82f6" unit={units === 'imperial' ? 'lbs' : 'kg'} height={80} />
+              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Weight Trend</p>
+              <LineGraph data={weightChartData} dataKey="weight" color="#9B7FD4" unit={units === 'imperial' ? 'lbs' : 'kg'} height={80} />
             </>
           )}
 
           {/* Grip strength trend */}
           {gripChartData.length >= 2 && (
             <div className="mt-3">
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Grip Strength Trend</p>
-              <LineGraph data={gripChartData} dataKey="grip" color="#00c9a7" unit={units === 'imperial' ? 'lbs' : 'kg'} height={70} />
+              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Grip Strength Trend</p>
+              <LineGraph data={gripChartData} dataKey="grip" color="#3E9C7E" unit={units === 'imperial' ? 'lbs' : 'kg'} height={70} />
             </div>
           )}
 
           {/* Waist trend */}
           {waistChartData.length >= 2 && (
             <div className="mt-3">
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Waist Circumference Trend</p>
-              <LineGraph data={waistChartData} dataKey="waist" color="#f59e0b" unit={units === 'imperial' ? 'in' : 'cm'} height={70} reference={units === 'imperial' ? Math.round(94 / 2.54) : 94} />
+              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Waist Circumference Trend</p>
+              <LineGraph data={waistChartData} dataKey="waist" color="#D98E3F" unit={units === 'imperial' ? 'in' : 'cm'} height={70} reference={units === 'imperial' ? Math.round(94 / 2.54) : 94} />
             </div>
           )}
 
           {weightKg === 0 && bodyFatPct === null && (
-            <p className="text-xs text-gray-600">Set height, weight, and body fat % in Settings to see composition metrics.</p>
+            <p className="text-xs text-[#9a8f7e]">Set height, weight, and body fat % in Settings to see composition metrics.</p>
           )}
           {weightKg > 0 && bodyFatPct === null && (
-            <p className="text-xs text-gray-600 mt-1">Add body fat % in Settings to see lean and fat mass.</p>
+            <p className="text-xs text-[#9a8f7e] mt-1">Add body fat % in Settings to see lean and fat mass.</p>
           )}
         </div>
       )}
 
       {/* Zone 2 Training */}
-      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Zone 2 Cardio This Week</p>
+      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Zone 2 Cardio This Week</p>
         <div className="flex items-end gap-3 mb-3">
-          <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#00c9a7' : weeklyZone2 >= 150 ? '#3b82f6' : '#f59e0b' }}>
+          <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }}>
             {weeklyZone2}
           </span>
           <div className="pb-1">
-            <p className="text-sm text-gray-400">minutes</p>
-            <p className="text-xs text-gray-600">{weeklyZone2 >= 300 ? 'Excellent — above longevity target' : weeklyZone2 >= 150 ? 'Good — meets minimum target' : 'Below target — aim for 150+ min'}</p>
+            <p className="text-sm text-[#9a8f7e]">minutes</p>
+            <p className="text-xs text-[#9a8f7e]">{weeklyZone2 >= 300 ? 'Excellent — above longevity target' : weeklyZone2 >= 150 ? 'Good — meets minimum target' : 'Below target — aim for 150+ min'}</p>
           </div>
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <div className="w-full rounded-full h-2" style={{ background: '#1a1a1a' }}>
-              <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (weeklyZone2 / 300) * 100)}%`, background: weeklyZone2 >= 300 ? '#00c9a7' : weeklyZone2 >= 150 ? '#3b82f6' : '#f59e0b' }} />
+            <div className="w-full rounded-full h-2" style={{ background: '#F6F1E9' }}>
+              <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (weeklyZone2 / 300) * 100)}%`, background: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }} />
             </div>
-            <span className="text-[10px] text-gray-600 whitespace-nowrap">300 goal</span>
+            <span className="text-[10px] text-[#9a8f7e] whitespace-nowrap">300 goal</span>
           </div>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
+        <p className="text-[10px] text-[#9a8f7e] mt-2">60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
       </div>
 
       {/* Sleep Regularity Index */}
       {sri !== null && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Regularity Index</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Sleep Regularity Index</p>
           <div className="flex items-end gap-3 mb-2">
-            <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#00c9a7' : sri >= 0.80 ? '#3b82f6' : sri >= 0.70 ? '#f59e0b' : '#ef4444' }}>
+            <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }}>
               {Math.round(sri * 100)}
             </span>
             <div className="pb-1">
-              <p className="text-sm text-gray-400">/ 100</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm text-[#9a8f7e]">/ 100</p>
+              <p className="text-xs text-[#9a8f7e]">
                 {sri >= 0.87 ? 'Excellent regularity' : sri >= 0.80 ? 'Good' : sri >= 0.70 ? 'Moderate — work on consistency' : 'Poor — irregular schedule'}
               </p>
             </div>
           </div>
-          <div className="w-full rounded-full h-2 mb-2" style={{ background: '#1a1a1a' }}>
-            <div className="h-2 rounded-full" style={{ width: `${Math.round(sri * 100)}%`, background: sri >= 0.87 ? '#00c9a7' : sri >= 0.80 ? '#3b82f6' : sri >= 0.70 ? '#f59e0b' : '#ef4444' }} />
+          <div className="w-full rounded-full h-2 mb-2" style={{ background: '#F6F1E9' }}>
+            <div className="h-2 rounded-full" style={{ width: `${Math.round(sri * 100)}%`, background: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }} />
           </div>
-          <p className="text-[10px] text-gray-600">Probability of same sleep/wake state 24h apart. ≥87 = excellent circadian rhythm. Used as sleep consistency in your biological age.</p>
+          <p className="text-[10px] text-[#9a8f7e]">Probability of same sleep/wake state 24h apart. ≥87 = excellent circadian rhythm. Used as sleep consistency in your biological age.</p>
         </div>
       )}
 
       {/* Post-exercise Heart Rate Recovery — shows live today or last known (≤90 days) */}
       {lastKnownHRR && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Heart Rate Recovery</p>
+            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Heart Rate Recovery</p>
             {!data.hrr && lastKnownHRR.date && (
-              <span className="text-[10px] text-gray-600">last recorded {lastKnownHRR.date}</span>
+              <span className="text-[10px] text-[#9a8f7e]">last recorded {lastKnownHRR.date}</span>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 mb-2">
-            <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Post-Exercise Drop</p>
-              <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr60 >= 18 ? '#00c9a7' : lastKnownHRR.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
-                -{lastKnownHRR.hrr60}<span className="text-sm font-normal text-gray-500"> bpm</span>
+            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Post-Exercise Drop</p>
+              <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr60 >= 18 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 12 ? '#9B7FD4' : '#ef4444' }}>
+                -{lastKnownHRR.hrr60}<span className="text-sm font-normal text-[#9a8f7e]"> bpm</span>
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr60 >= 25 ? '#00c9a7' : lastKnownHRR.hrr60 >= 18 ? '#00c9a7' : lastKnownHRR.hrr60 >= 12 ? '#3b82f6' : '#ef4444' }}>
+              <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr60 >= 25 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 18 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 12 ? '#9B7FD4' : '#ef4444' }}>
                 {lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor (↑ risk)'}
               </p>
             </div>
             {lastKnownHRR.hrr120 !== null && (
-              <div className="rounded-xl p-3" style={{ background: '#1a1a1a' }}>
-                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Early Recovery Drop</p>
-                <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#00c9a7' : lastKnownHRR.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
-                  -{lastKnownHRR.hrr120}<span className="text-sm font-normal text-gray-500"> bpm</span>
+              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
+                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Early Recovery Drop</p>
+                <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#3E9C7E' : lastKnownHRR.hrr120 >= 30 ? '#9B7FD4' : '#ef4444' }}>
+                  -{lastKnownHRR.hrr120}<span className="text-sm font-normal text-[#9a8f7e]"> bpm</span>
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#00c9a7' : lastKnownHRR.hrr120 >= 30 ? '#3b82f6' : '#ef4444' }}>
+                <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#3E9C7E' : lastKnownHRR.hrr120 >= 30 ? '#9B7FD4' : '#ef4444' }}>
                   {lastKnownHRR.hrr120 >= 42 ? 'Excellent' : lastKnownHRR.hrr120 >= 30 ? 'Good' : 'Below average'}
                 </p>
               </div>
             )}
           </div>
-          {lastKnownHRR.peakHR && <p className="text-[10px] text-gray-600">Peak HR {lastKnownHRR.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>}
+          {lastKnownHRR.peakHR && <p className="text-[10px] text-[#9a8f7e]">Peak HR {lastKnownHRR.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>}
         </div>
       )}
 
@@ -812,7 +878,7 @@ export default function Chronos({ data, onNav }) {
 
       {/* What's moving the needle — WHOOP-style metric factor cards */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 px-1">What's Moving the Needle</p>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3 px-1">What's Moving the Needle</p>
         <div className="space-y-3">
           {/* HRV */}
           {avgHRV > 0 && <MetricFactorCard label="Heart Rate Variability" value={Math.round(avgHRV)} unit=" ms" contribution={contributions.find(c => c.label === 'HRV')?.contribution ?? 0} min={20} max={120} higherBetter={true} sublabel={`30-day avg · norm ~${getHRVNorm(userAge)} ms for age`} />}
@@ -848,20 +914,20 @@ export default function Chronos({ data, onNav }) {
 
       {/* VO2 Max History */}
       {vo2ChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">VO2 Max Trend</p>
-          <p className="text-[10px] text-gray-600 mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
-          <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#3b82f6" unit=" mL/kg/min" height={90} />
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">VO2 Max Trend</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
+          <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#9B7FD4" unit=" mL/kg/min" height={90} />
           {vo2Max > 0 && (() => {
             const ctx = getVO2MortalityContext(vo2Max, userAge)
             if (!ctx) return null
             return (
-              <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a1a1a' }}>
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid #ece3d4' }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold" style={{ color: ctx.color }}>{ctx.category}</p>
-                    <p className="text-[10px] text-gray-600 mt-0.5">{ctx.note}</p>
-                    <p className="text-[10px] text-gray-700 mt-0.5">Mandsager et al., JAMA Network Open 2018</p>
+                    <p className="text-[10px] text-[#9a8f7e] mt-0.5">{ctx.note}</p>
+                    <p className="text-[10px] text-[#b3a890] mt-0.5">Mandsager et al., JAMA Network Open 2018</p>
                   </div>
                   <span className="text-sm font-bold flex-shrink-0 px-2 py-1 rounded-lg" style={{ background: ctx.color + '20', color: ctx.color }}>
                     {vo2Max} ml/kg/min
@@ -875,14 +941,14 @@ export default function Chronos({ data, onNav }) {
 
       {/* Lab results impact */}
       {labContributions.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <div className="px-4 pt-4 pb-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Bloodwork Impact</span>
-            <p className="text-xs text-gray-600 mt-1">{labContributions.length} marker{labContributions.length !== 1 ? 's' : ''} entered</p>
+            <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Bloodwork Impact</span>
+            <p className="text-xs text-[#9a8f7e] mt-1">{labContributions.length} marker{labContributions.length !== 1 ? 's' : ''} entered</p>
           </div>
           <div className="px-4 pb-2">
             {labContributions.map((c) => {
-              const color = c.contribution < 0 ? '#00c9a7' : c.contribution > 1 ? '#ef4444' : '#f59e0b'
+              const color = c.contribution < 0 ? '#3E9C7E' : c.contribution > 1 ? '#ef4444' : '#D98E3F'
               return <MetricContribution key={c.label} {...c} color={color} />
             })}
           </div>
@@ -891,15 +957,15 @@ export default function Chronos({ data, onNav }) {
 
       {/* Blood Pressure Trend */}
       {bpChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Blood Pressure Trend</p>
-          <p className="text-[10px] text-gray-600 mb-3">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Blood Pressure Trend</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-3">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
           <DualLineGraph
             data={bpChartData}
             dataKey1="sys"
             dataKey2="dia"
             color1="#ef4444"
-            color2="#3b82f6"
+            color2="#9B7FD4"
             unit=" mmHg"
             height={100}
             reference1={120}
@@ -909,97 +975,97 @@ export default function Chronos({ data, onNav }) {
       )}
 
       {/* Mortality Driver Dashboard */}
-      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Longevity Profile</p>
+      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Longevity Profile</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Top Assets</p>
+            <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Top Assets</p>
             {allAssets.slice(0, 3).map(c => (
-              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
-                <p className="text-xs text-gray-300 truncate mr-2">{c.label}</p>
-                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#00c9a7' }}>{c.contribution}y</span>
+              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
+                <p className="text-xs text-[#5c5648] truncate mr-2">{c.label}</p>
+                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#3E9C7E' }}>{c.contribution}y</span>
               </div>
             ))}
-            {allAssets.length === 0 && <p className="text-xs text-gray-600">No assets yet — keep tracking.</p>}
+            {allAssets.length === 0 && <p className="text-xs text-[#9a8f7e]">No assets yet — keep tracking.</p>}
           </div>
           <div>
-            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-2">Top Liabilities</p>
+            <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Top Liabilities</p>
             {allOpportunities.slice(0, 3).map(c => (
-              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #1a1a1a' }}>
-                <p className="text-xs text-gray-300 truncate mr-2">{c.label}</p>
+              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
+                <p className="text-xs text-[#5c5648] truncate mr-2">{c.label}</p>
                 <span className="text-xs font-bold flex-shrink-0" style={{ color: '#ef4444' }}>+{c.contribution}y</span>
               </div>
             ))}
-            {allOpportunities.length === 0 && <p className="text-xs text-gray-600 text-green-400">Clean slate.</p>}
+            {allOpportunities.length === 0 && <p className="text-xs text-[#9a8f7e] text-green-400">Clean slate.</p>}
           </div>
         </div>
       </div>
 
       {/* Chronos Delta Engine */}
       {chronosDeltas.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
-          <p className="text-[10px] text-gray-600 mb-3">One-tier improvement on each factor</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-3">One-tier improvement on each factor</p>
           <div className="space-y-3">
             {chronosDeltas.slice(0, 5).map(d => (
               <div key={d.label} className="flex items-start gap-3">
-                <span className="text-lg font-bold flex-shrink-0" style={{ color: '#00c9a7', minWidth: 32 }}>+{d.gain}y</span>
+                <span className="text-lg font-bold flex-shrink-0" style={{ color: '#3E9C7E', minWidth: 32 }}>+{d.gain}y</span>
                 <div>
-                  <p className="text-sm font-medium text-white">{d.label}</p>
-                  <p className="text-xs text-gray-500">{d.action}</p>
+                  <p className="text-sm font-medium text-[#1a1a1a]">{d.label}</p>
+                  <p className="text-xs text-[#9a8f7e]">{d.action}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-gray-600 mt-3">Estimates based on next-tier bio age scoring. Actual gains compound with multiple improvements.</p>
+          <p className="text-[10px] text-[#9a8f7e] mt-3">Estimates based on next-tier bio age scoring. Actual gains compound with multiple improvements.</p>
         </div>
       )}
 
       {/* Social Jet Lag */}
       {socialJetLag !== null && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Circadian Alignment</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Circadian Alignment</p>
           <div className="flex items-end gap-3 mb-2">
-            <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#00c9a7' : socialJetLag <= 45 ? '#3b82f6' : socialJetLag <= 75 ? '#f59e0b' : '#ef4444' }}>
+            <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#3E9C7E' : socialJetLag <= 45 ? '#9B7FD4' : socialJetLag <= 75 ? '#D98E3F' : '#ef4444' }}>
               {socialJetLag}
             </span>
             <div className="pb-1">
-              <p className="text-sm text-gray-400">min variability</p>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm text-[#9a8f7e]">min variability</p>
+              <p className="text-xs text-[#9a8f7e]">
                 {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate timing variability' : 'High variability — circadian disruption risk'}
               </p>
             </div>
           </div>
-          <p className="text-[10px] text-gray-600">SD of sleep midpoint timing across last 30 nights. Measures sleep schedule consistency (not classic Roenneberg SJL). &lt;20 min = elite consistency.</p>
+          <p className="text-[10px] text-[#9a8f7e]">SD of sleep midpoint timing across last 30 nights. Measures sleep schedule consistency (not classic Roenneberg SJL). &lt;20 min = elite consistency.</p>
         </div>
       )}
 
       {/* Sleep Apnea Risk */}
       {sleepApneaRisk !== null && (
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(160deg, #141414, #0f0f0f)', border: '1px solid #1e1e1e' }}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Sleep Breathing Risk</p>
+        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Sleep Breathing Risk</p>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#00c9a7' : sleepApneaRisk.riskLevel === 1 ? '#f59e0b' : '#ef4444' }}>
+              <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#3E9C7E' : sleepApneaRisk.riskLevel === 1 ? '#D98E3F' : '#ef4444' }}>
                 {sleepApneaRisk.risk}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Based on SpO₂ during sleep</p>
+              <p className="text-xs text-[#9a8f7e] mt-0.5">Based on SpO₂ during sleep</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-600">Min SpO₂</p>
-              <p className="text-lg font-bold" style={{ color: sleepApneaRisk.minSpo2 >= 93 ? '#00c9a7' : sleepApneaRisk.minSpo2 >= 88 ? '#f59e0b' : '#ef4444' }}>
+              <p className="text-xs text-[#9a8f7e]">Min SpO₂</p>
+              <p className="text-lg font-bold" style={{ color: sleepApneaRisk.minSpo2 >= 93 ? '#3E9C7E' : sleepApneaRisk.minSpo2 >= 88 ? '#D98E3F' : '#ef4444' }}>
                 {sleepApneaRisk.minSpo2}%
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-2">
-            <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase mb-1">Desat. Events/hr</p>
-              <p className="text-base font-bold text-white">{sleepApneaRisk.odi}<span className="text-xs text-gray-600"> /hr</span></p>
+            <div className="rounded-xl p-2.5" style={{ background: '#F6F1E9' }}>
+              <p className="text-[10px] text-[#9a8f7e] uppercase mb-1">Desat. Events/hr</p>
+              <p className="text-base font-bold text-[#1a1a1a]">{sleepApneaRisk.odi}<span className="text-xs text-[#9a8f7e]"> /hr</span></p>
             </div>
-            <div className="rounded-xl p-2.5" style={{ background: '#1a1a1a' }}>
-              <p className="text-[10px] text-gray-600 uppercase mb-1">Avg SpO₂</p>
-              <p className="text-base font-bold text-white">{sleepApneaRisk.avgSpo2}%</p>
+            <div className="rounded-xl p-2.5" style={{ background: '#F6F1E9' }}>
+              <p className="text-[10px] text-[#9a8f7e] uppercase mb-1">Avg SpO₂</p>
+              <p className="text-base font-bold text-[#1a1a1a]">{sleepApneaRisk.avgSpo2}%</p>
             </div>
           </div>
           {sleepApneaRisk.brElevated && (
@@ -1008,7 +1074,7 @@ export default function Chronos({ data, onNav }) {
           {sleepApneaRisk.riskLevel >= 2 && (
             <p className="text-xs text-red-400 mt-1">Consider discussing with a doctor — a sleep study (polysomnography) is the only way to diagnose sleep apnea.</p>
           )}
-          <p className="text-[10px] text-gray-600 mt-2">Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
+          <p className="text-[10px] text-[#9a8f7e] mt-2">Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
         </div>
       )}
     </div>
