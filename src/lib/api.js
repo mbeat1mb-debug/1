@@ -10,6 +10,11 @@ export function getFetchErrors() {
   return fetchErrors
 }
 
+// No request to Google should be allowed to hang forever - without this, one
+// stalled request (rare, but seen on paginated follow-up requests) blocks the
+// whole sync indefinitely with the spinner stuck on screen.
+const FETCH_TIMEOUT_MS = 20000
+
 async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
   try {
     if (isTokenExpired()) {
@@ -17,14 +22,22 @@ async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
       if (!ok) { disconnect(); window.location.reload(); return null }
     }
     const { access_token } = getTokens()
-    const res = await fetch(`${BASE}${path}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    let res
+    try {
+      res = await fetch(`${BASE}${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
     if (res.status === 401) {
       // Token rejected despite looking valid locally (clock skew / early revoke).
       // Refresh once and retry before tearing down the session.
