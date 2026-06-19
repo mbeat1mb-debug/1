@@ -951,7 +951,7 @@ export function parseGoogleHealthData(raw) {
   const todayBRRaw = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.breathsPerMinute', 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.avg')
   const todayBR = todayBRRaw ? Math.round(Number(todayBRRaw) * 10) / 10 : 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
-  const calories = rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
+  const calories = Math.round(rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum'))
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
   const activeMinutes = azmPoints.reduce((sum, p) => {
     const z = p.activeZoneMinutes
