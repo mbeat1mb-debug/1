@@ -279,7 +279,10 @@ export default function Sleep({ data, onNav }) {
               <StatRow label="Sleep Efficiency" value={todaySleep.efficiency ?? '--'} unit="%" color={sleepColor} />
               <StatRow label="Sleep Score" value={sleepScore} unit="/ 100" color={sleepColor} />
               <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
-              <StatRow label="Wakeups" value={todaySleep.stageSegments?.filter(d => d.type === 'AWAKE' && (new Date(d.endTime) - new Date(d.startTime)) / 1000 >= 60).length ?? '--'} />
+              <StatRow label="Wakeups" value={(() => {
+                const arch = parseSleepArchitecture(todaySleep)
+                return arch ? arch.fullAwakenings + arch.briefAwakenings : '--'
+              })()} />
             </div>
           </div>
 

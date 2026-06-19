@@ -41,7 +41,10 @@ export function updatePersonalRecords({ todayHRV, todayRHR, recoveryScore, strai
 
 export function calculateStreaks(recoveryHistory, sleepHistory, stressHistory = []) {
   const recovery = [...recoveryHistory].reverse()
-  const sleep = [...sleepHistory].reverse()
+  // sleepHistory entries carry a date, unlike recovery/stress — sort defensively
+  // so a streak isn't silently miscounted if the caller's array isn't already
+  // in ascending date order.
+  const sleep = [...sleepHistory].sort((a, b) => (a?.date ?? '').localeCompare(b?.date ?? '')).reverse()
   const stress = [...stressHistory].reverse()
 
   const streak = (arr, test) => {
