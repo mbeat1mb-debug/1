@@ -1,3 +1,5 @@
+import { localToday, localDateOf } from './calculations'
+
 const DB_NAME = 'health_dashboard'
 const DB_VERSION = 1
 
@@ -45,7 +47,7 @@ export async function saveDay(result) {
   try {
     const db = await openDB()
     await dbPut(db, 'health_days', {
-      date: result.date || new Date().toISOString().split('T')[0],
+      date: result.date || localToday(),
       recovery: result.recoveryScore,
       strain: result.strainScore,
       sleep: result.todaySleep?.minutesAsleep ?? 0,
@@ -88,7 +90,7 @@ export async function getHistory(days = 90) {
     const cutoff = (() => {
       const d = new Date()
       d.setDate(d.getDate() - days)
-      return d.toISOString().split('T')[0]
+      return localDateOf(d)
     })()
     const rows = await dbGetAll(db, 'health_days', IDBKeyRange.lowerBound(cutoff))
     return rows.sort((a, b) => a.date.localeCompare(b.date))

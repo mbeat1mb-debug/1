@@ -8,6 +8,12 @@ export function localDateOf(isoString) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// Today's local calendar date — use this instead of new Date().toISOString().split('T')[0],
+// which is today's UTC date and rolls over hours before local midnight for anyone west of Greenwich.
+export function localToday() {
+  return localDateOf(new Date())
+}
+
 // Dynamic user age from settings
 export function getUserAge() {
   try {
@@ -669,11 +675,11 @@ export function parseSleepArchitecture(todaySleep) {
 
 // ── EPOC & Workout Analytics ─────────────────────────────────────────────────
 // Borsheim E & Bahr R (2003) Sports Med 33(14):1037-60 — EPOC from exercise intensity.
-// Fitbit activity logs use 4-zone format: [outOfRange, fatBurn, cardio, peak]
+// zoneMinutes here is the same 5-zone format used everywhere else in this file:
+// [z1=below, z2=light, z3=moderate, z4=vigorous, z5=peak] (see calculateTrainingEffect).
 export function calculateEPOC(zoneMinutes, weightKg = 70) {
-  // Zone indices for Fitbit 4-zone: [0]=low, [1]=fatBurn, [2]=cardio, [3]=peak
-  const z3 = zoneMinutes[2] || 0  // Cardio: ~65-80% HRmax
-  const z4 = (zoneMinutes[3] || 0) + (zoneMinutes[4] || 0)  // Peak: >80% HRmax
+  const z3 = zoneMinutes[3] || 0  // Vigorous: ~65-80% HRmax
+  const z4 = zoneMinutes[4] || 0  // Peak: >80% HRmax
   // EPOC kcal: empirical rates from Borsheim & Bahr 2003 and Sedlock 1989
   // High-intensity: 0.08-0.15 L O2/min × 5 kcal/L O2
   const kcal = Math.round(z4 * 0.75 + z3 * 0.15)
@@ -707,7 +713,7 @@ export function classifyWorkoutSport(activityTypeId, activityName) {
 // constant effort signals dehydration/fatigue.
 export function parseActivityLogs(rawActivityLogs, hrIntraday) {
   const activities = rawActivityLogs?.dataPoints ?? []
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localToday()
 
   // Build minute → HR map for today's cardiac drift computation
   const hrMap = {}
@@ -723,7 +729,7 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
     .map(a => {
       const session = a.exercise
       const startTime = session.interval.startTime
-      const startDate = startTime.split('T')[0]
+      const startDate = localDateOf(startTime)
       const isToday   = startDate === todayStr
       const durationMins = Math.round((new Date(session.interval.endTime) - new Date(startTime)) / 60000)
       const sport = classifyWorkoutSport(session.exerciseType, session.displayName)
@@ -811,8 +817,10 @@ function rollupValue(rollupResponse, dataTypeKey, ...sumKeys) {
   const points = rollupResponse?.rollupDataPoints ?? []
   return points.reduce((sum, p) => {
     for (const key of sumKeys) {
-      const val = Number(p?.[dataTypeKey]?.[key])
-      if (val) return sum + val
+      const raw = p?.[dataTypeKey]?.[key]
+      if (raw == null) continue
+      const val = Number(raw)
+      if (!isNaN(val)) return sum + val
     }
     return sum
   }, 0)
@@ -904,20 +912,20 @@ export function parseGoogleHealthData(raw) {
   for (const d of (hrvRange?.dataPoints ?? [])) {
     const val = pick(d, 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
     const date = pointDate(d)
-    if (date && val) hrvByDate[date] = Number(val)
+    if (date && val) hrvByDate[date] = Math.round(Number(val))
   }
   const rhrByDate = {}
   for (const d of (hrRange?.dataPoints ?? [])) {
     const val = pick(d, 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.avg')
     const date = pointDate(d)
-    if (date && val) rhrByDate[date] = Number(val)
+    if (date && val) rhrByDate[date] = Math.round(Number(val))
   }
   const historyDates = Object.keys(hrvByDate).sort()
   const hrvHistory = historyDates.map(date => hrvByDate[date])
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
-  const todayHRV = todayHRVRaw ? Number(todayHRVRaw) : (hrvByDate[historyDates.at(-1)] ?? 0)
+  const todayHRV = todayHRVRaw ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
   // Google Health can return more than one sleep session for the same calendar
@@ -939,9 +947,9 @@ export function parseGoogleHealthData(raw) {
   const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
   const todaySleep = normalizeSleepPoint(sleepPoints[0]) ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
-  const todaySpO2 = todaySpO2Raw ? Number(todaySpO2Raw) : 97
+  const todaySpO2 = todaySpO2Raw ? Math.round(Number(todaySpO2Raw) * 10) / 10 : 97
   const todayBRRaw = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.breathsPerMinute', 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.avg')
-  const todayBR = todayBRRaw ? Number(todayBRRaw) : 14
+  const todayBR = todayBRRaw ? Math.round(Number(todayBRRaw) * 10) / 10 : 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
   const calories = rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
@@ -961,7 +969,7 @@ export function parseGoogleHealthData(raw) {
   // Skin temperature nightly deviation in °C relative to personal baseline
   const skinTempPoint = skinTemp?.dataPoints?.[0]?.dailySleepTemperatureDerivations
   const skinTempDev = (skinTempPoint?.nightlyTemperatureCelsius != null && skinTempPoint?.baselineTemperatureCelsius != null)
-    ? skinTempPoint.nightlyTemperatureCelsius - skinTempPoint.baselineTemperatureCelsius
+    ? Math.round((skinTempPoint.nightlyTemperatureCelsius - skinTempPoint.baselineTemperatureCelsius) * 10) / 10
     : null
 
   // Sleep end hour for daytime stress calculation
@@ -1157,7 +1165,7 @@ export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual', humeExt
     const idx = history.findIndex(e => e.date === date)
     // Manual entries win over a synced source — don't let a sync overwrite what the user typed
     if (source === 'google_health' && idx >= 0 && history[idx].source === 'manual') return
-    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct || null, source, ...(humeExtras || {}) }
+    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct ? Math.round(fatPct * 10) / 10 : null, source, ...(humeExtras || {}) }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)
     history.sort((a, b) => a.date.localeCompare(b.date))

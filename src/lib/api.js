@@ -223,7 +223,7 @@ export async function loadDashboardData() {
     getSpO2(date),
     getRespiratoryRate(date),
     getHRVRange(daysAgo(30), date),
-    getHeartRateRange(daysAgo(7), date),
+    getHeartRateRange(daysAgo(30), date),
     getSleepRange(daysAgo(30), date),
     getCardioFitness(),
     getSkinTemp(date),

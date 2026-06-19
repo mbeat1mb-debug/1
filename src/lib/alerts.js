@@ -1,3 +1,5 @@
+import { localToday, localDateOf } from './calculations'
+
 export function detectAlerts(data) {
   const {
     hrvHistory = [], rhrHistory = [], recoveryHistory = [],
@@ -37,9 +39,10 @@ export function detectAlerts(data) {
 
   // RHR elevated trend
   const last7RHR = rhrHistory.slice(-7).filter(Boolean)
+  const recent3RHR = rhrHistory.slice(-3).filter(Boolean)
   const first3RHR = rhrHistory.slice(-7, -4).filter(Boolean)
-  if (last7RHR.length >= 6 && first3RHR.length >= 3) {
-    const recentAvg = last7RHR.slice(-3).reduce((a, b) => a + b, 0) / 3
+  if (last7RHR.length >= 6 && recent3RHR.length >= 3 && first3RHR.length >= 3) {
+    const recentAvg = recent3RHR.reduce((a, b) => a + b, 0) / recent3RHR.length
     const priorAvg = first3RHR.reduce((a, b) => a + b, 0) / first3RHR.length
     if (recentAvg > priorAvg + 5) {
       alerts.push({
@@ -113,7 +116,7 @@ export function getAlertColor(severity) {
 const ALERT_HISTORY_KEY = 'alert_history'
 const ILLNESS_ALERT_IDS = ['illness_signal', 'hrv_declining', 'rhr_elevated']
 
-export function logAlertHistory(alerts, date = new Date().toISOString().split('T')[0]) {
+export function logAlertHistory(alerts, date = localToday()) {
   if (!alerts || alerts.length === 0) return
   try {
     const history = JSON.parse(localStorage.getItem(ALERT_HISTORY_KEY) || '[]')
@@ -162,7 +165,7 @@ export function getIllnessAlertAccuracy(journalEntries, windowDays = 3) {
     for (let i = 0; i <= windowDays; i++) {
       const d = new Date(start)
       d.setDate(d.getDate() + i)
-      if (sickDates.has(d.toISOString().split('T')[0])) { hits++; break }
+      if (sickDates.has(localDateOf(d))) { hits++; break }
     }
   }
   return { total: episodes.length, hits, rate: Math.round((hits / episodes.length) * 100) }

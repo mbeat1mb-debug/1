@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   getUserUnits, getBodyWeightHistory, getBPReadings, getGripHistory,
-  getWaistHistory, calculateLeanMass, calculateFatMass, getUserAge,
+  getWaistHistory, calculateLeanMass, calculateFatMass, getUserAge, localDateOf,
 } from '../lib/calculations'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 
@@ -17,7 +17,7 @@ function cutoffFor(days) {
   if (!days) return null
   const d = new Date()
   d.setDate(d.getDate() - days)
-  return d.toISOString().slice(0, 10)
+  return localDateOf(d)
 }
 
 function fmtDate(dateStr) {

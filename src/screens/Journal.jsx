@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, addCustomTag, analyzeEnergyCorrelation, TIMING_SUBSTANCES, getTimingForDate, addTimingEntry, removeTimingEntry, getTagStreak, getRecentTagActivity, getDailyTimings, saveDailyTiming, getJournalEntries } from '../lib/storage'
 import { getIllnessAlertAccuracy } from '../lib/alerts'
-import { getBPReadings, saveBPReading } from '../lib/calculations'
+import { getBPReadings, saveBPReading, localToday } from '../lib/calculations'
 import { haptic } from '../lib/haptics'
 
 function today() {
-  return new Date().toISOString().split('T')[0]
+  return localToday()
 }
 
 function nowTime() {

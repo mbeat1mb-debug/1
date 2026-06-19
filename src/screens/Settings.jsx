@@ -6,7 +6,7 @@ import {
   getLocalPushPrefs, DEFAULT_PREFS, isPushHealthy,
 } from '../lib/notifications'
 import { getHistory } from '../lib/db'
-import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry, saveGripEntry, saveWaistEntry } from '../lib/calculations'
+import { calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getUserBP, saveBPReading, saveBodyWeightEntry, saveGripEntry, saveWaistEntry, localToday } from '../lib/calculations'
 import { getLabResults, saveLabResults } from '../lib/labs'
 import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
@@ -622,7 +622,7 @@ async function parseAndImportCSV(file) {
           let count = 0
           lines.slice(1).forEach(line => {
             const cols = line.split(',').map(c => c.trim())
-            const date = dateIdx >= 0 ? cols[dateIdx] : new Date().toISOString().split('T')[0]
+            const date = dateIdx >= 0 ? cols[dateIdx] : localToday()
             const sys = parseInt(cols[sysIdx], 10)
             const dia = parseInt(cols[diaIdx], 10)
             if (date && !isNaN(sys) && !isNaN(dia)) { saveBPReading(date, sys, dia); count++ }
@@ -635,7 +635,7 @@ async function parseAndImportCSV(file) {
           const dateIdx = headers.indexOf('date')
           if (valueIdx < 0) { reject(new Error('Expected columns: marker, value[, date]')); return }
 
-          const today = new Date().toISOString().split('T')[0]
+          const today = localToday()
           const existing = getLabResults()
           let count = 0
           lines.slice(1).forEach(line => {
@@ -832,7 +832,7 @@ export default function Settings({ onBack }) {
       if (!isNaN(age) && age >= 15 && age <= 100) localStorage.setItem('user_age', String(age))
 
       localStorage.setItem('user_units', units)
-      const today = new Date().toISOString().split('T')[0]
+      const today = localToday()
       if (units === 'imperial') {
         const ft = parseInt(heightFt, 10), inch = parseInt(heightIn, 10) || 0
         if (!isNaN(ft) && ft > 0) localStorage.setItem('user_height_cm', String(Math.round((ft * 12 + inch) * 2.54)))
@@ -996,7 +996,7 @@ export default function Settings({ onBack }) {
       if (p.bodyWaterPct != null) humeExtras.bodyWaterPct = p.bodyWaterPct
       if (p.bmrCal != null) humeExtras.bmrCal = p.bmrCal
       if (lbsToKg(p.bodyCellMassLbs)) humeExtras.bodyCellMassKg = lbsToKg(p.bodyCellMassLbs)
-      let date = new Date().toISOString().slice(0, 10)
+      let date = localToday()
       if (p.endDate) {
         const now = new Date()
         let d = new Date(`${p.endDate} ${now.getFullYear()}`)

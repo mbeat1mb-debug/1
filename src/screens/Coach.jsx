@@ -3,7 +3,7 @@ import DailyReport from '../components/DailyReport'
 import {
   getUserAge, getUserBodyFatPct, getUserHeightCm, getUserWeightKg,
   calculateLeanMass, getUserWaistCm, getUserGripStrengthKg,
-  getHOMAIR, getAverageBP, calculatePhysiologicalAge,
+  getHOMAIR, getAverageBP, calculatePhysiologicalAge, localDateOf,
 } from '../lib/calculations'
 import { getPhenoAgeResult, getLabResults } from '../lib/labs'
 import { getJournalEntries, getAllTags } from '../lib/storage'
@@ -18,7 +18,7 @@ function getRecentJournalContext() {
 
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 7)
-  const cutoffStr = cutoff.toISOString().split('T')[0]
+  const cutoffStr = localDateOf(cutoff)
 
   const recent = entries
     .filter(e => e.date >= cutoffStr)

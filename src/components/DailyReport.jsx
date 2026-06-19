@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { getRecoveryColor, getRecoveryLabel } from '../lib/calculations'
+import { getRecoveryColor, getRecoveryLabel, localToday } from '../lib/calculations'
 import { getTopCorrelations } from '../lib/correlations'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 
 function todayKey(type) {
-  return `${type}_brief_${new Date().toISOString().split('T')[0]}`
+  return `${type}_brief_${localToday()}`
 }
 
 async function generateBrief(apiKey, prompt) {
@@ -56,7 +56,7 @@ export default function DailyReport({ data, type }) {
   const [loading, setLoading] = useState(false)
   const [topCorr, setTopCorr] = useState(() => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = localToday()
       const cached = localStorage.getItem(`top_corr_${today}`)
       return cached ? JSON.parse(cached) : null
     } catch { return null }

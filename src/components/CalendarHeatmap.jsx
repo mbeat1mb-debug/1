@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { getRecoveryColor } from '../lib/calculations'
+import { getRecoveryColor, localDateOf } from '../lib/calculations'
 
 function toDateStr(date) {
-  return date.toISOString().split('T')[0]
+  return localDateOf(date)
 }
 
 function buildGrid(days) {

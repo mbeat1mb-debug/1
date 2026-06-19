@@ -7,6 +7,7 @@ import {
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR, saveLastKnownHRR,
   calculateSleepApneaRisk, calculateSocialJetLag, getHRVNorm, getUserAge,
+  localDateOf, localToday,
 } from './lib/calculations'
 import { detectAlerts, logAlertHistory } from './lib/alerts'
 import { getDataFreshness } from './lib/dataFreshness'
@@ -56,7 +57,7 @@ function makeCalendarDays() {
     const d = new Date()
     d.setDate(d.getDate() - (89 - i))
     return {
-      date: d.toISOString().split('T')[0],
+      date: localDateOf(d),
       recovery: Math.round(30 + Math.random() * 65),
       strain: Math.round(5 + Math.random() * 12),
       sleep: Math.round(360 + Math.random() * 120),
@@ -88,11 +89,11 @@ const DEMO = {
   weeklyZone2: 180,
   vo2MaxHistory: Array.from({ length: 8 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (7 - i) * 25)
-    return { date: d.toISOString().split('T')[0], vo2Max: 44 + i }
+    return { date: localDateOf(d), vo2Max: 44 + i }
   }),
   skinTempDev: 0.10,
   todaySleep: {
-    date: new Date().toISOString().split('T')[0],
+    date: localToday(),
     minutes: 447, minutesAsleep: 447, minutesAwake: 43, efficiency: 91,
     deepMinutes: 72, remMinutes: 98,
     startTime: new Date(new Date().setHours(23, 30, 0, 0) - 86400000).toISOString(),
@@ -104,7 +105,7 @@ const DEMO = {
   sleepHistory: Array.from({ length: 30 }, (_, i) => {
     const mins = 420 + Math.round((Math.random() - 0.4) * 90)
     return {
-      date: (() => { const d = new Date(); d.setDate(d.getDate() - (29 - i)); return d.toISOString().split('T')[0] })(),
+      date: (() => { const d = new Date(); d.setDate(d.getDate() - (29 - i)); return localDateOf(d) })(),
       minutes: mins,
       efficiency: 80 + Math.round(Math.random() * 15),
       startTime: null, endTime: null,
@@ -124,11 +125,11 @@ const DEMO = {
   activityLogs: (() => {
     const now = new Date()
     return [
-      { activityId: 1, name: 'Run', category: 'aerobic', date: now.toISOString().split('T')[0], startTime: new Date(now - 2 * 3600000).toISOString(), durationMins: 42, avgHR: 148, calories: 420, steps: 5800, distance: 6.2, distanceUnit: 'Kilometer', zoneMinutes: [5, 12, 18, 7, 0], epoc: { kcal: 7, durationMins: 62 }, cardiacDrift: 3.2, strainContribution: 8.4 },
-      { activityId: 2, name: 'Weights', category: 'strength', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 2); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 2 * 86400000).toISOString(), durationMins: 55, avgHR: 122, calories: 310, steps: null, distance: null, distanceUnit: null, zoneMinutes: [10, 20, 18, 7, 0], epoc: { kcal: 6, durationMins: 62 }, cardiacDrift: null, strainContribution: 6.8 },
-      { activityId: 3, name: 'Run', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 4); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 4 * 86400000).toISOString(), durationMins: 35, avgHR: 155, calories: 370, steps: 4900, distance: 5.1, distanceUnit: 'Kilometer', zoneMinutes: [3, 8, 14, 10, 0], epoc: { kcal: 9, durationMins: 71 }, cardiacDrift: null, strainContribution: 9.1 },
-      { activityId: 4, name: 'Bike', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 6 * 86400000).toISOString(), durationMins: 60, avgHR: 138, calories: 480, steps: null, distance: 22, distanceUnit: 'Kilometer', zoneMinutes: [8, 18, 24, 10, 0], epoc: { kcal: 11, durationMins: 86 }, cardiacDrift: null, strainContribution: 10.2 },
-      { activityId: 5, name: 'Walk', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })(), startTime: new Date(now - 7 * 86400000).toISOString(), durationMins: 45, avgHR: 105, calories: 210, steps: 5200, distance: 3.8, distanceUnit: 'Kilometer', zoneMinutes: [20, 20, 5, 0, 0], epoc: { kcal: 1, durationMins: 8 }, cardiacDrift: null, strainContribution: 3.2 },
+      { activityId: 1, name: 'Run', category: 'aerobic', date: localDateOf(now), startTime: new Date(now - 2 * 3600000).toISOString(), durationMins: 42, avgHR: 148, calories: 420, steps: 5800, distance: 6.2, distanceUnit: 'Kilometer', zoneMinutes: [5, 12, 18, 7, 0], epoc: { kcal: 7, durationMins: 62 }, cardiacDrift: 3.2, strainContribution: 8.4 },
+      { activityId: 2, name: 'Weights', category: 'strength', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 2); return localDateOf(d) })(), startTime: new Date(now - 2 * 86400000).toISOString(), durationMins: 55, avgHR: 122, calories: 310, steps: null, distance: null, distanceUnit: null, zoneMinutes: [10, 20, 18, 7, 0], epoc: { kcal: 6, durationMins: 62 }, cardiacDrift: null, strainContribution: 6.8 },
+      { activityId: 3, name: 'Run', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 4); return localDateOf(d) })(), startTime: new Date(now - 4 * 86400000).toISOString(), durationMins: 35, avgHR: 155, calories: 370, steps: 4900, distance: 5.1, distanceUnit: 'Kilometer', zoneMinutes: [3, 8, 14, 10, 0], epoc: { kcal: 9, durationMins: 71 }, cardiacDrift: null, strainContribution: 9.1 },
+      { activityId: 4, name: 'Bike', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 6); return localDateOf(d) })(), startTime: new Date(now - 6 * 86400000).toISOString(), durationMins: 60, avgHR: 138, calories: 480, steps: null, distance: 22, distanceUnit: 'Kilometer', zoneMinutes: [8, 18, 24, 10, 0], epoc: { kcal: 11, durationMins: 86 }, cardiacDrift: null, strainContribution: 10.2 },
+      { activityId: 5, name: 'Walk', category: 'aerobic', date: (() => { const d = new Date(now); d.setDate(d.getDate() - 7); return localDateOf(d) })(), startTime: new Date(now - 7 * 86400000).toISOString(), durationMins: 45, avgHR: 105, calories: 210, steps: 5200, distance: 3.8, distanceUnit: 'Kilometer', zoneMinutes: [20, 20, 5, 0, 0], epoc: { kcal: 1, durationMins: 8 }, cardiacDrift: null, strainContribution: 3.2 },
     ]
   })(),
   trainingLoad: { atl: 9.2, ctl: 10.5, tsb: 1.3, form: 'Neutral' },
@@ -465,7 +466,7 @@ export default function App() {
 
       // Auto-backup once per day after a successful sync (fire-and-forget)
       const lastBackup = getLastBackupAt()
-      const today = new Date().toISOString().split('T')[0]
+      const today = localToday()
       if (!lastBackup || !lastBackup.startsWith(today)) {
         createBackup().catch(() => {})
       }

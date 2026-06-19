@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { LAB_MARKERS, getLabResults, saveLabResults } from '../lib/labs';
 import { extractLabsFromPdf } from '../lib/pdfLabExtract';
+import { localToday } from '../lib/calculations';
 
 const GROUPS = [
   'Lipids',
@@ -13,7 +14,7 @@ const GROUPS = [
 ];
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return localToday();
 }
 
 function getMostRecentDate(saved) {

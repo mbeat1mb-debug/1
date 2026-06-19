@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import ScoreRing from '../components/ScoreRing'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings, getHRVNorm, getUserAge, getRHRMortalityContext } from '../lib/calculations'
+import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings, getHRVNorm, getUserAge, getRHRMortalityContext, localToday, localDateOf } from '../lib/calculations'
 import { getHistory } from '../lib/db'
 import { getTimingForDate, TIMING_SUBSTANCES, analyzeTimingCorrelation } from '../lib/storage'
 
@@ -25,7 +25,7 @@ export default function Recovery({ data, onNav }) {
   const [brHistory, setBrHistory] = useState([])
 
   useEffect(() => {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = localToday()
     const daysAgo = date => Math.round((new Date(todayStr) - new Date(date)) / 86400000)
     getHistory(14).then(rows => {
       setSpo2History(rows.filter(r => r.spo2 > 0).map(r => ({
@@ -53,7 +53,7 @@ export default function Recovery({ data, onNav }) {
   const bpReadings = getBPReadings()
   const hasBP = avgBP.sys > 0
 
-  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] })()
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return localDateOf(d) })()
   const yesterdayTiming = getTimingForDate(yesterdayStr)
   const healthHistory = (data.calendarDays || []).filter(d => d.recovery != null).map(d => ({ date: d.date, recovery: d.recovery }))
   const timingInsights = (() => {
@@ -73,7 +73,7 @@ export default function Recovery({ data, onNav }) {
     return out
   })()
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localToday()
   const hrv14 = hrvHistory.slice(-14)
   const rhr14 = rhrHistory.slice(-14)
   const dates14 = historyDates.slice(-14)

@@ -467,7 +467,7 @@ export default function Chronos({ data, onNav }) {
     }] : []),
     ...(visceralFatIndex !== null ? [{
       label: 'Visceral Fat Index',
-      value: visceralFatIndex,
+      value: Math.round(visceralFatIndex * 10) / 10,
       unit: '',
       contribution: visceralFatIndex <= 7 ? -1 : visceralFatIndex <= 12 ? 0 : visceralFatIndex <= 17 ? 1 : visceralFatIndex <= 24 ? 2 : 3,
       sublabel: visceralFatIndex <= 7 ? 'Low — protective' : visceralFatIndex <= 12 ? 'Standard' : visceralFatIndex <= 17 ? 'Elevated' : visceralFatIndex <= 24 ? 'High' : 'Very High',
@@ -480,7 +480,7 @@ export default function Chronos({ data, onNav }) {
     }] : []),
     ...(skelMuscleKg !== null && weightKg > 0 ? [{
       label: 'Skeletal Muscle Mass',
-      value: units === 'imperial' ? Math.round(skelMuscleKg * 2.2046) : skelMuscleKg,
+      value: units === 'imperial' ? Math.round(skelMuscleKg * 2.2046) : Math.round(skelMuscleKg * 10) / 10,
       unit: units === 'imperial' ? ' lbs' : ' kg',
       contribution: (() => {
         const pct = (skelMuscleKg / weightKg) * 100

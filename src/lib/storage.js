@@ -1,3 +1,5 @@
+import { localDateOf } from './calculations'
+
 const JOURNAL_KEY = 'journal_entries'
 const TAGS_KEY = 'custom_tags'
 
@@ -119,7 +121,7 @@ export function getTagStreak(tagId) {
   let streak = 0
   const d = new Date()
   for (let i = 0; i < 90; i++) {
-    const dateStr = d.toISOString().slice(0, 10)
+    const dateStr = localDateOf(d)
     if (!(entryMap[dateStr] || []).includes(tagId)) break
     streak++
     d.setDate(d.getDate() - 1)
@@ -136,7 +138,7 @@ export function getRecentTagActivity(numDays = 7) {
   for (let i = numDays - 1; i >= 0; i--) {
     const dt = new Date(d)
     dt.setDate(dt.getDate() - i)
-    const dateStr = dt.toISOString().slice(0, 10)
+    const dateStr = localDateOf(dt)
     result.push({ date: dateStr, tagIds: entryMap[dateStr] || [] })
   }
   return result
@@ -234,7 +236,7 @@ export function analyzeTimingCorrelation(substanceId, healthHistory) {
   for (const [date, times] of Object.entries(substanceDays)) {
     const d = new Date(date + 'T12:00:00')
     d.setDate(d.getDate() + 1)
-    const nextDate = d.toISOString().split('T')[0]
+    const nextDate = localDateOf(d)
     if (recoveryByDate[nextDate] == null) continue
     const rec = recoveryByDate[nextDate]
     withNextDay.push(rec)
@@ -249,7 +251,7 @@ export function analyzeTimingCorrelation(substanceId, healthHistory) {
   for (const day of healthHistory) {
     const d = new Date(day.date + 'T12:00:00')
     d.setDate(d.getDate() - 1)
-    const prev = d.toISOString().split('T')[0]
+    const prev = localDateOf(d)
     if (allLoggedDates.has(prev) && !substanceDays[prev]) withoutNextDay.push(day.recovery)
   }
 

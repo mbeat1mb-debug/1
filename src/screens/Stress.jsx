@@ -1,7 +1,7 @@
 import ScoreRing from '../components/ScoreRing'
 import { LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { getStressColor, getStressLabel } from '../lib/calculations'
+import { getStressColor, getStressLabel, localToday } from '../lib/calculations'
 
 function BackButton({ onNav }) {
   return (
@@ -26,7 +26,7 @@ export default function Stress({ data, onNav }) {
   const hrvRatio = avgHRV14 > 0 ? Math.round((todayHRV / avgHRV14) * 100) : 100
   const rhrDiff = Math.round(todayRHR - avgRHR14)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localToday()
   const dates14 = historyDates.slice(-14)
   const stressChartData = hrv14.map((v, i) => {
     const d = dates14[i]

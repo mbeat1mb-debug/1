@@ -1,6 +1,6 @@
 import ScoreRing from '../components/ScoreRing'
 import { StatRow } from '../components/MetricCard'
-import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance, getTrainingStatus } from '../lib/calculations'
+import { getMaxHR, getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance, getTrainingStatus, localToday } from '../lib/calculations'
 
 const ZONE_COLORS = ['#374151', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444']
 const ZONE_LABELS = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5']
@@ -11,7 +11,7 @@ const CATEGORY_COLOR = { aerobic: '#3b82f6', strength: '#f59e0b', recovery: '#00
 function WorkoutRow({ workout, units }) {
   const catColor = CATEGORY_COLOR[workout.category] || '#888'
   const dateLabel = (() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = localToday()
     if (workout.date === today) return 'Today'
     const diff = Math.round((new Date(today) - new Date(workout.date)) / 86400000)
     return diff === 1 ? 'Yesterday' : `${diff}d ago`
@@ -216,7 +216,7 @@ export default function Strain({ data, onNav }) {
           <StatRow label="Active Minutes" value={activeMinutes} unit="min" />
           <StatRow label="Max HR Target" value={maxHR} unit="bpm" color="#f59e0b" />
           {(() => {
-            const todayStr = new Date().toISOString().split('T')[0]
+            const todayStr = localToday()
             const todayWorkouts = activityLogs.filter(w => w.date === todayStr && w.epoc)
             if (!todayWorkouts.length) return null
             const totalEpoc = todayWorkouts.reduce((s, w) => s + (w.epoc?.kcal || 0), 0)

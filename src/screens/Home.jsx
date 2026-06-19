@@ -15,7 +15,7 @@ import DailyReport, { getTimeOfDay } from '../components/DailyReport'
 import {
   getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
   getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
-  calculatePhysiologicalAge, getUserAge, calculateReadiness,
+  calculatePhysiologicalAge, getUserAge, calculateReadiness, localToday,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 import { getTopCorrelations } from '../lib/correlations'
@@ -271,7 +271,7 @@ function WeeklyPatternContent({ data }) {
 }
 
 function JournalContent() {
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localToday()
   const entry = getEntryForDate(todayStr)
   const loggedIds = entry.tagIds || []
   const allTags = getAllTags()

@@ -4,7 +4,7 @@ import {
   ReferenceLine, ResponsiveContainer, LineChart, Line, BarChart, Bar,
 } from 'recharts'
 import { LineGraph } from '../components/TrendChart'
-import { getHRVNorm, getUserAge, getRecoveryColor } from '../lib/calculations'
+import { getHRVNorm, getUserAge, getRecoveryColor, localToday } from '../lib/calculations'
 import { getHistory } from '../lib/db'
 
 function BackButton({ onNav }) {
@@ -117,7 +117,7 @@ export default function Trends({ data, onNav }) {
     getHistory(30).then(rows => setDbHistory(rows))
   }, [])
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const todayStr = useMemo(() => localToday(), [])
   const age = getUserAge()
   const hrvNorm = getHRVNorm(age)
 
