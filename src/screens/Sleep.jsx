@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ScoreRing from '../components/ScoreRing'
 import { BarGraph, LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
-import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge, calculateChronotype, calculateSleepDebtPayback } from '../lib/calculations'
+import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge, calculateChronotype, calculateSleepDebtPayback, localDateOf } from '../lib/calculations'
 import { getSleepTimeOverride, saveSleepTimeOverride, clearSleepTimeOverride } from '../lib/storage'
 
 function SleepStageBar({ label, minutes, total, color }) {
@@ -94,7 +94,7 @@ export default function Sleep({ data, onNav }) {
   const hours = Math.floor(totalMins / 60)
   const mins = totalMins % 60
 
-  const sleepDate = todaySleep?.date ?? new Date().toISOString().split('T')[0]
+  const sleepDate = todaySleep?.date ?? localDateOf(new Date())
   const [override, setOverride] = useState(() => getSleepTimeOverride(sleepDate))
   const [editingBed, setEditingBed] = useState(false)
   const [editingWake, setEditingWake] = useState(false)
@@ -131,7 +131,7 @@ export default function Sleep({ data, onNav }) {
   const chronotype = calculateChronotype(adjustedSleepHistory)
   const sleepDebtPayback = calculateSleepDebtPayback(sleepDebt, adjustedSleepHistory)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateOf(new Date())
   const sleepChartData = adjustedSleepHistory.slice(-14).map(s => ({
     label: s.date === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(s.date)) / 86400000)}d`,
     hours: Math.round((s.minutes / 60) * 10) / 10,

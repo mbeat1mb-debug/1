@@ -1,5 +1,13 @@
 import { getLabAgeAdjustment, getTyGIndex, getPhenoAgeProgress } from './labs'
 
+// Local calendar date (not UTC) of an ISO timestamp — toISOString()-style
+// truncation shifts to UTC, which lands on the wrong day for anyone west of
+// Greenwich once local time crosses into evening.
+export function localDateOf(isoString) {
+  const d = new Date(isoString)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // Dynamic user age from settings
 export function getUserAge() {
   try {
@@ -858,7 +866,10 @@ function normalizeSleepPoint(point) {
   const sleepLatency = summary.minutesToFallAsleep != null ? Number(summary.minutesToFallAsleep) : 0
   const awakenings = (summary.stagesSummary ?? []).find(g => g.type === 'AWAKE')?.count
   return {
-    date: String(s.interval.startTime).split('T')[0],
+    // Local calendar date of wake-up time, not a UTC truncation of startTime —
+    // a UTC cut would shift sleep that starts late evening local time onto the
+    // wrong day for anyone west of Greenwich, scrambling night-to-night ordering.
+    date: localDateOf(s.interval.endTime),
     minutes: minutesAsleep,
     minutesAsleep,
     minutesAwake,
