@@ -770,7 +770,7 @@ export function parseActivityLogs(rawActivityLogs, hrIntraday) {
       let strainContribution = null
       if (zoneMinutes) {
         const raw = zoneMinutes.reduce((s, m, i) => s + m * ZONE_WEIGHTS[i], 0)
-        strainContribution = Math.round((raw / 900) * 16 * 10) / 10
+        strainContribution = Math.round((raw / 900) * 21 * 10) / 10
       }
 
       return {
@@ -1080,10 +1080,12 @@ export function calculateTrainingLoad(strainHistory) {
   const kATL = 2 / (7 + 1)   // 7-day exponential weighted average
   const kCTL = 2 / (42 + 1)  // 42-day exponential weighted average
 
-  let atl = strainHistory[0] || 5
-  let ctl = strainHistory[0] || 5
+  // A legitimate rest day has strain 0, which `|| 5` would wrongly treat as
+  // "missing" and replace with a fake seed — use the real value via `??`.
+  let atl = strainHistory[0] ?? 0
+  let ctl = strainHistory[0] ?? 0
   for (let i = 1; i < strainHistory.length; i++) {
-    const s = strainHistory[i] || 0
+    const s = strainHistory[i] ?? 0
     atl = s * kATL + atl * (1 - kATL)
     ctl = s * kCTL + ctl * (1 - kCTL)
   }

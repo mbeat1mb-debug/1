@@ -386,8 +386,10 @@ export default function App() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-90)
 
-      // Training load from full strain history in DB
-      const strainHistory = dbHistory.map(d => d.strain).filter(Boolean)
+      // Training load from full strain history in DB — keep real 0-strain rest
+      // days (only drop entries with no recorded strain at all), since the EWMA
+      // below assumes each array slot is one calendar day apart.
+      const strainHistory = dbHistory.map(d => d.strain).filter(v => v != null)
       const trainingLoad = calculateTrainingLoad(strainHistory)
       const strainVelocity = getTrendVelocity(strainHistory)
 
