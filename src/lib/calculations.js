@@ -906,10 +906,13 @@ export function parseGoogleHealthData(raw) {
   const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
 
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
-  const todayHRV = todayHRVRaw ? Number(todayHRVRaw) : 0
+  const todayHRV = todayHRVRaw ? Number(todayHRVRaw) : (hrvByDate[historyDates.at(-1)] ?? 0)
   const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
   const sleepPoints = sleep?.dataPoints ?? []
-  const todaySleep = normalizeSleepPoint(sleepPoints[0])
+  const sleepHistory = (sleepRange?.dataPoints ?? [])
+    .map(s => normalizeSleepPoint(s))
+    .filter(Boolean)
+  const todaySleep = normalizeSleepPoint(sleepPoints[0]) ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
   const todaySpO2 = todaySpO2Raw ? Number(todaySpO2Raw) : 97
   const todayBRRaw = pick(br?.dataPoints?.[0], 'dailyRespiratoryRate.breathsPerMinute', 'dailyRespiratoryRate.bpm', 'dailyRespiratoryRate.avg')
@@ -935,10 +938,6 @@ export function parseGoogleHealthData(raw) {
   const skinTempDev = (skinTempPoint?.nightlyTemperatureCelsius != null && skinTempPoint?.baselineTemperatureCelsius != null)
     ? skinTempPoint.nightlyTemperatureCelsius - skinTempPoint.baselineTemperatureCelsius
     : null
-
-  const sleepHistory = (sleepRange?.dataPoints ?? [])
-    .map(s => normalizeSleepPoint(s))
-    .filter(Boolean)
 
   // Sleep end hour for daytime stress calculation
   const sleepEndHour = todaySleep?.endTime
