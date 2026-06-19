@@ -110,6 +110,11 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
 
   let pageToken = ''
   let combined = null
+  let pageCount = 0
+  // Hard cap so a flaky/looping nextPageToken (server repeats the same or an
+  // empty page forever) can't hang the sync indefinitely - bail out with
+  // whatever was collected so far instead of spinning forever.
+  const MAX_PAGES = 50
   do {
     const params = { filter, ...(pageToken ? { pageToken } : {}) }
     const page = await ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams(params).toString()}`)
@@ -119,8 +124,15 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
     } else if (Array.isArray(page.dataPoints)) {
       combined.dataPoints = [...(combined.dataPoints || []), ...page.dataPoints]
     }
-    pageToken = page.nextPageToken || ''
+    const nextToken = page.nextPageToken || ''
+    pageCount++
+    if (nextToken === pageToken || pageCount >= MAX_PAGES) {
+      pageToken = ''
+    } else {
+      pageToken = nextToken
+    }
   } while (pageToken)
+  delete combined.nextPageToken
   return combined
 }
 
