@@ -47,7 +47,7 @@ function hrZone(hr, maxHR) {
 const ZONE_WEIGHTS = [0, 1, 2, 4, 8, 16]
 
 export function calculateStrain(hrIntradayData) {
-  if (!hrIntradayData?.['activities-heart-intraday']?.dataset) return 5.0
+  if (!hrIntradayData?.['activities-heart-intraday']?.dataset) return 0
   const points = hrIntradayData['activities-heart-intraday'].dataset
   const maxHR = getMaxHR()
 
@@ -66,7 +66,10 @@ export function calculateStrain(hrIntradayData) {
     }
   } catch {}
 
-  const strain = Math.min(21, 5 + (raw / 900) * 16)
+  // raw is 0 if you've had zero elevated-heart-rate minutes all day — strain
+  // should reflect that as ~0, not a hardcoded floor that's already halfway
+  // to a typical day's target before any real activity happens.
+  const strain = Math.min(21, (raw / 900) * 21)
   return Math.round(strain * 10) / 10
 }
 
