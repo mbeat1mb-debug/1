@@ -4,34 +4,7 @@ import {
   getRecoveryColor, getStressLabel, getUserHeightCm, getUserUnits,
   calculateDistance, localToday,
 } from '../lib/calculations'
-
-// ── Almanac palette ───────────────────────────────────────────────────────────
-// Ink on warm paper. No traffic-light scores, no ring widgets — the only colour
-// that carries meaning is a single state accent derived from recovery; the rest
-// is the printed page: ink, soft ink, hairline rules, and a thin gold rule.
-const C = {
-  paper:   '#F6F1E9',
-  ink:     '#28231C',
-  inkSoft: '#6E6557',
-  faint:   '#9A8F7E',
-  rule:    '#DBD1BF',
-  ruleSoft:'#E7DECE',
-  gold:    '#C9A84C',
-}
-const SERIF = 'Georgia, "Times New Roman", serif'
-const STAGE = { deep: '#5E5198', rem: '#9B7FD4', light: '#CDC3E6', wake: '#D9A24F', asleep: '#BCAFDD' }
-
-// Small-caps printed label — replaces the uppercase tracking-widest "dashboard" tell.
-function Label({ children, style }) {
-  return (
-    <span style={{ fontFamily: SERIF, fontVariant: 'small-caps', letterSpacing: '0.08em', fontSize: 12, color: C.faint, ...style }}>
-      {children}
-    </span>
-  )
-}
-
-const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0
-const fmtDur = m => m == null ? '--' : `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, '0')}m`
+import { C, SERIF, STAGE, Label, mean, fmtDur, norm } from '../lib/almanacTheme'
 
 // ── The Reading ───────────────────────────────────────────────────────────────
 // Composes the day into a short written verdict + paragraph, deterministically
@@ -118,10 +91,15 @@ function DayRibbon({ data }) {
   const now = Date.now()
   const sleepStart = sleep?.startTime ? new Date(sleep.startTime).getTime() : null
   const sleepEnd = sleep?.endTime ? new Date(sleep.endTime).getTime() : null
-  // Window: from when last night began to now. Falls back to local midnight.
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
-  const tMin = sleepStart ?? midnight.getTime()
-  const tMax = Math.max(now, (sleepEnd ?? 0) + 3600000)
+  // Window: a fixed 24h frame anchored to the local midnight that begins last
+  // night's sleep (or today's, if none yet). A fixed span keeps the sleep
+  // block's width constant through the day — anchoring to "now" instead would
+  // shrink it hour by hour as the denominator grows, which is what made the
+  // night look more and more compressed the later you checked the ribbon.
+  const dayStart = new Date(sleepStart ?? now)
+  dayStart.setHours(0, 0, 0, 0)
+  const tMin = dayStart.getTime()
+  const tMax = Math.max(tMin + 24 * 3600000, now + 3600000)
   const span = Math.max(tMax - tMin, 3600000)
 
   const W = 1000, H = 236
@@ -311,7 +289,6 @@ function Instruments({ data, onNav }) {
   const sMins = data.todaySleep?.minutesAsleep || 0
   const tsb = data.trainingLoad?.tsb ?? 0
 
-  const norm = (v, lo, hi) => Math.max(0, Math.min(1, (v - lo) / Math.max(hi - lo, 1)))
   const accent = getRecoveryColor(data.recoveryScore || 0)
 
   const rows = [
@@ -485,7 +462,7 @@ export default function HomeAlmanac({ data, onNav, onRefresh, isSyncing, syncFai
       <div className="px-5 pt-7">
         <div className="flex items-baseline justify-between">
           <Label style={{ color: C.inkSoft }}>The Day So Far</Label>
-          <Label style={{ fontSize: 11 }}>bedtime → now</Label>
+          <Label style={{ fontSize: 11 }}>midnight → midnight</Label>
         </div>
         <div className="mt-2"><DayRibbon data={data} /></div>
         <RibbonLegend data={data} />

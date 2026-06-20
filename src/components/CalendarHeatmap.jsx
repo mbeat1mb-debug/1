@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getRecoveryColor, localDateOf } from '../lib/calculations'
+import { C, SERIF, Label } from '../lib/almanacTheme'
 
 function toDateStr(date) {
   return localDateOf(date)
@@ -53,7 +54,7 @@ export default function CalendarHeatmap({ days = [] }) {
         <div className="flex flex-col gap-1 mr-1">
           <div className="h-3" />
           {DAY_LABELS.map((l, i) => (
-            <div key={i} className="w-4 h-4 flex items-center justify-center text-[9px] text-[#9a8f7e]">{l}</div>
+            <div key={i} className="w-4 h-4 flex items-center justify-center" style={{ fontFamily: SERIF, fontSize: 9, color: C.faint }}>{l}</div>
           ))}
         </div>
 
@@ -61,7 +62,7 @@ export default function CalendarHeatmap({ days = [] }) {
         <div className="flex gap-1 overflow-x-auto scrollbar-none flex-1">
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-1 flex-shrink-0">
-              <div className="text-[9px] text-[#9a8f7e] h-3 leading-none">{monthLabels[wi]}</div>
+              <div className="h-3 leading-none" style={{ fontFamily: SERIF, fontSize: 9, color: C.faint }}>{monthLabels[wi]}</div>
               {week.map((cell, di) => {
                 if (cell.future) return <div key={di} className="w-4 h-4" />
                 const recovery = cell.data?.recovery
@@ -84,18 +85,18 @@ export default function CalendarHeatmap({ days = [] }) {
 
       {/* Tooltip */}
       {selected && (
-        <div className="mt-3 p-3 rounded-xl text-sm" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[#1a1a1a] font-semibold">
+        <div className="mt-3 pt-2" style={{ borderTop: `1px solid ${C.ruleSoft}` }}>
+          <p style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: C.ink }}>
             {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </p>
           {selected.data && (selected.data.recovery != null || selected.data.strain || selected.data.sleep) ? (
             <div className="flex gap-4 mt-1">
-              {selected.data.recovery != null && <span className="text-[#9a8f7e]">Recovery: <span className="font-bold" style={{ color: getRecoveryColor(selected.data.recovery) }}>{selected.data.recovery}%</span></span>}
-              {selected.data.strain && <span className="text-[#9a8f7e]">Strain: <span className="font-bold" style={{ color: '#D98E3F' }}>{selected.data.strain}</span></span>}
-              {selected.data.sleep && <span className="text-[#9a8f7e]">Sleep: <span className="text-[#1a1a1a] font-bold">{Math.round(selected.data.sleep / 60 * 10) / 10}h</span></span>}
+              {selected.data.recovery != null && <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>Recovery: <b style={{ color: getRecoveryColor(selected.data.recovery) }}>{selected.data.recovery}%</b></span>}
+              {selected.data.strain && <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>Strain: <b style={{ color: '#D98E3F' }}>{selected.data.strain}</b></span>}
+              {selected.data.sleep && <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>Sleep: <b style={{ color: C.ink }}>{Math.round(selected.data.sleep / 60 * 10) / 10}h</b></span>}
             </div>
           ) : (
-            <p className="text-[#9a8f7e]">No data</p>
+            <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>No data</p>
           )}
         </div>
       )}
@@ -105,7 +106,7 @@ export default function CalendarHeatmap({ days = [] }) {
         {[['#ef4444cc', 'Low'], ['#D9A23Faa', 'Moderate'], ['#3E9C7E99', 'Peak']].map(([color, label]) => (
           <div key={label} className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-sm" style={{ background: color }} />
-            <span className="text-[10px] text-[#9a8f7e]">{label}</span>
+            <Label style={{ fontSize: 10 }}>{label}</Label>
           </div>
         ))}
       </div>

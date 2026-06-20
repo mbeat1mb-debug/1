@@ -1,93 +1,34 @@
-import { useState, useEffect, useId } from 'react'
+import { C, SERIF } from '../lib/almanacTheme'
 
-export default function ScoreRing({
-  score, max = 100, color = '#3E9C7E',
-  size = 140, strokeWidth = 10,
-  label, sublabel, unit = '',
-}) {
-  const uid    = useId().replace(/:/g, 'x')
-  const gradId = `sg${uid}`
-  const r    = (size - strokeWidth * 2) / 2
-  const circ = 2 * Math.PI * r
-  const targetOffset = circ * (1 - Math.min(score, max) / max)
-
-  // Arc: start fully empty, animate to target after first paint
-  const [arcOffset, setArcOffset] = useState(circ)
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setArcOffset(targetOffset))
-    return () => cancelAnimationFrame(raf)
-  }, [targetOffset])
-
-  // Number count-up (easeOutCubic, 750ms)
-  const [display, setDisplay] = useState(0)
-  useEffect(() => {
-    if (score == null || isNaN(score)) { setDisplay(0); return }
-    const isFloat = score !== Math.round(score)
-    const duration = 750
-    const startTs = Date.now()
-    let raf
-    const tick = () => {
-      const t = Math.min((Date.now() - startTs) / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 3)
-      const val = score * eased
-      setDisplay(isFloat ? Math.round(val * 10) / 10 : Math.round(val))
-      if (t < 1) raf = requestAnimationFrame(tick)
-      else setDisplay(score)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [score])
-
-  // Gradient: 70-unit lighter shade → full color
-  const hex = (color || '#3E9C7E').replace('#', '').padEnd(6, '0')
-  const pr = parseInt(hex.slice(0, 2), 16)
-  const pg = parseInt(hex.slice(2, 4), 16)
-  const pb = parseInt(hex.slice(4, 6), 16)
-  const lighter = `rgb(${Math.min(255, pr + 70)},${Math.min(255, pg + 70)},${Math.min(255, pb + 70)})`
-
-  const cx = size / 2
-
+// Printed dial — the day's headline figure plus a needle on a scale, replacing
+// the circular progress-ring widget. Keeps the old prop API (score, max, color,
+// size, label, sublabel, unit) so every screen that called <ScoreRing /> keeps
+// working unchanged.
+export default function ScoreRing({ score = 0, max = 100, color = C.ink, size = 140, label, sublabel, unit = '' }) {
+  const p = Math.max(0, Math.min(1, (score || 0) / max))
   return (
-    <div className="relative flex flex-col items-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={lighter} />
-            <stop offset="100%" stopColor={color} />
-          </linearGradient>
-        </defs>
-        {/* Track */}
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke="#EAE2D2" strokeWidth={strokeWidth} />
-        {/* Animated fill arc */}
-        <circle
-          cx={cx} cy={cx} r={r}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circ}
-          strokeDashoffset={arcOffset}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.33, 1, 0.68, 1)', filter: `drop-shadow(0 0 6px ${color}cc)` }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
-          className="font-bold leading-none"
-          style={{ fontSize: size * 0.22, fontVariantNumeric: 'tabular-nums', color: '#1a1a1a' }}
-        >
-          {display}{unit}
+    <div style={{ width: size }}>
+      <div className="flex items-baseline gap-1">
+        <span style={{ fontFamily: SERIF, fontSize: size * 0.34, fontWeight: 700, color: C.ink, lineHeight: 1 }} className="tabular">
+          {Math.round(score)}
         </span>
-        {label && (
-          <span className="text-xs font-semibold mt-0.5" style={{ color, fontSize: size * 0.085 }}>
-            {label}
-          </span>
-        )}
-        {sublabel && (
-          <span className="mt-0.5" style={{ fontSize: size * 0.075, color: '#9a8f7e' }}>
-            {sublabel}
-          </span>
-        )}
+        {unit ? (
+          <span style={{ fontFamily: SERIF, fontSize: size * 0.12, color: C.faint }}>{unit}</span>
+        ) : max !== 100 ? (
+          <span style={{ fontFamily: SERIF, fontSize: size * 0.12, color: C.faint }}>/ {max}</span>
+        ) : null}
       </div>
+      {label && <p style={{ fontFamily: SERIF, fontSize: size * 0.1, color, fontWeight: 600, marginTop: 2 }}>{label}</p>}
+      <div style={{ position: 'relative', height: 16, marginTop: 10 }}>
+        <div style={{ position: 'absolute', top: 7, left: 0, right: 0, height: 1, background: C.rule }} />
+        {[0, 0.25, 0.5, 0.75, 1].map(t => (
+          <div key={t} style={{ position: 'absolute', top: 4, left: `${t * 100}%`, width: 1, height: 6, background: C.ruleSoft }} />
+        ))}
+        <div style={{ position: 'absolute', top: 0, left: `${p * 100}%`, transform: 'translateX(-50%)' }}>
+          <svg width="14" height="16" viewBox="0 0 12 14"><path d="M6 14 L1 4 Q6 0 11 4 Z" fill={color} /></svg>
+        </div>
+      </div>
+      {sublabel && <p style={{ fontFamily: SERIF, fontSize: size * 0.08, color: C.faint, marginTop: 4 }}>{sublabel}</p>}
     </div>
   )
 }
