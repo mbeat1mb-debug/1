@@ -956,7 +956,15 @@ export function parseGoogleHealthData(raw) {
     }
   }
   const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
-  const todaySleep = normalizeSleepPoint(sleepPoints[0]) ?? sleepHistory.at(-1) ?? null
+  // Same "longest session wins" rule as sleepHistory above, applied to today's
+  // live query too — without it, a short fragment session (e.g. a brief
+  // return-to-sleep blip recorded as its own session) could be returned before
+  // the real overnight sleep and get shown as "last night's sleep" instead.
+  const todaySleepCandidates = sleepPoints.map(normalizeSleepPoint).filter(Boolean)
+  const todaySleepLive = todaySleepCandidates.length
+    ? todaySleepCandidates.reduce((longest, s) => s.minutesAsleep > longest.minutesAsleep ? s : longest)
+    : null
+  const todaySleep = todaySleepLive ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
   // Same sensor-glitch range used by toLegacySpo2Minutes below (60-100%) — applied
   // here too so a single bad daily aggregate can't override real intraday readings.
