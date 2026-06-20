@@ -4,6 +4,7 @@ import { BarGraph, LineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
 import { calculateSleepDebt, calculateOptimalSleepWindow, parseSleepArchitecture, getSleepStageNorms, getUserAge, calculateChronotype, calculateSleepDebtPayback, localDateOf } from '../lib/calculations'
 import { getSleepTimeOverride, saveSleepTimeOverride, clearSleepTimeOverride } from '../lib/storage'
+import { C, SERIF, STAGE, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
 function SleepStageBar({ label, minutes, total, color }) {
   const pct = total > 0 ? (minutes / total) * 100 : 0
@@ -12,19 +13,12 @@ function SleepStageBar({ label, minutes, total, color }) {
   const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`
   return (
     <div>
-      <div className="flex justify-between text-xs mb-1.5">
-        <span style={{ color: '#9a8f7e' }}>{label}</span>
-        <span className="font-semibold text-[#1a1a1a]">{timeStr}</span>
+      <div className="flex justify-between items-baseline">
+        <Label style={{ fontSize: 12 }}>{label}</Label>
+        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: C.ink }}>{timeStr}</span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F6F1E9' }}>
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${pct}%`,
-            background: `linear-gradient(90deg, ${color}88, ${color})`,
-            boxShadow: pct > 0 ? `0 0 8px ${color}55` : undefined,
-          }}
-        />
+      <div style={{ height: 4, marginTop: 6, background: C.ruleSoft }}>
+        <div style={{ height: 4, width: `${pct}%`, background: color }} />
       </div>
     </div>
   )
@@ -38,33 +32,23 @@ function Hypnogram({ hypnogram }) {
   if (spanMs <= 0) return null
 
   const STAGE_Y  = { wake: 0, rem: 20, light: 40, deep: 60 }
-  const COLORS   = { deep: '#4f46e5', rem: '#8b5cf6', light: '#a78bfa', wake: '#374151' }
+  const COLORS   = { deep: STAGE.deep, rem: STAGE.rem, light: STAGE.light, wake: STAGE.wake }
   const W = 980
 
   return (
     <svg viewBox={`0 0 1000 80`} width="100%" style={{ display: 'block' }}>
       {[['W', 0], ['R', 20], ['L', 40], ['D', 60]].map(([l, y]) => (
-        <text key={l} x={2} y={y + 15} fontSize={9} fill="#9a8f7e" fontFamily="monospace">{l}</text>
+        <text key={l} x={2} y={y + 15} fontSize={9} fill={C.faint} fontFamily={SERIF}>{l}</text>
       ))}
       {hypnogram.map((seg, i) => {
         const x = 20 + ((seg.startMs - minMs) / spanMs) * W
         const w = Math.max(1, (seg.seconds * 1000 / spanMs) * W)
         return (
           <rect key={i} x={x} y={STAGE_Y[seg.level] ?? 40} width={w} height={20}
-            fill={COLORS[seg.level] || '#9a8f7e'} opacity={0.9} />
+            fill={COLORS[seg.level] || C.faint} opacity={0.9} />
         )
       })}
     </svg>
-  )
-}
-
-function BackButton({ onNav }) {
-  return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
   )
 }
 
@@ -78,7 +62,7 @@ export default function Sleep({ data, onNav }) {
   const { todaySleep, sleepHistory = [], todayBR = 0 } = data
 
   const sleepScore = data.sleepScore || 0
-  const sleepColor = sleepScore >= 75 ? '#8b5cf6' : sleepScore >= 50 ? '#D9A23F' : '#ef4444'
+  const sleepColor = sleepScore >= 75 ? STAGE.rem : sleepScore >= 50 ? '#D9A23F' : '#ef4444'
 
   // Google Health sleep points are normalized to flat deepMinutes/remMinutes/
   // minutesAwake fields (see normalizeSleepPoint in calculations.js) — fall
@@ -138,52 +122,51 @@ export default function Sleep({ data, onNav }) {
   }))
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-      <div className="pt-2 flex items-center gap-3">
-        {onNav && <BackButton onNav={onNav} />}
-        <div>
-          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Sleep</p>
-          <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>Last night's sleep</h1>
-        </div>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>SLEEP</Label>
       </div>
 
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>Last night's sleep</h1>
+
       {!todaySleep && (
-        <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-2xl mb-4">😴</p>
-          <p className="text-[#5c5648] text-sm font-medium">No sleep data yet</p>
-          <p className="text-xs text-[#9a8f7e] mt-1">Make sure Google Health synced after waking up.</p>
+        <div className="mt-9 text-center">
+          <p style={{ fontFamily: SERIF, fontSize: 16, color: C.inkSoft }}>No sleep data yet</p>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 4 }}>Make sure Google Health synced after waking up.</p>
         </div>
       )}
 
       {/* Main score */}
       {todaySleep && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center gap-6 mb-4">
-            <ScoreRing score={sleepScore} color={sleepColor} size={120} strokeWidth={11} unit="%" />
+        <>
+          <div className="flex items-center gap-6 mt-6">
+            <ScoreRing score={sleepScore} color={sleepColor} size={120} unit="%" />
             <div className="flex-1">
-              <p className="text-2xl font-bold text-[#1a1a1a]">{displayHours}h {displayMinRemainder}m</p>
-              <p className="text-[#9a8f7e] text-sm">Time asleep</p>
+              <p style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 700, color: C.ink }}>{displayHours}h {displayMinRemainder}m</p>
+              <Label>Time asleep</Label>
               {correctedMins !== null && (
-                <p className="text-[10px] mt-1" style={{ color: '#D9A23F' }}>Synced: {hours}h {mins}m · edited</p>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: '#D9A23F', marginTop: 4, fontStyle: 'italic' }}>Synced: {hours}h {mins}m · edited</p>
               )}
-              <div className="mt-3 px-2 py-1 rounded-lg inline-block" style={{ background: sleepColor + '20' }}>
-                <span className="text-xs font-bold" style={{ color: sleepColor }}>
-                  {sleepScore >= 75 ? 'GREAT' : sleepScore >= 50 ? 'FAIR' : 'POOR'}
-                </span>
-              </div>
+              <p style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 700, color: sleepColor, marginTop: 8 }}>
+                {sleepScore >= 75 ? 'Great' : sleepScore >= 50 ? 'Fair' : 'Poor'}
+              </p>
             </div>
           </div>
+
           {/* Bed / Wake times with inline editing */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Bedtime</p>
+          <div className="grid grid-cols-2 gap-6 mt-5">
+            <div>
+              <Label style={{ fontSize: 11 }}>Bedtime</Label>
               {editingBed ? (
                 <input
                   type="time"
                   defaultValue={override?.bed ?? (todaySleep?.startTime ? todaySleep.startTime.slice(11, 16) : '')}
                   autoFocus
-                  className="bg-transparent text-[#1a1a1a] text-base font-bold outline-none w-full"
-                  style={{ colorScheme: 'light' }}
+                  className="bg-transparent outline-none w-full"
+                  style={{ colorScheme: 'light', fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: C.ink, marginTop: 2 }}
                   onBlur={e => {
                     const val = e.target.value
                     if (val) {
@@ -195,21 +178,21 @@ export default function Sleep({ data, onNav }) {
                   }}
                 />
               ) : (
-                <button className="flex items-center gap-2 w-full text-left" onClick={() => setEditingBed(true)}>
-                  <span className="text-base font-bold text-[#1a1a1a]">{displayBed}</span>
-                  <svg viewBox="0 0 16 16" fill="none" stroke="#9a8f7e" strokeWidth={1.5} className="w-3 h-3 flex-shrink-0"><path d="M11 2l3 3-9 9H2v-3L11 2z"/></svg>
+                <button className="flex items-baseline gap-2 mt-0.5" onClick={() => setEditingBed(true)}>
+                  <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: C.ink }}>{displayBed}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>edit</span>
                 </button>
               )}
             </div>
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Wake Time</p>
+            <div>
+              <Label style={{ fontSize: 11 }}>Wake Time</Label>
               {editingWake ? (
                 <input
                   type="time"
                   defaultValue={override?.wake ?? (todaySleep?.endTime ? todaySleep.endTime.slice(11, 16) : '')}
                   autoFocus
-                  className="bg-transparent text-[#1a1a1a] text-base font-bold outline-none w-full"
-                  style={{ colorScheme: 'light' }}
+                  className="bg-transparent outline-none w-full"
+                  style={{ colorScheme: 'light', fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: C.ink, marginTop: 2 }}
                   onBlur={e => {
                     const val = e.target.value
                     if (val) {
@@ -221,9 +204,9 @@ export default function Sleep({ data, onNav }) {
                   }}
                 />
               ) : (
-                <button className="flex items-center gap-2 w-full text-left" onClick={() => setEditingWake(true)}>
-                  <span className="text-base font-bold text-[#1a1a1a]">{displayWake}</span>
-                  <svg viewBox="0 0 16 16" fill="none" stroke="#9a8f7e" strokeWidth={1.5} className="w-3 h-3 flex-shrink-0"><path d="M11 2l3 3-9 9H2v-3L11 2z"/></svg>
+                <button className="flex items-baseline gap-2 mt-0.5" onClick={() => setEditingWake(true)}>
+                  <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: C.ink }}>{displayWake}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>edit</span>
                 </button>
               )}
             </div>
@@ -231,24 +214,24 @@ export default function Sleep({ data, onNav }) {
           {override && (
             <button
               onClick={() => { clearSleepTimeOverride(sleepDate); setOverride(null) }}
-              className="mt-2 text-[10px] text-[#9a8f7e] underline"
+              style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, textDecoration: 'underline', marginTop: 10 }}
             >
               Reset to synced times
             </button>
           )}
-        </div>
+        </>
       )}
 
       {/* Sleep stages + metrics — only when data exists */}
       {todaySleep && (
         <>
-          <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Stages</p>
-            <div className="space-y-4">
-              <SleepStageBar label="Deep (Restorative)" minutes={deep} total={displayMins} color="#4f46e5" />
-              <SleepStageBar label="REM (Dream)" minutes={rem} total={displayMins} color="#8b5cf6" />
-              <SleepStageBar label="Light" minutes={light} total={displayMins} color="#a78bfa" />
-              <SleepStageBar label="Awake" minutes={wake} total={displayMins} color="#374151" />
+          <div className="mt-9">
+            <SectionLabel>Sleep Stages</SectionLabel>
+            <div className="mt-4 space-y-4">
+              <SleepStageBar label="Deep (Restorative)" minutes={deep} total={displayMins} color={STAGE.deep} />
+              <SleepStageBar label="REM (Dream)" minutes={rem} total={displayMins} color={STAGE.rem} />
+              <SleepStageBar label="Light" minutes={light} total={displayMins} color={STAGE.light} />
+              <SleepStageBar label="Awake" minutes={wake} total={displayMins} color={STAGE.wake} />
             </div>
           </div>
 
@@ -256,26 +239,25 @@ export default function Sleep({ data, onNav }) {
             const arch = parseSleepArchitecture(todaySleep)
             if (!arch?.hypnogram?.length) return null
             return (
-              <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-                <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Hypnogram</p>
-                <div className="flex gap-3 text-[10px] text-[#9a8f7e] mb-2 justify-end">
-                  {[['Deep', '#4f46e5'], ['REM', '#8b5cf6'], ['Light', '#a78bfa'], ['Wake', '#374151']].map(([l, c]) => (
-                    <span key={l} className="flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-sm" style={{ background: c }} />{l}
+              <div className="mt-9">
+                <SectionLabel>Hypnogram</SectionLabel>
+                <div className="flex gap-3 justify-end mt-3">
+                  {[['Deep', STAGE.deep], ['REM', STAGE.rem], ['Light', STAGE.light], ['Wake', STAGE.wake]].map(([l, c]) => (
+                    <span key={l} className="flex items-center gap-1.5">
+                      <span style={{ width: 8, height: 8, background: c, borderRadius: 2, display: 'inline-block' }} />
+                      <Label style={{ fontSize: 11 }}>{l}</Label>
                     </span>
                   ))}
                 </div>
-                <Hypnogram hypnogram={arch.hypnogram} />
-                <p className="text-[10px] text-[#9a8f7e] mt-2">W=Wake · R=REM · L=Light · D=Deep</p>
+                <div className="mt-2"><Hypnogram hypnogram={arch.hypnogram} /></div>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>W=Wake · R=REM · L=Light · D=Deep</p>
               </div>
             )
           })()}
 
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <div className="px-4 pt-4 pb-2">
-              <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Metrics</span>
-            </div>
-            <div className="px-4">
+          <div className="mt-9">
+            <SectionLabel>Metrics</SectionLabel>
+            <div className="mt-1">
               <StatRow label="Sleep Efficiency" value={todaySleep.efficiency ?? '--'} unit="%" color={sleepColor} />
               <StatRow label="Sleep Score" value={sleepScore} unit="/ 100" color={sleepColor} />
               <StatRow label="Respiratory Rate" value={todayBR} unit="br/min" />
@@ -292,14 +274,12 @@ export default function Sleep({ data, onNav }) {
             const latColor  = arch.sleepLatency <= 20 ? '#3E9C7E' : arch.sleepLatency <= 30 ? '#D9A23F' : '#ef4444'
             const wakeColor = arch.minutesAwake  <= 30 ? '#3E9C7E' : arch.minutesAwake  <= 45 ? '#D9A23F' : '#ef4444'
             return (
-              <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-                <div className="px-4 pt-4 pb-2">
-                  <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Sleep Architecture</span>
-                </div>
-                <div className="px-4 pb-3">
+              <div className="mt-9">
+                <SectionLabel>Sleep Architecture</SectionLabel>
+                <div className="mt-1">
                   <StatRow label="Sleep Onset Latency" value={arch.sleepLatency} unit="min" color={latColor} />
                   <StatRow label="Time Awake"          value={arch.minutesAwake} unit="min" color={wakeColor} />
-                  <StatRow label="Sleep Cycles"        value={arch.cycleCount > 0 ? arch.cycleCount : '--'} color="#a78bfa" />
+                  <StatRow label="Sleep Cycles"        value={arch.cycleCount > 0 ? arch.cycleCount : '--'} color={STAGE.rem} />
                   <StatRow label="Full Awakenings"     value={arch.fullAwakenings} />
                   <StatRow label="Brief Awakenings"    value={arch.briefAwakenings} />
                 </div>
@@ -320,39 +300,39 @@ export default function Sleep({ data, onNav }) {
             const deepColor = deepPct >= norms.deepPct ? '#3E9C7E' : deepPct >= norms.deepPct * 0.7 ? '#D9A23F' : '#ef4444'
             const remColor  = remPct  >= norms.remPct  ? '#3E9C7E' : remPct  >= norms.remPct  * 0.7 ? '#D9A23F' : '#ef4444'
             return (
-              <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-                <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">vs Age-Adjusted Norms</p>
-                <p className="text-[10px] text-[#9a8f7e] mb-4">Ohayon 2004 meta-analysis · males age {age}</p>
-                <div className="space-y-4">
+              <div className="mt-9">
+                <SectionLabel>vs Age-Adjusted Norms</SectionLabel>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Ohayon 2004 meta-analysis · males age {age}</p>
+                <div className="mt-4 space-y-4">
                   {[
                     { label: 'Deep Sleep', yours: deepPct, norm: norms.deepPct, color: deepColor, unit: '%' },
                     { label: 'REM Sleep',  yours: remPct,  norm: norms.remPct,  color: remColor,  unit: '%' },
                   ].map(({ label, yours, norm, color, unit }) => (
                     <div key={label}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-[#9a8f7e]">{label}</span>
+                      <div className="flex justify-between items-baseline">
+                        <Label style={{ fontSize: 12 }}>{label}</Label>
                         <span>
-                          <span className="font-semibold" style={{ color }}>{yours}{unit}</span>
-                          <span className="text-[#9a8f7e]"> / norm {norm}{unit}</span>
+                          <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color }}>{yours}{unit}</span>
+                          <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}> / norm {norm}{unit}</span>
                         </span>
                       </div>
-                      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F6F1E9' }}>
+                      <div style={{ height: 4, marginTop: 6, background: C.ruleSoft }}>
                         {(() => { const w = Math.min(100, (yours / (norm * 1.5)) * 100); return (
-                          <div className="h-full rounded-full" style={{ width: `${w}%`, background: `linear-gradient(90deg, ${color}77, ${color})`, boxShadow: w > 0 ? `0 0 6px ${color}44` : undefined }} />
+                          <div style={{ height: 4, width: `${w}%`, background: color }} />
                         ) })()}
                       </div>
                     </div>
                   ))}
-                  <div className="grid grid-cols-2 gap-3 mt-1">
-                    <div className="rounded-xl p-2" style={{ background: '#F6F1E9' }}>
-                      <p className="text-[10px] text-[#9a8f7e] mb-0.5">Sleep Onset Latency</p>
-                      <p className="text-sm font-bold text-[#1a1a1a]">{arch.sleepLatency}<span className="text-xs text-[#9a8f7e]"> min</span></p>
-                      <p className="text-[10px] text-[#9a8f7e]">Norm &lt;{norms.solMins} min</p>
+                  <div className="grid grid-cols-2 gap-6 mt-1">
+                    <div>
+                      <Label style={{ fontSize: 11 }}>Sleep Onset Latency</Label>
+                      <p style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 600, color: C.ink, marginTop: 2 }}>{arch.sleepLatency}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}> min</span></p>
+                      <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>Norm &lt;{norms.solMins} min</p>
                     </div>
-                    <div className="rounded-xl p-2" style={{ background: '#F6F1E9' }}>
-                      <p className="text-[10px] text-[#9a8f7e] mb-0.5">Time Awake</p>
-                      <p className="text-sm font-bold text-[#1a1a1a]">{arch.minutesAwake}<span className="text-xs text-[#9a8f7e]"> min</span></p>
-                      <p className="text-[10px] text-[#9a8f7e]">Norm &lt;{norms.wasoMins} min</p>
+                    <div>
+                      <Label style={{ fontSize: 11 }}>Time Awake</Label>
+                      <p style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 600, color: C.ink, marginTop: 2 }}>{arch.minutesAwake}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}> min</span></p>
+                      <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>Norm &lt;{norms.wasoMins} min</p>
                     </div>
                   </div>
                 </div>
@@ -364,24 +344,24 @@ export default function Sleep({ data, onNav }) {
             const arch = parseSleepArchitecture(todaySleep)
             if (!arch || arch.cycleCount === 0) return null
             return (
-              <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-                <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Sleep Architecture Split</p>
-                <p className="text-[10px] text-[#9a8f7e] mb-4">Borbely two-process model — deep front-loads, REM back-loads</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl p-3" style={{ background: '#F3EEFB', border: '1px solid #E0D4F5' }}>
-                    <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">First half</p>
-                    <p className="text-xs text-[#1a1a1a]"><span className="font-bold" style={{ color: '#4f46e5' }}>{arch.firstHalfDeepMins}m</span> deep</p>
-                    <p className="text-xs text-[#1a1a1a]"><span className="font-bold" style={{ color: '#8b5cf6' }}>{arch.firstHalfRemMins}m</span> REM</p>
-                    {arch.deepFrontLoaded && <p className="text-[10px] text-green-500 mt-1">Deep front-loaded ✓</p>}
+              <div className="mt-9">
+                <SectionLabel>Sleep Architecture Split</SectionLabel>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Borbely two-process model — deep front-loads, REM back-loads</p>
+                <div className="grid grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <Label style={{ fontSize: 11 }}>First half</Label>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft, marginTop: 6 }}><span style={{ fontWeight: 700, color: STAGE.deep }}>{arch.firstHalfDeepMins}m</span> deep</p>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft }}><span style={{ fontWeight: 700, color: STAGE.rem }}>{arch.firstHalfRemMins}m</span> REM</p>
+                    {arch.deepFrontLoaded && <p style={{ fontFamily: SERIF, fontSize: 11, color: '#3E9C7E', marginTop: 4 }}>Deep front-loaded ✓</p>}
                   </div>
-                  <div className="rounded-xl p-3" style={{ background: '#F3EEFB', border: '1px solid #E0D4F5' }}>
-                    <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Second half</p>
-                    <p className="text-xs text-[#1a1a1a]"><span className="font-bold" style={{ color: '#4f46e5' }}>{arch.secondHalfDeepMins}m</span> deep</p>
-                    <p className="text-xs text-[#1a1a1a]"><span className="font-bold" style={{ color: '#8b5cf6' }}>{arch.secondHalfRemMins}m</span> REM</p>
-                    {arch.remBackLoaded && <p className="text-[10px] text-green-500 mt-1">REM back-loaded ✓</p>}
+                  <div>
+                    <Label style={{ fontSize: 11 }}>Second half</Label>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft, marginTop: 6 }}><span style={{ fontWeight: 700, color: STAGE.deep }}>{arch.secondHalfDeepMins}m</span> deep</p>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft }}><span style={{ fontWeight: 700, color: STAGE.rem }}>{arch.secondHalfRemMins}m</span> REM</p>
+                    {arch.remBackLoaded && <p style={{ fontFamily: SERIF, fontSize: 11, color: '#3E9C7E', marginTop: 4 }}>REM back-loaded ✓</p>}
                   </div>
                 </div>
-                <p className="text-[11px] text-[#9a8f7e] mt-3">
+                <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 12 }}>
                   {arch.deepFrontLoaded && arch.remBackLoaded
                     ? 'Healthy architecture. Deep sleep concentrating early, REM enriching the back half.'
                     : !arch.deepFrontLoaded
@@ -395,34 +375,32 @@ export default function Sleep({ data, onNav }) {
       )}
 
       {/* 14-day trend */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Duration — 14 Days</p>
-        <BarGraph data={sleepChartData} dataKey="hours" color="#8b5cf6" unit="h" height={100} />
-        <p className="text-xs text-[#9a8f7e] mt-2 text-center">Target: 7.5–9 hrs</p>
+      <div className="mt-9">
+        <SectionLabel>Sleep Duration — 14 Days</SectionLabel>
+        <div className="mt-3"><BarGraph data={sleepChartData} dataKey="hours" color={STAGE.rem} unit="h" height={100} /></div>
+        <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 8, textAlign: 'center' }}>Target: 7.5–9 hrs</p>
       </div>
 
-      {/* Guidance */}
       {/* Sleep Debt */}
       {(() => {
         const debt = sleepDebt
         const debtColor = debt >= 5 ? '#ef4444' : debt >= 2 ? '#D9A23F' : '#3E9C7E'
         return (
-          <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">7-Day Sleep Debt</p>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-bold" style={{ color: debtColor }}>{debt}h</span>
-              <span className="text-[#9a8f7e] text-sm">{debt === 0 ? 'fully caught up' : 'owed this week'}</span>
+          <div className="mt-9">
+            <SectionLabel>7-Day Sleep Debt</SectionLabel>
+            <div className="flex items-baseline gap-2 mt-4">
+              <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: debtColor }}>{debt}h</span>
+              <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{debt === 0 ? 'fully caught up' : 'owed this week'}</span>
             </div>
             {sleepDebtPayback != null && (
-              <p className="text-xs text-[#9a8f7e] mt-1">
-                At current pace, clear in <span className="text-[#1a1a1a] font-semibold">{sleepDebtPayback} {sleepDebtPayback === 1 ? 'night' : 'nights'}</span>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 6 }}>
+                At current pace, clear in <span style={{ color: C.ink, fontWeight: 600 }}>{sleepDebtPayback} {sleepDebtPayback === 1 ? 'night' : 'nights'}</span>
               </p>
             )}
-            <div className="h-2 rounded-full bg-[#EAE2D2] overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${Math.min(100, (debt / 10) * 100)}%`, background: debtColor }} />
+            <div style={{ height: 4, marginTop: 10, background: C.ruleSoft }}>
+              <div style={{ height: 4, width: `${Math.min(100, (debt / 10) * 100)}%`, background: debtColor }} />
             </div>
-            <p className="text-xs text-[#9a8f7e] mt-2">
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>
               {debt === 0
                 ? 'No debt — your body is fully rested.'
                 : debt < 2
@@ -437,31 +415,31 @@ export default function Sleep({ data, onNav }) {
       {(() => {
         const window = calculateOptimalSleepWindow(sleepHistory)
         if (!window) return (
-          <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-2">Optimal Sleep Window</p>
-            <p className="text-sm text-[#9a8f7e]">Need 7+ nights of data to calculate your natural window.</p>
+          <div className="mt-9">
+            <SectionLabel>Optimal Sleep Window</SectionLabel>
+            <p style={{ fontFamily: SERIF, fontSize: 14, color: C.faint, marginTop: 8 }}>Need 7+ nights of data to calculate your natural window.</p>
           </div>
         )
         const consistencyColor = window.consistency >= 75 ? '#3E9C7E' : window.consistency >= 50 ? '#D9A23F' : '#ef4444'
         return (
-          <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Your Natural Sleep Window</p>
-            <div className="flex justify-around text-center mb-4">
+          <div className="mt-9">
+            <SectionLabel>Your Natural Sleep Window</SectionLabel>
+            <div className="flex justify-around text-center mt-5">
               <div>
-                <p className="text-xs text-[#9a8f7e] mb-1">Target Bedtime</p>
-                <p className="text-xl font-bold text-[#1a1a1a]">{window.bedtime}</p>
+                <Label style={{ fontSize: 11 }}>Target Bedtime</Label>
+                <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 4 }}>{window.bedtime}</p>
               </div>
-              <div className="text-[#b3a890] self-center text-xl">→</div>
+              <div style={{ fontFamily: SERIF, fontSize: 19, color: C.faint, alignSelf: 'center' }}>→</div>
               <div>
-                <p className="text-xs text-[#9a8f7e] mb-1">Natural Wake</p>
-                <p className="text-xl font-bold text-[#1a1a1a]">{window.wakeTime}</p>
+                <Label style={{ fontSize: 11 }}>Natural Wake</Label>
+                <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 4 }}>{window.wakeTime}</p>
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[#9a8f7e]">Consistency score</span>
-              <span className="text-sm font-bold" style={{ color: consistencyColor }}>{window.consistency}%</span>
+            <div className="flex items-baseline justify-between mt-5">
+              <Label style={{ fontSize: 12 }}>Consistency score</Label>
+              <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 700, color: consistencyColor }}>{window.consistency}%</span>
             </div>
-            <p className="text-xs text-[#9a8f7e] mt-2">
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 8 }}>
               {window.consistency >= 75
                 ? 'Great consistency. Your body has a stable rhythm — protect it.'
                 : 'Irregular sleep schedule detected. Staying within 30 min of your target adds ~20% recovery quality.'}
@@ -471,24 +449,18 @@ export default function Sleep({ data, onNav }) {
       })()}
 
       {chronotype && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Chronotype</p>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-bold text-[#1a1a1a]">{chronotype.type}</p>
-              <p className="text-sm text-[#9a8f7e] mt-0.5">Sleep midpoint: {chronotype.timeStr}</p>
-              <p className="text-xs text-[#9a8f7e] mt-1">
-                {chronotype.type === 'Morning' && 'Natural early riser — align wake time with light exposure'}
-                {chronotype.type === 'Neutral' && 'Intermediate chronotype — flexible sleep timing'}
-                {chronotype.type === 'Evening' && 'Natural night owl — avoid early morning hard training'}
-              </p>
-            </div>
-            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-3"
-              style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
-              <span className="text-2xl">{chronotype.type === 'Morning' ? '🌅' : chronotype.type === 'Evening' ? '🌙' : '🌤'}</span>
-            </div>
+        <div className="mt-9">
+          <SectionLabel>Chronotype</SectionLabel>
+          <div className="mt-4">
+            <p style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 700, color: C.ink }}>{chronotype.type}</p>
+            <p style={{ fontFamily: SERIF, fontSize: 14, color: C.faint, marginTop: 2 }}>Sleep midpoint: {chronotype.timeStr}</p>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 6 }}>
+              {chronotype.type === 'Morning' && 'Natural early riser — align wake time with light exposure'}
+              {chronotype.type === 'Neutral' && 'Intermediate chronotype — flexible sleep timing'}
+              {chronotype.type === 'Evening' && 'Natural night owl — avoid early morning hard training'}
+            </p>
           </div>
-          <p className="text-xs text-[#9a8f7e] mt-2">Based on average sleep midpoint over last 30 nights (Roenneberg MCTQ)</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 10 }}>Based on average sleep midpoint over last 30 nights (Roenneberg MCTQ)</p>
         </div>
       )}
 
@@ -503,23 +475,22 @@ export default function Sleep({ data, onNav }) {
           })
         if (scorePts.length < 5) return null
         return (
-          <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Score Trend</p>
-            <LineGraph data={scorePts} dataKey="score" color="#8b5cf6" unit="%" height={90} />
+          <div className="mt-9">
+            <SectionLabel>Sleep Score Trend</SectionLabel>
+            <div className="mt-3"><LineGraph data={scorePts} dataKey="score" color={STAGE.rem} unit="%" height={90} /></div>
           </div>
         )
       })()}
 
       {/* Sleep tip */}
-      <div className="rounded-2xl p-5" style={{ background: '#F3EEFB', border: '1px solid #E0D4F5' }}>
-        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#7C5BC4' }}>Sleep Tip</p>
-        <p className="text-sm text-[#5c5648]">
+      <div className="mt-9 mb-4">
+        <Note accent={STAGE.rem}>
           {deep < 60
             ? 'Deep sleep is low. Avoid alcohol and late meals — they suppress slow-wave sleep.'
             : rem < 90
             ? 'REM sleep is below optimal. Consistent sleep/wake times improve REM quality.'
             : 'Good sleep architecture. Maintain your current schedule to lock in the pattern.'}
-        </p>
+        </Note>
       </div>
     </div>
   )

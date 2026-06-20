@@ -2,192 +2,106 @@ import { useMemo, useEffect, useState } from 'react'
 import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
+import { StatRow } from '../components/MetricCard'
+import { C, SERIF, Label, BackLink, SectionLabel, Note, norm } from '../lib/almanacTheme'
 
-function BackButton({ onNav }) {
-  return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  )
-}
-
-const ORB_PALETTES = {
-  '#3E9C7E': ['#bdf0d6', '#5fc79a', '#2f8a6b', '#1c5c47', '#0e3528', 'rgba(10,40,30,', 'rgba(0,20,14,'],
-  '#9B7FD4': ['#e0d4f7', '#a98fe0', '#7457b8', '#473585', '#241a4d', 'rgba(20,10,40,', 'rgba(10,5,25,'],
-  '#D98E3F': ['#ffe2b0', '#f0ab50', '#c97a28', '#8a4f14', '#4d2a0a', 'rgba(40,20,5,', 'rgba(25,12,3,'],
-  '#ef4444': ['#ffc9c0', '#e8665a', '#b8362c', '#7a1f18', '#42100c', 'rgba(40,5,5,', 'rgba(25,3,3,'],
-}
-
-function BioAgeOrb({ physAge, chronAge }) {
+// ── Soma Age headline ──────────────────────────────────────────────────────────
+// Replaces the glowing orb with a printed figure and needle scale: the
+// biological age set against the calendar age, read straight off a ruler.
+function BioAgeHeadline({ physAge, chronAge }) {
   const diff = physAge - chronAge
-  const color = diff <= -3 ? '#3E9C7E' : diff <= 0 ? '#9B7FD4' : diff <= 3 ? '#D98E3F' : '#ef4444'
+  const color = diff <= -3 ? '#3E9C7E' : diff <= 0 ? '#6E6557' : diff <= 3 ? '#D98E3F' : '#ef4444'
   const diffText = diff < 0
-    ? `${Math.abs(diff)} years younger`
+    ? `${Math.abs(diff)} years younger than calendar age`
     : diff > 0
-    ? `${diff} years older`
+    ? `${diff} years older than calendar age`
     : 'Same as calendar age'
-  const canvasRef = (el) => {
-    if (!el || el.dataset.drawn === color) return
-    el.dataset.drawn = color
-    const ctx = el.getContext('2d')
-    const w = el.width, h = el.height, cx = w / 2, cy = h / 2, r = w / 2
-    const [hi, mid, deep, dark, edge, darkSpeckle, vignette] = ORB_PALETTES[color] || ORB_PALETTES['#3E9C7E']
-
-    const base = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.32, r * 0.05, cx, cy, r)
-    base.addColorStop(0, hi)
-    base.addColorStop(0.28, mid)
-    base.addColorStop(0.55, deep)
-    base.addColorStop(0.8, dark)
-    base.addColorStop(1, edge)
-    ctx.fillStyle = base
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.clip()
-
-    let seed = 42
-    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280 }
-
-    for (let i = 0; i < 900; i++) {
-      const a = rand() * Math.PI * 2
-      const d = Math.sqrt(rand()) * r
-      const x = cx + Math.cos(a) * d
-      const y = cy + Math.sin(a) * d
-      const distFromHot = Math.hypot(x - (cx - r * 0.28), y - (cy - r * 0.32)) / r
-      const brightness = Math.max(0, 1 - distFromHot * 1.1)
-      const size = 0.4 + rand() * 1.8
-      const alpha = 0.08 + brightness * 0.55 * rand()
-      ctx.beginPath()
-      ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`
-      ctx.arc(x, y, size, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    for (let i = 0; i < 70; i++) {
-      const a = rand() * Math.PI * 2
-      const d = Math.sqrt(rand()) * r * 0.75
-      const x = cx + Math.cos(a) * d
-      const y = cy + Math.sin(a) * d
-      ctx.beginPath()
-      ctx.fillStyle = `${darkSpeckle}${(0.15 + rand() * 0.25).toFixed(3)})`
-      ctx.arc(x, y, 1.2 + rand() * 3, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const vign = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r)
-    vign.addColorStop(0, 'rgba(0,0,0,0)')
-    vign.addColorStop(1, `${vignette}0.35)`)
-    ctx.fillStyle = vign
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.restore()
-  }
+  // position the needle on a scale spanning chronAge ± 12 years
+  const lo = chronAge - 12, hi = chronAge + 12
+  const p = norm(physAge, lo, hi)
+  const b = norm(chronAge, lo, hi)
   return (
-    <div className="flex flex-col items-center py-4">
-      <div
-        className="relative"
-        style={{ width: 220, height: 220, borderRadius: '50%', boxShadow: `0 0 70px 10px ${color}59, 0 20px 50px rgba(0,0,0,0.12)` }}
-      >
-        <canvas ref={canvasRef} width={220} height={220} style={{ position: 'absolute', top: 0, left: 0, borderRadius: '50%' }} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-          <p className="text-6xl font-bold text-white" style={{ lineHeight: 1, textShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>{physAge}</p>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] mt-2 text-white" style={{ opacity: 0.92 }}>SOMA AGE</p>
-          <p className="text-[13px] font-bold mt-2.5 text-white" style={{ opacity: 0.92 }}>{diffText}</p>
+    <div className="mt-6">
+      <div className="flex items-baseline justify-between">
+        <Label>Soma Age</Label>
+        <Label style={{ color: C.faint }}>wearable estimate ± 3y</Label>
+      </div>
+      <div className="flex items-baseline gap-2 mt-1">
+        <span style={{ fontFamily: SERIF, fontSize: 56, fontWeight: 700, color: C.ink, lineHeight: 1 }} className="tabular">{physAge}</span>
+        <span style={{ fontFamily: SERIF, fontSize: 15, color }}>{diffText}</span>
+      </div>
+      <div style={{ position: 'relative', height: 16, marginTop: 16 }}>
+        <div style={{ position: 'absolute', top: 7, left: 0, right: 0, height: 1, background: C.rule }} />
+        {[0, 0.25, 0.5, 0.75, 1].map(t => (
+          <div key={t} style={{ position: 'absolute', top: 4, left: `${t * 100}%`, width: 1, height: 6, background: C.ruleSoft }} />
+        ))}
+        <div style={{ position: 'absolute', top: 2, left: `${b * 100}%`, transform: 'translateX(-50%)', width: 1.5, height: 10, background: C.faint, opacity: 0.7 }} />
+        <div style={{ position: 'absolute', top: 0, left: `${p * 100}%`, transform: 'translateX(-50%)' }}>
+          <svg width="14" height="16" viewBox="0 0 12 14"><path d="M6 14 L1 4 Q6 0 11 4 Z" fill={color} /></svg>
         </div>
       </div>
-      <p className="text-xs text-[#9a8f7e] mt-4">vs {chronAge} calendar age · wearable estimate ±3y</p>
+      <div className="flex justify-between mt-1.5">
+        <Label style={{ fontSize: 10 }}>{lo}y</Label>
+        <Label style={{ fontSize: 10 }}>calendar {chronAge}y</Label>
+        <Label style={{ fontSize: 10 }}>{hi}y</Label>
+      </div>
     </div>
   )
 }
 
-function ConfidenceBadge({ confidence }) {
+function ConfidenceLine({ confidence }) {
   if (!confidence) return null
   const { present, total, missingNames } = confidence
-  const color = present === total ? '#3E9C7E' : present >= total - 1 ? '#9B7FD4' : present >= total / 2 ? '#D98E3F' : '#ef4444'
   return (
-    <div className="rounded-xl px-4 py-2.5 -mt-1 mb-1" style={{ background: color + '12', border: `1px solid ${color}30` }}>
-      <p className="text-xs font-semibold" style={{ color }}>
-        {present}/{total} domains using real data
-      </p>
-      {missingNames.length > 0 && (
-        <p className="text-[11px] text-[#9a8f7e] mt-0.5">Missing: {missingNames.join(', ')} — those domains default to 0</p>
-      )}
-    </div>
+    <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10, fontStyle: 'italic' }}>
+      {present}/{total} domains using real data
+      {missingNames.length > 0 && ` — missing ${missingNames.join(', ')} (defaults to 0)`}
+    </p>
   )
 }
 
-function PaceSlider({ pace, physAge, chronAge }) {
+function PaceLine({ pace, physAge, chronAge }) {
   const rate = pace?.rate ?? (chronAge > 0 ? physAge / chronAge : 1.0)
-  const paceColor = rate <= 0.85 ? '#3E9C7E' : rate <= 1.05 ? '#9B7FD4' : rate <= 1.3 ? '#D98E3F' : '#ef4444'
+  const paceColor = rate <= 0.85 ? '#3E9C7E' : rate <= 1.05 ? C.inkSoft : rate <= 1.3 ? '#D98E3F' : '#ef4444'
   const paceLabel = rate <= 0.8 ? 'Slowing significantly' : rate <= 0.95 ? 'Slowing' : rate <= 1.05 ? 'On track' : rate <= 1.3 ? 'Slightly fast' : 'Accelerated'
   const minRate = 0.5, maxRate = 1.8
-  const total = 44
-  const currentIdx = Math.round(Math.min(43, Math.max(0, ((rate - minRate) / (maxRate - minRate)) * (total - 1))))
+  const p = norm(rate, minRate, maxRate)
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Pace of Aging</p>
-      <p className="text-[32px] font-bold mt-1.5 text-[#1a1a1a]">{rate.toFixed(1)}x</p>
-      <div className="flex items-end gap-[3px] mt-5" style={{ height: 30 }}>
-        {Array.from({ length: total }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-[1px]"
-            style={{
-              height: i % 4 === 0 || i === currentIdx ? '100%' : '55%',
-              width: i === currentIdx ? 3 : undefined,
-              background: i === currentIdx ? '#3E9C7E' : i % 4 === 0 ? '#cbbfa3' : '#E3D9C4',
-            }}
-          />
-        ))}
+    <div className="mt-9">
+      <SectionLabel right="1.0x = on pace">Pace of Aging</SectionLabel>
+      <div className="flex items-baseline gap-2 mt-3">
+        <span style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, color: C.ink }} className="tabular">{rate.toFixed(1)}x</span>
+        <span style={{ fontFamily: SERIF, fontSize: 14, color: paceColor }}>{paceLabel}</span>
       </div>
-      <div className="flex justify-between mt-2">
-        <span className="text-[11px] font-bold text-[#b3a890]">1.0x</span>
-        <span className="text-[11px] font-bold text-[#b3a890]">Fast →</span>
+      <div style={{ position: 'relative', height: 14, marginTop: 10 }}>
+        <div style={{ position: 'absolute', top: 6, left: 0, right: 0, height: 1, background: C.rule }} />
+        <div style={{ position: 'absolute', top: 0, left: `${p * 100}%`, transform: 'translateX(-50%)' }}>
+          <svg width="12" height="14" viewBox="0 0 12 14"><path d="M6 14 L1 4 Q6 0 11 4 Z" fill={paceColor} /></svg>
+        </div>
       </div>
-      <p className="text-sm font-medium mt-3" style={{ color: paceColor }}>{paceLabel}</p>
-      {pace && (
-        <p className="text-xs text-[#9a8f7e] mt-2">
-          Bio age {pace.bioAgeDelta < 0 ? '↓' : '↑'} {Math.abs(pace.bioAgeDelta).toFixed(1)}y over {Math.round(pace.calDays / 30)}mo · longitudinal tracking
-        </p>
-      )}
-      {!pace && (
-        <p className="text-xs text-[#9a8f7e] mt-2">Longitudinal pace unlocks after 30+ days of tracking.</p>
-      )}
+      <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 8 }}>
+        {pace
+          ? `Bio age ${pace.bioAgeDelta < 0 ? 'down' : 'up'} ${Math.abs(pace.bioAgeDelta).toFixed(1)}y over ${Math.round(pace.calDays / 30)} months · longitudinal tracking`
+          : 'Longitudinal pace unlocks after 30+ days of tracking.'}
+      </p>
     </div>
   )
 }
 
-function InsightCard({ physAge, chronAge, pace }) {
+function InsightNote({ physAge, chronAge, pace }) {
   const diff = physAge - chronAge
-  const color = diff <= 0 ? '#3E9C7E' : '#D98E3F'
-  let headline, body
+  const accent = diff <= 0 ? '#3E9C7E' : '#D98E3F'
+  let body
   if (pace && pace.bioAgeDelta < -0.5) {
-    headline = 'Trending Younger'
-    body = `Your biological age has dropped ${Math.abs(pace.bioAgeDelta).toFixed(1)} years over the last ${Math.round(pace.calDays / 30)} months. What you're doing is working — keep it up.`
+    body = `Trending younger — your biological age has dropped ${Math.abs(pace.bioAgeDelta).toFixed(1)} years over the last ${Math.round(pace.calDays / 30)} months. What you're doing is working.`
   } else if (diff <= -3) {
-    headline = 'Keep It Up'
-    body = `Your biological age is ${Math.abs(diff)} years younger than your calendar age. Your habits are measurably extending your healthspan.`
+    body = `Keep it up — your biological age is ${Math.abs(diff)} years younger than your calendar age. Your habits are measurably extending your healthspan.`
   } else if (diff <= 0) {
-    headline = 'Good Shape'
-    body = `Biological age is in line with your calendar. Optimizing Zone 2 cardio, sleep consistency, or HRV could push you into the "younger" tier.`
+    body = `Good shape — biological age is in line with your calendar. Optimizing Zone 2 cardio, sleep consistency, or HRV could push you into the younger tier.`
   } else {
-    headline = 'Room to Improve'
-    body = `Biological age is running ${diff} years ahead of your calendar. Focus on your top opportunities below to reverse this trend.`
+    body = `Room to improve — biological age is running ${diff} years ahead of your calendar. Focus on your top opportunities below to reverse this trend.`
   }
-  return (
-    <div className="rounded-2xl p-5" style={{ background: color + '12', border: `1px solid ${color}30` }}>
-      <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color }}>{headline}</p>
-      <p className="text-sm text-[#5c5648] leading-relaxed">{body}</p>
-    </div>
-  )
+  return <Note accent={accent}>{body}</Note>
 }
 
 function BioAgeTrendChart({ chronAge }) {
@@ -208,56 +122,43 @@ function BioAgeTrendChart({ chronAge }) {
   }, [chronAge])
   if (data.length < 2) return null
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Age Trend</p>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-[#9a8f7e] flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#3E9C7E' }} /> Soma Age
-          </span>
-          <span className="text-[10px] text-[#9a8f7e] flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#9a8f7e' }} /> Calendar
-          </span>
-        </div>
+    <div className="mt-9">
+      <SectionLabel>Age Trend</SectionLabel>
+      <div className="flex items-center gap-4 mt-3">
+        <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#3E9C7E', marginRight: 5 }} />Soma Age
+        </span>
+        <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: C.faint, marginRight: 5 }} />Calendar
+        </span>
       </div>
-      <p className="text-[10px] text-[#9a8f7e] mb-4">Biological vs chronological age over time</p>
-      <DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#3E9C7E" color2="#9a8f7e" unit="y" height={110} />
+      <div className="mt-3"><DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#3E9C7E" color2={C.faint} unit="y" height={110} /></div>
     </div>
   )
 }
 
-function MetricFactorCard({ label, value, displayValue, unit, contribution, min, max, higherBetter = true, sublabel }) {
+function MetricFactorRow({ label, value, displayValue, unit, contribution, min, max, higherBetter = true, sublabel }) {
   const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''))
-  const rawPct = isNaN(numericValue) || max === min ? 50 : ((numericValue - min) / (max - min)) * 100
-  const markerPct = higherBetter
-    ? Math.min(96, Math.max(4, rawPct))
-    : Math.min(96, Math.max(4, 100 - rawPct))
-  const color = contribution < 0 ? '#3E9C7E' : contribution === 0 ? '#9B7FD4' : contribution <= 2 ? '#D98E3F' : '#ef4444'
+  const p01 = isNaN(numericValue) || max === min ? 0.5 : norm(numericValue, min, max)
+  const pos01 = higherBetter ? p01 : 1 - p01
+  const color = contribution < 0 ? '#3E9C7E' : contribution === 0 ? C.inkSoft : contribution <= 2 ? '#D98E3F' : '#ef4444'
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">{label}</p>
-      <div className="relative pt-2 mb-2 mx-1">
-        <div className="h-2 rounded-full" style={{
-          background: higherBetter
-            ? 'linear-gradient(to right, #ef4444, #D98E3F 40%, #3E9C7E)'
-            : 'linear-gradient(to right, #3E9C7E, #D98E3F 60%, #ef4444)',
-        }} />
-        <div className="absolute top-0 flex justify-center" style={{ left: `calc(${markerPct}% - 5px)` }}>
-          <svg width="10" height="8"><polygon points="5,0 0,8 10,8" fill="white"/></svg>
-        </div>
-      </div>
-      <div className="flex items-end justify-between mt-1">
-        <div>
-          <span className="text-base font-bold text-[#1a1a1a]">{displayValue ?? value}{unit}</span>
-          {sublabel && <p className="text-[10px] text-[#9a8f7e] mt-0.5">{sublabel}</p>}
-        </div>
-        <span className="text-base font-bold" style={{ color }}>
+    <div className="py-3" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+      <div className="flex items-baseline justify-between">
+        <Label>{label}</Label>
+        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color }}>
           {contribution < 0 ? '' : contribution > 0 ? '+' : ''}{contribution}y
         </span>
       </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-[#9a8f7e]">{higherBetter ? min : max}{unit}</span>
-        <span className="text-[10px] text-[#9a8f7e]">{higherBetter ? max : min}{unit}</span>
+      <div className="flex items-baseline gap-2 mt-1">
+        <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: C.ink }}>{displayValue ?? value}{unit}</span>
+        {sublabel && <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, fontStyle: 'italic' }}>{sublabel}</span>}
+      </div>
+      <div style={{ position: 'relative', height: 12, marginTop: 8 }}>
+        <div style={{ position: 'absolute', top: 5, left: 0, right: 0, height: 1, background: C.rule }} />
+        <div style={{ position: 'absolute', top: 0, left: `${Math.min(96, Math.max(4, pos01 * 100))}%`, transform: 'translateX(-50%)' }}>
+          <svg width="10" height="12" viewBox="0 0 12 14"><path d="M6 14 L1 4 Q6 0 11 4 Z" fill={color} /></svg>
+        </div>
       </div>
     </div>
   )
@@ -282,21 +183,15 @@ function TopPriorities({ opportunities }) {
   if (!opportunities || opportunities.length === 0) return null
   const top3 = opportunities.slice(0, 3)
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Top Priorities</p>
-      <div className="space-y-0">
-        {top3.map((c, i) => (
-          <div
-            key={c.label}
-            className="flex items-start gap-3 py-3"
-            style={i < top3.length - 1 ? { borderBottom: '1px solid #ece3d4' } : {}}
-          >
-            <span className="text-base font-bold flex-shrink-0 w-14 text-right" style={{ color: '#ef4444' }}>
-              +{c.contribution}y
-            </span>
+    <div className="mt-9">
+      <SectionLabel>Top Priorities</SectionLabel>
+      <div className="mt-1">
+        {top3.map(c => (
+          <div key={c.label} className="flex items-start gap-3 py-3" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+            <span style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, color: '#ef4444', minWidth: 48, textAlign: 'right' }}>+{c.contribution}y</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1a1a1a] leading-tight">{c.label}</p>
-              <p className="text-xs text-[#9a8f7e] mt-0.5">{getActionTip(c.label)}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 15, color: C.ink }}>{c.label}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 1 }}>{getActionTip(c.label)}</p>
             </div>
           </div>
         ))}
@@ -307,12 +202,12 @@ function TopPriorities({ opportunities }) {
 
 function MetricContribution({ label, value, unit, contribution, color, sublabel }) {
   return (
-    <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid #ece3d4' }}>
+    <div className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
       <div>
-        <p className="text-sm text-[#1a1a1a]">{label}</p>
-        <p className="text-xs text-[#9a8f7e]">{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
+        <p style={{ fontFamily: SERIF, fontSize: 14, color: C.ink }}>{label}</p>
+        <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>{value}{unit}{sublabel ? ` — ${sublabel}` : ''}</p>
       </div>
-      <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ background: color + '20', color }}>
+      <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color }}>
         {contribution > 0 ? '+' : ''}{contribution}y
       </span>
     </div>
@@ -626,60 +521,51 @@ export default function Chronos({ data, onNav }) {
   })
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-      <div className="pt-2 flex items-center gap-3">
-        {onNav && <BackButton onNav={onNav} />}
-        <div>
-          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Chronos</p>
-          <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>Your biological age</h1>
-        </div>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>CHRONOS</Label>
       </div>
 
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>Your biological age</h1>
+
       {!ageIsSet ? (
-        <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-2xl mb-4">⏳</p>
-          <p className="text-[#5c5648] text-sm font-medium">Set your age to get started</p>
-          <p className="text-xs text-[#9a8f7e] mt-1 mb-4">Biological age needs your calendar age as a baseline.</p>
+        <div className="mt-9">
+          <Note>Set your age in Settings to get started — biological age needs your calendar age as a baseline.</Note>
           {onNav && (
-            <button
-              onClick={() => onNav('settings')}
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
-            >
-              Open Settings
+            <button onClick={() => onNav('settings')} className="mt-4 active:opacity-50 transition-opacity">
+              <Label style={{ color: C.ink }}>Open Settings ›</Label>
             </button>
           )}
         </div>
       ) : (
         <>
-          <BioAgeOrb physAge={physAge} chronAge={userAge} />
-          <ConfidenceBadge confidence={confidence} />
-          <PaceSlider pace={pace} physAge={physAge} chronAge={userAge} />
-          <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
+          <BioAgeHeadline physAge={physAge} chronAge={userAge} />
+          <ConfidenceLine confidence={confidence} />
+          <PaceLine pace={pace} physAge={physAge} chronAge={userAge} />
+          <div className="mt-9"><InsightNote physAge={physAge} chronAge={userAge} pace={pace} /></div>
           <BioAgeTrendChart chronAge={userAge} />
+
           {phenoAge !== null ? (
-            <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge</p>
-                  <p className="text-[10px] text-[#9a8f7e] mt-0.5">Levine Formula · validated clinical model</p>
-                </div>
-                <span className="text-2xl font-bold" style={{ color: phenoAge < userAge ? '#3E9C7E' : phenoAge < userAge + 5 ? '#D98E3F' : '#ef4444' }}>
+            <div className="mt-9">
+              <SectionLabel>PhenoAge</SectionLabel>
+              <div className="flex items-baseline justify-between mt-3">
+                <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>Levine Formula · validated clinical model</p>
+                <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: phenoAge < userAge ? '#3E9C7E' : phenoAge < userAge + 5 ? '#D98E3F' : '#ef4444' }}>
                   {Math.round(phenoAge)}y
                 </span>
               </div>
             </div>
           ) : phenoProgress ? (
-            <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge — bloodwork panel</p>
-                <span className="text-xs font-bold text-[#9a8f7e]">{phenoProgress.present}/{phenoProgress.total} markers</span>
-              </div>
-              <div className="w-full rounded-full h-1.5 mb-2" style={{ background: '#EAE2D2' }}>
-                <div className="h-1.5 rounded-full" style={{ width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#9B7FD4' }} />
+            <div className="mt-9">
+              <SectionLabel right={`${phenoProgress.present}/${phenoProgress.total} markers`}>PhenoAge — Bloodwork Panel</SectionLabel>
+              <div style={{ height: 3, marginTop: 12, background: C.ruleSoft }}>
+                <div style={{ height: 3, width: `${(phenoProgress.present / phenoProgress.total) * 100}%`, background: '#9B7FD4' }} />
               </div>
               {phenoProgress.missingNames.length > 0 && (
-                <p className="text-[10px] text-[#9a8f7e]">Still needed: {phenoProgress.missingNames.join(', ')}</p>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Still needed: {phenoProgress.missingNames.join(', ')}</p>
               )}
             </div>
           ) : null}
@@ -687,219 +573,139 @@ export default function Chronos({ data, onNav }) {
       )}
 
       {/* Vitals History shortcut */}
-      <button
-        onClick={() => onNav('vitals')}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl"
-        style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">📊</span>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-[#1a1a1a]">Vitals History</p>
-            <p className="text-xs text-[#9a8f7e]">BP · Weight · Grip · Waist · HRV · RHR</p>
-          </div>
-        </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#9a8f7e" strokeWidth={2} className="w-5 h-5 flex-shrink-0">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+      <div className="mt-9">
+        <button onClick={() => onNav('vitals')} className="w-full flex items-center justify-between py-2.5 active:opacity-50 transition-opacity" style={{ borderTop: `1px solid ${C.rule}`, borderBottom: `1px solid ${C.rule}` }}>
+          <span style={{ fontFamily: SERIF, fontSize: 16, color: C.ink }}>Vitals History</span>
+          <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>BP · Weight · Grip · Waist · HRV · RHR ›</span>
+        </button>
+      </div>
 
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Body Composition</p>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="mt-9">
+          <SectionLabel>Body Composition</SectionLabel>
+          <div className="mt-1">
             {weightKg > 0 && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Weight</p>
-                <p className="text-xl font-bold text-[#1a1a1a]">
-                  {units === 'imperial' ? Math.round(weightKg * 2.2046) : Math.round(weightKg * 10) / 10}
-                </p>
-                <p className="text-[10px] text-[#9a8f7e]">{units === 'imperial' ? 'lbs' : 'kg'}</p>
-              </div>
+              <StatRow label="Weight" value={units === 'imperial' ? Math.round(weightKg * 2.2046) : Math.round(weightKg * 10) / 10} unit={units === 'imperial' ? 'lbs' : 'kg'} />
             )}
             {bodyFatPct !== null && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Body Fat</p>
-                <p className="text-xl font-bold" style={{ color: getBodyFatColor(bodyFatPct) }}>
-                  {bodyFatPct}%
-                </p>
-                <p className="text-[10px]" style={{ color: getBodyFatColor(bodyFatPct) }}>
-                  {getBodyFatLabel(bodyFatPct)}
-                </p>
-              </div>
+              <StatRow label="Body Fat" value={`${bodyFatPct}%`} unit={getBodyFatLabel(bodyFatPct)} color={getBodyFatColor(bodyFatPct)} />
             )}
             {bmi !== null && (
-              <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">BMI</p>
-                <p className="text-xl font-bold" style={{ color: getBMIColor(bmi) }}>{bmi}</p>
-                <p className="text-[10px]" style={{ color: getBMIColor(bmi) }}>{getBMILabel(bmi)}</p>
-              </div>
+              <StatRow label="BMI" value={bmi} unit={getBMILabel(bmi)} color={getBMIColor(bmi)} />
+            )}
+            {leanMass !== null && (
+              <>
+                <StatRow label="Lean Mass" value={units === 'imperial' ? Math.round(leanMass * 2.2046) : leanMass} unit={units === 'imperial' ? 'lbs' : 'kg'} />
+                <StatRow label="Fat Mass" value={units === 'imperial' ? Math.round(fatMass * 2.2046) : fatMass} unit={units === 'imperial' ? 'lbs' : 'kg'} />
+              </>
             )}
           </div>
 
-          {/* Lean / fat mass */}
-          {leanMass !== null && (
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Lean Mass</p>
-                <p className="text-base font-bold text-[#1a1a1a]">
-                  {units === 'imperial' ? Math.round(leanMass * 2.2046) : leanMass}
-                  <span className="text-xs text-[#9a8f7e] ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
-                </p>
-              </div>
-              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Fat Mass</p>
-                <p className="text-base font-bold text-[#1a1a1a]">
-                  {units === 'imperial' ? Math.round(fatMass * 2.2046) : fatMass}
-                  <span className="text-xs text-[#9a8f7e] ml-1">{units === 'imperial' ? 'lbs' : 'kg'}</span>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Weight trend chart */}
           {weightChartData.length >= 2 && (
-            <>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Weight Trend</p>
-              <LineGraph data={weightChartData} dataKey="weight" color="#9B7FD4" unit={units === 'imperial' ? 'lbs' : 'kg'} height={80} />
-            </>
-          )}
-
-          {/* Grip strength trend */}
-          {gripChartData.length >= 2 && (
-            <div className="mt-3">
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Grip Strength Trend</p>
-              <LineGraph data={gripChartData} dataKey="grip" color="#3E9C7E" unit={units === 'imperial' ? 'lbs' : 'kg'} height={70} />
+            <div className="mt-5">
+              <Label style={{ fontSize: 11 }}>Weight Trend</Label>
+              <div className="mt-2"><LineGraph data={weightChartData} dataKey="weight" color="#9B7FD4" unit={units === 'imperial' ? 'lbs' : 'kg'} height={80} /></div>
             </div>
           )}
 
-          {/* Waist trend */}
+          {gripChartData.length >= 2 && (
+            <div className="mt-5">
+              <Label style={{ fontSize: 11 }}>Grip Strength Trend</Label>
+              <div className="mt-2"><LineGraph data={gripChartData} dataKey="grip" color="#3E9C7E" unit={units === 'imperial' ? 'lbs' : 'kg'} height={70} /></div>
+            </div>
+          )}
+
           {waistChartData.length >= 2 && (
-            <div className="mt-3">
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Waist Circumference Trend</p>
-              <LineGraph data={waistChartData} dataKey="waist" color="#D98E3F" unit={units === 'imperial' ? 'in' : 'cm'} height={70} reference={units === 'imperial' ? Math.round(94 / 2.54) : 94} />
+            <div className="mt-5">
+              <Label style={{ fontSize: 11 }}>Waist Circumference Trend</Label>
+              <div className="mt-2"><LineGraph data={waistChartData} dataKey="waist" color="#D98E3F" unit={units === 'imperial' ? 'in' : 'cm'} height={70} reference={units === 'imperial' ? Math.round(94 / 2.54) : 94} /></div>
             </div>
           )}
 
           {weightKg === 0 && bodyFatPct === null && (
-            <p className="text-xs text-[#9a8f7e]">Set height, weight, and body fat % in Settings to see composition metrics.</p>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>Set height, weight, and body fat % in Settings to see composition metrics.</p>
           )}
           {weightKg > 0 && bodyFatPct === null && (
-            <p className="text-xs text-[#9a8f7e] mt-1">Add body fat % in Settings to see lean and fat mass.</p>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>Add body fat % in Settings to see lean and fat mass.</p>
           )}
         </div>
       )}
 
       {/* Zone 2 Training */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Zone 2 Cardio This Week</p>
-        <div className="flex items-end gap-3 mb-4">
-          <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }}>
-            {weeklyZone2}
-          </span>
-          <div className="pb-1">
-            <p className="text-sm text-[#9a8f7e]">minutes</p>
-            <p className="text-xs text-[#9a8f7e]">{weeklyZone2 >= 300 ? 'Excellent — above longevity target' : weeklyZone2 >= 150 ? 'Good — meets minimum target' : 'Below target — aim for 150+ min'}</p>
-          </div>
+      <div className="mt-9">
+        <SectionLabel>Zone 2 Cardio This Week</SectionLabel>
+        <div className="flex items-baseline gap-2 mt-3">
+          <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, color: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#6E6557' : '#D98E3F' }}>{weeklyZone2}</span>
+          <span style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>minutes</span>
         </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="w-full rounded-full h-2" style={{ background: '#F6F1E9' }}>
-              <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (weeklyZone2 / 300) * 100)}%`, background: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }} />
-            </div>
-            <span className="text-[10px] text-[#9a8f7e] whitespace-nowrap">300 goal</span>
-          </div>
+        <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 2 }}>{weeklyZone2 >= 300 ? 'Excellent — above longevity target' : weeklyZone2 >= 150 ? 'Good — meets minimum target' : 'Below target — aim for 150+ min'}</p>
+        <div style={{ height: 3, marginTop: 10, background: C.ruleSoft }}>
+          <div style={{ height: 3, width: `${Math.min(100, (weeklyZone2 / 300) * 100)}%`, background: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }} />
         </div>
-        <p className="text-[10px] text-[#9a8f7e] mt-2">60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>60–70% max HR from your intraday data. 150 min/week = good, 300 min/week = excellent for longevity.</p>
       </div>
 
       {/* Sleep Regularity Index */}
       {sri !== null && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Regularity Index</p>
-          <div className="flex items-end gap-3 mb-2">
-            <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }}>
-              {Math.round(sri * 100)}
-            </span>
-            <div className="pb-1">
-              <p className="text-sm text-[#9a8f7e]">/ 100</p>
-              <p className="text-xs text-[#9a8f7e]">
-                {sri >= 0.87 ? 'Excellent regularity' : sri >= 0.80 ? 'Good' : sri >= 0.70 ? 'Moderate — work on consistency' : 'Poor — irregular schedule'}
-              </p>
-            </div>
+        <div className="mt-9">
+          <SectionLabel>Sleep Regularity Index</SectionLabel>
+          <div className="flex items-baseline gap-2 mt-3">
+            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, color: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#6E6557' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }}>{Math.round(sri * 100)}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>/ 100</span>
           </div>
-          <div className="w-full rounded-full h-2 mb-2" style={{ background: '#F6F1E9' }}>
-            <div className="h-2 rounded-full" style={{ width: `${Math.round(sri * 100)}%`, background: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }} />
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 2 }}>
+            {sri >= 0.87 ? 'Excellent regularity' : sri >= 0.80 ? 'Good' : sri >= 0.70 ? 'Moderate — work on consistency' : 'Poor — irregular schedule'}
+          </p>
+          <div style={{ height: 3, marginTop: 10, background: C.ruleSoft }}>
+            <div style={{ height: 3, width: `${Math.round(sri * 100)}%`, background: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }} />
           </div>
-          <p className="text-[10px] text-[#9a8f7e]">Probability of same sleep/wake state 24h apart. ≥87 = excellent circadian rhythm. Used as sleep consistency in your biological age.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Probability of same sleep/wake state 24h apart. ≥87 = excellent circadian rhythm. Used as sleep consistency in your biological age.</p>
         </div>
       )}
 
       {/* Post-exercise Heart Rate Recovery — shows live today or last known (≤90 days) */}
       {lastKnownHRR && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Heart Rate Recovery</p>
-            {!data.hrr && lastKnownHRR.date && (
-              <span className="text-[10px] text-[#9a8f7e]">last recorded {lastKnownHRR.date}</span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Post-Exercise Drop</p>
-              <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr60 >= 18 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 12 ? '#9B7FD4' : '#ef4444' }}>
-                -{lastKnownHRR.hrr60}<span className="text-sm font-normal text-[#9a8f7e]"> bpm</span>
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr60 >= 25 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 18 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 12 ? '#9B7FD4' : '#ef4444' }}>
-                {lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor (↑ risk)'}
-              </p>
-            </div>
+        <div className="mt-9">
+          <SectionLabel right={!data.hrr && lastKnownHRR.date ? `last recorded ${lastKnownHRR.date}` : undefined}>Heart Rate Recovery</SectionLabel>
+          <div className="mt-1">
+            <StatRow
+              label="Post-Exercise Drop"
+              value={`-${lastKnownHRR.hrr60}`}
+              unit={`bpm · ${lastKnownHRR.hrr60 >= 25 ? 'Excellent' : lastKnownHRR.hrr60 >= 18 ? 'Good' : lastKnownHRR.hrr60 >= 12 ? 'Normal' : 'Poor (↑ risk)'}`}
+              color={lastKnownHRR.hrr60 >= 18 ? '#3E9C7E' : lastKnownHRR.hrr60 >= 12 ? '#9B7FD4' : '#ef4444'}
+            />
             {lastKnownHRR.hrr120 !== null && (
-              <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-                <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Early Recovery Drop</p>
-                <p className="text-2xl font-bold" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#3E9C7E' : lastKnownHRR.hrr120 >= 30 ? '#9B7FD4' : '#ef4444' }}>
-                  -{lastKnownHRR.hrr120}<span className="text-sm font-normal text-[#9a8f7e]"> bpm</span>
-                </p>
-                <p className="text-[10px] mt-0.5" style={{ color: lastKnownHRR.hrr120 >= 42 ? '#3E9C7E' : lastKnownHRR.hrr120 >= 30 ? '#9B7FD4' : '#ef4444' }}>
-                  {lastKnownHRR.hrr120 >= 42 ? 'Excellent' : lastKnownHRR.hrr120 >= 30 ? 'Good' : 'Below average'}
-                </p>
-              </div>
+              <StatRow
+                label="Early Recovery Drop"
+                value={`-${lastKnownHRR.hrr120}`}
+                unit={`bpm · ${lastKnownHRR.hrr120 >= 42 ? 'Excellent' : lastKnownHRR.hrr120 >= 30 ? 'Good' : 'Below average'}`}
+                color={lastKnownHRR.hrr120 >= 42 ? '#3E9C7E' : lastKnownHRR.hrr120 >= 30 ? '#9B7FD4' : '#ef4444'}
+              />
             )}
           </div>
-          {lastKnownHRR.peakHR && <p className="text-[10px] text-[#9a8f7e]">Peak HR {lastKnownHRR.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>}
+          {lastKnownHRR.peakHR && <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Peak HR {lastKnownHRR.peakHR} bpm · HR drop from peak to 1 min post-exercise. Drop &lt;12 bpm predicts higher mortality (Cole NEJM 1999).</p>}
         </div>
       )}
 
       {/* Top Priorities — only shown when biologically older than calendar age */}
       {diff > 0 && <TopPriorities opportunities={allOpportunities} />}
 
-      {/* What's moving the needle — WHOOP-style metric factor cards */}
-      <div>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4 px-1">What's Moving the Needle</p>
-        <div className="space-y-4">
-          {/* HRV */}
-          {avgHRV > 0 && <MetricFactorCard label="Heart Rate Variability" value={Math.round(avgHRV)} unit=" ms" contribution={contributions.find(c => c.label === 'HRV')?.contribution ?? 0} min={20} max={120} higherBetter={true} sublabel={`30-day avg · norm ~${getHRVNorm(userAge)} ms for age`} />}
-          {/* RHR */}
-          {avgRHR > 0 && <MetricFactorCard label="Resting Heart Rate" value={Math.round(avgRHR)} unit=" bpm" contribution={contributions.find(c => c.label === 'Resting Heart Rate')?.contribution ?? 0} min={40} max={100} higherBetter={false} sublabel="lower is better" />}
-          {/* Sleep Duration */}
-          <MetricFactorCard label="Sleep Duration" value={Math.round(avgSleepHours * 10) / 10} unit="h avg" contribution={contributions.find(c => c.label === 'Sleep Duration')?.contribution ?? 0} min={5} max={9} higherBetter={true} />
-          {/* Daily Steps */}
-          <MetricFactorCard label="Daily Steps" value={steps} displayValue={steps.toLocaleString()} unit="" contribution={contributions.find(c => c.label === 'Daily Steps')?.contribution ?? 0} min={0} max={15000} higherBetter={true} />
-          {/* VO2 Max */}
-          {vo2Max > 0 && <MetricFactorCard label="VO2 Max" value={vo2Max} unit=" ml/kg/min" contribution={contributions.find(c => c.label === 'VO2 Max (Cardio Fitness)')?.contribution ?? 0} min={20} max={60} higherBetter={true} sublabel={(() => { const norms = userAge <= 29 ? [34,42,53] : userAge <= 39 ? [31,39,49] : userAge <= 49 ? [27,35,45] : userAge <= 59 ? [25,34,44] : [22,30,40]; const [f,g,e] = norms; return vo2Max >= e+5 ? 'Elite' : vo2Max >= e ? 'Superior' : vo2Max >= g ? 'Excellent' : vo2Max >= f ? 'Good' : 'Fair' })()} />}
-          {/* Body Fat or BMI */}
-          {bodyFatPct !== null && <MetricFactorCard label="Body Fat %" value={bodyFatPct} unit="%" contribution={contributions.find(c => c.label === 'Body Fat %')?.contribution ?? 0} min={5} max={35} higherBetter={false} sublabel={getBodyFatLabel(bodyFatPct)} />}
-          {bodyFatPct === null && bmi !== null && <MetricFactorCard label="BMI" value={bmi} unit="" contribution={contributions.find(c => c.label?.includes('BMI'))?.contribution ?? 0} min={16} max={40} higherBetter={false} sublabel={getBMILabel(bmi)} />}
-          {/* Grip Strength */}
-          {gripKg > 0 && <MetricFactorCard label="Grip Strength" value={units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg} unit={units === 'imperial' ? ' lbs' : ' kg'} contribution={contributions.find(c => c.label === 'Grip Strength')?.contribution ?? 0} min={units === 'imperial' ? 66 : 30} max={units === 'imperial' ? 132 : 60} higherBetter={true} />}
-          {/* Active Zone Minutes */}
-          <MetricFactorCard label="Weekly Active Zone Min" value={weeklyAZM} unit=" AZM" contribution={contributions.find(c => c.label === 'Active Zone Minutes')?.contribution ?? 0} min={0} max={500} higherBetter={true} sublabel="WHO target: 150/wk · Excellent: 300/wk" />
-          {/* Heart Rate Recovery */}
+      {/* What's moving the needle */}
+      <div className="mt-9">
+        <SectionLabel>What's Moving the Needle</SectionLabel>
+        <div className="mt-1">
+          {avgHRV > 0 && <MetricFactorRow label="Heart Rate Variability" value={Math.round(avgHRV)} unit=" ms" contribution={contributions.find(c => c.label === 'HRV')?.contribution ?? 0} min={20} max={120} higherBetter={true} sublabel={`30-day avg · norm ~${getHRVNorm(userAge)} ms for age`} />}
+          {avgRHR > 0 && <MetricFactorRow label="Resting Heart Rate" value={Math.round(avgRHR)} unit=" bpm" contribution={contributions.find(c => c.label === 'Resting Heart Rate')?.contribution ?? 0} min={40} max={100} higherBetter={false} sublabel="lower is better" />}
+          <MetricFactorRow label="Sleep Duration" value={Math.round(avgSleepHours * 10) / 10} unit="h avg" contribution={contributions.find(c => c.label === 'Sleep Duration')?.contribution ?? 0} min={5} max={9} higherBetter={true} />
+          <MetricFactorRow label="Daily Steps" value={steps} displayValue={steps.toLocaleString()} unit="" contribution={contributions.find(c => c.label === 'Daily Steps')?.contribution ?? 0} min={0} max={15000} higherBetter={true} />
+          {vo2Max > 0 && <MetricFactorRow label="VO2 Max" value={vo2Max} unit=" ml/kg/min" contribution={contributions.find(c => c.label === 'VO2 Max (Cardio Fitness)')?.contribution ?? 0} min={20} max={60} higherBetter={true} sublabel={(() => { const norms = userAge <= 29 ? [34,42,53] : userAge <= 39 ? [31,39,49] : userAge <= 49 ? [27,35,45] : userAge <= 59 ? [25,34,44] : [22,30,40]; const [f,g,e] = norms; return vo2Max >= e+5 ? 'Elite' : vo2Max >= e ? 'Superior' : vo2Max >= g ? 'Excellent' : vo2Max >= f ? 'Good' : 'Fair' })()} />}
+          {bodyFatPct !== null && <MetricFactorRow label="Body Fat %" value={bodyFatPct} unit="%" contribution={contributions.find(c => c.label === 'Body Fat %')?.contribution ?? 0} min={5} max={35} higherBetter={false} sublabel={getBodyFatLabel(bodyFatPct)} />}
+          {bodyFatPct === null && bmi !== null && <MetricFactorRow label="BMI" value={bmi} unit="" contribution={contributions.find(c => c.label?.includes('BMI'))?.contribution ?? 0} min={16} max={40} higherBetter={false} sublabel={getBMILabel(bmi)} />}
+          {gripKg > 0 && <MetricFactorRow label="Grip Strength" value={units === 'imperial' ? Math.round(gripKg * 2.2046) : gripKg} unit={units === 'imperial' ? ' lbs' : ' kg'} contribution={contributions.find(c => c.label === 'Grip Strength')?.contribution ?? 0} min={units === 'imperial' ? 66 : 30} max={units === 'imperial' ? 132 : 60} higherBetter={true} />}
+          <MetricFactorRow label="Weekly Active Zone Min" value={weeklyAZM} unit=" AZM" contribution={contributions.find(c => c.label === 'Active Zone Minutes')?.contribution ?? 0} min={0} max={500} higherBetter={true} sublabel="WHO target: 150/wk · Excellent: 300/wk" />
           {lastKnownHRR?.hrr60 > 0 && (
-            <MetricFactorCard
+            <MetricFactorRow
               label="Heart Rate Recovery"
               value={lastKnownHRR.hrr60}
               unit=" bpm"
@@ -914,24 +720,22 @@ export default function Chronos({ data, onNav }) {
 
       {/* VO2 Max History */}
       {vo2ChartData.length >= 2 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">VO2 Max Trend</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-4">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
-          <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#9B7FD4" unit=" mL/kg/min" height={90} />
+        <div className="mt-9">
+          <SectionLabel>VO2 Max Trend</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
+          <div className="mt-3"><LineGraph data={vo2ChartData} dataKey="vo2Max" color="#9B7FD4" unit=" mL/kg/min" height={90} /></div>
           {vo2Max > 0 && (() => {
             const ctx = getVO2MortalityContext(vo2Max, userAge)
             if (!ctx) return null
             return (
-              <div className="mt-3 pt-3" style={{ borderTop: '1px solid #ece3d4' }}>
+              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${C.ruleSoft}` }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold" style={{ color: ctx.color }}>{ctx.category}</p>
-                    <p className="text-[10px] text-[#9a8f7e] mt-0.5">{ctx.note}</p>
-                    <p className="text-[10px] text-[#b3a890] mt-0.5">Mandsager et al., JAMA Network Open 2018</p>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 700, color: ctx.color }}>{ctx.category}</p>
+                    <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 2 }}>{ctx.note}</p>
+                    <p style={{ fontFamily: SERIF, fontSize: 10, color: C.faint, marginTop: 2, fontStyle: 'italic' }}>Mandsager et al., JAMA Network Open 2018</p>
                   </div>
-                  <span className="text-sm font-bold flex-shrink-0 px-2 py-1 rounded-lg" style={{ background: ctx.color + '20', color: ctx.color }}>
-                    {vo2Max} ml/kg/min
-                  </span>
+                  <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: ctx.color, flexShrink: 0 }}>{vo2Max} ml/kg/min</span>
                 </div>
               </div>
             )
@@ -941,12 +745,9 @@ export default function Chronos({ data, onNav }) {
 
       {/* Lab results impact */}
       {labContributions.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="px-4 pt-4 pb-2">
-            <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Bloodwork Impact</span>
-            <p className="text-xs text-[#9a8f7e] mt-1">{labContributions.length} marker{labContributions.length !== 1 ? 's' : ''} entered</p>
-          </div>
-          <div className="px-4 pb-2">
+        <div className="mt-9">
+          <SectionLabel right={`${labContributions.length} marker${labContributions.length !== 1 ? 's' : ''} entered`}>Bloodwork Impact</SectionLabel>
+          <div className="mt-1">
             {labContributions.map((c) => {
               const color = c.contribution < 0 ? '#3E9C7E' : c.contribution > 1 ? '#ef4444' : '#D98E3F'
               return <MetricContribution key={c.label} {...c} color={color} />
@@ -957,124 +758,116 @@ export default function Chronos({ data, onNav }) {
 
       {/* Blood Pressure Trend */}
       {bpChartData.length >= 2 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Blood Pressure Trend</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-4">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
-          <DualLineGraph
-            data={bpChartData}
-            dataKey1="sys"
-            dataKey2="dia"
-            color1="#ef4444"
-            color2="#9B7FD4"
-            unit=" mmHg"
-            height={100}
-            reference1={120}
-            reference2={80}
-          />
+        <div className="mt-9">
+          <SectionLabel>Blood Pressure Trend</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
+          <div className="mt-3">
+            <DualLineGraph
+              data={bpChartData}
+              dataKey1="sys"
+              dataKey2="dia"
+              color1="#ef4444"
+              color2="#9B7FD4"
+              unit=" mmHg"
+              height={100}
+              reference1={120}
+              reference2={80}
+            />
+          </div>
         </div>
       )}
 
       {/* Mortality Driver Dashboard */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Longevity Profile</p>
-        <div className="grid grid-cols-2 gap-3">
+      <div className="mt-9">
+        <SectionLabel>Longevity Profile</SectionLabel>
+        <div className="grid grid-cols-2 gap-6 mt-3">
           <div>
-            <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Top Assets</p>
-            {allAssets.slice(0, 3).map(c => (
-              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
-                <p className="text-xs text-[#5c5648] truncate mr-2">{c.label}</p>
-                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#3E9C7E' }}>{c.contribution}y</span>
-              </div>
-            ))}
-            {allAssets.length === 0 && <p className="text-xs text-[#9a8f7e]">No assets yet — keep tracking.</p>}
+            <Label style={{ fontSize: 11 }}>Top Assets</Label>
+            <div className="mt-2">
+              {allAssets.slice(0, 3).map(c => (
+                <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+                  <p style={{ fontFamily: SERIF, fontSize: 12, color: C.inkSoft }} className="truncate mr-2">{c.label}</p>
+                  <span style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 700, color: '#3E9C7E', flexShrink: 0 }}>{c.contribution}y</span>
+                </div>
+              ))}
+              {allAssets.length === 0 && <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>No assets yet — keep tracking.</p>}
+            </div>
           </div>
           <div>
-            <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Top Liabilities</p>
-            {allOpportunities.slice(0, 3).map(c => (
-              <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
-                <p className="text-xs text-[#5c5648] truncate mr-2">{c.label}</p>
-                <span className="text-xs font-bold flex-shrink-0" style={{ color: '#ef4444' }}>+{c.contribution}y</span>
-              </div>
-            ))}
-            {allOpportunities.length === 0 && <p className="text-xs text-[#9a8f7e] text-green-400">Clean slate.</p>}
+            <Label style={{ fontSize: 11 }}>Top Liabilities</Label>
+            <div className="mt-2">
+              {allOpportunities.slice(0, 3).map(c => (
+                <div key={c.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+                  <p style={{ fontFamily: SERIF, fontSize: 12, color: C.inkSoft }} className="truncate mr-2">{c.label}</p>
+                  <span style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 700, color: '#ef4444', flexShrink: 0 }}>+{c.contribution}y</span>
+                </div>
+              ))}
+              {allOpportunities.length === 0 && <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>Clean slate.</p>}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Chronos Delta Engine */}
       {chronosDeltas.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-4">One-tier improvement on each factor</p>
-          <div className="space-y-4">
+        <div className="mt-9">
+          <SectionLabel>Potential Years to Reclaim</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>One-tier improvement on each factor</p>
+          <div className="mt-3">
             {chronosDeltas.slice(0, 5).map(d => (
-              <div key={d.label} className="flex items-start gap-3">
-                <span className="text-lg font-bold flex-shrink-0" style={{ color: '#3E9C7E', minWidth: 32 }}>+{d.gain}y</span>
+              <div key={d.label} className="flex items-start gap-3 py-2.5" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+                <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 700, color: '#3E9C7E', minWidth: 36 }}>+{d.gain}y</span>
                 <div>
-                  <p className="text-sm font-medium text-[#1a1a1a]">{d.label}</p>
-                  <p className="text-xs text-[#9a8f7e]">{d.action}</p>
+                  <p style={{ fontFamily: SERIF, fontSize: 14, color: C.ink }}>{d.label}</p>
+                  <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>{d.action}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-[#9a8f7e] mt-3">Estimates based on next-tier bio age scoring. Actual gains compound with multiple improvements.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Estimates based on next-tier bio age scoring. Actual gains compound with multiple improvements.</p>
         </div>
       )}
 
       {/* Social Jet Lag */}
       {socialJetLag !== null && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Circadian Alignment</p>
-          <div className="flex items-end gap-3 mb-2">
-            <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#3E9C7E' : socialJetLag <= 45 ? '#9B7FD4' : socialJetLag <= 75 ? '#D98E3F' : '#ef4444' }}>
-              {socialJetLag}
-            </span>
-            <div className="pb-1">
-              <p className="text-sm text-[#9a8f7e]">min variability</p>
-              <p className="text-xs text-[#9a8f7e]">
-                {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate timing variability' : 'High variability — circadian disruption risk'}
-              </p>
-            </div>
+        <div className="mt-9">
+          <SectionLabel>Circadian Alignment</SectionLabel>
+          <div className="flex items-baseline gap-2 mt-3">
+            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, color: socialJetLag <= 20 ? '#3E9C7E' : socialJetLag <= 45 ? '#6E6557' : socialJetLag <= 75 ? '#D98E3F' : '#ef4444' }}>{socialJetLag}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>min variability</span>
           </div>
-          <p className="text-[10px] text-[#9a8f7e]">SD of sleep midpoint timing across last 30 nights. Measures sleep schedule consistency (not classic Roenneberg SJL). &lt;20 min = elite consistency.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 2 }}>
+            {socialJetLag <= 20 ? 'Excellent — rock-solid schedule' : socialJetLag <= 45 ? 'Good circadian alignment' : socialJetLag <= 75 ? 'Moderate timing variability' : 'High variability — circadian disruption risk'}
+          </p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>SD of sleep midpoint timing across last 30 nights. Measures sleep schedule consistency (not classic Roenneberg SJL). &lt;20 min = elite consistency.</p>
         </div>
       )}
 
       {/* Sleep Apnea Risk */}
       {sleepApneaRisk !== null && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Breathing Risk</p>
-          <div className="flex items-center justify-between mb-4">
+        <div className="mt-9 mb-4">
+          <SectionLabel>Sleep Breathing Risk</SectionLabel>
+          <div className="flex items-center justify-between mt-3">
             <div>
-              <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#3E9C7E' : sleepApneaRisk.riskLevel === 1 ? '#D98E3F' : '#ef4444' }}>
-                {sleepApneaRisk.risk}
-              </p>
-              <p className="text-xs text-[#9a8f7e] mt-0.5">Based on SpO₂ during sleep</p>
+              <p style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: sleepApneaRisk.riskLevel === 0 ? '#3E9C7E' : sleepApneaRisk.riskLevel === 1 ? '#D98E3F' : '#ef4444' }}>{sleepApneaRisk.risk}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 2 }}>Based on SpO₂ during sleep</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-[#9a8f7e]">Min SpO₂</p>
-              <p className="text-lg font-bold" style={{ color: sleepApneaRisk.minSpo2 >= 93 ? '#3E9C7E' : sleepApneaRisk.minSpo2 >= 88 ? '#D98E3F' : '#ef4444' }}>
-                {sleepApneaRisk.minSpo2}%
-              </p>
+              <Label style={{ fontSize: 11 }}>Min SpO₂</Label>
+              <p style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: sleepApneaRisk.minSpo2 >= 93 ? '#3E9C7E' : sleepApneaRisk.minSpo2 >= 88 ? '#D98E3F' : '#ef4444' }}>{sleepApneaRisk.minSpo2}%</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <div className="rounded-xl p-2.5" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase mb-1">Desat. Events/hr</p>
-              <p className="text-base font-bold text-[#1a1a1a]">{sleepApneaRisk.odi}<span className="text-xs text-[#9a8f7e]"> /hr</span></p>
-            </div>
-            <div className="rounded-xl p-2.5" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase mb-1">Avg SpO₂</p>
-              <p className="text-base font-bold text-[#1a1a1a]">{sleepApneaRisk.avgSpo2}%</p>
-            </div>
+          <div className="mt-3">
+            <StatRow label="Desat. Events/hr" value={sleepApneaRisk.odi} unit="/hr" />
+            <StatRow label="Avg SpO₂" value={`${sleepApneaRisk.avgSpo2}%`} />
           </div>
           {sleepApneaRisk.brElevated && (
-            <p className="text-xs text-amber-500 mt-1">Elevated respiratory rate detected — additional risk signal.</p>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: '#D98E3F', marginTop: 8 }}>Elevated respiratory rate detected — additional risk signal.</p>
           )}
           {sleepApneaRisk.riskLevel >= 2 && (
-            <p className="text-xs text-red-400 mt-1">Consider discussing with a doctor — a sleep study (polysomnography) is the only way to diagnose sleep apnea.</p>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: '#ef4444', marginTop: 4 }}>Consider discussing with a doctor — a sleep study (polysomnography) is the only way to diagnose sleep apnea.</p>
           )}
-          <p className="text-[10px] text-[#9a8f7e] mt-2">Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Based on 5-min SpO₂ samples — coarser than clinical oximetry. Use risk tier for trend direction, not as a diagnostic ODI value.</p>
         </div>
       )}
     </div>

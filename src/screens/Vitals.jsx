@@ -4,6 +4,7 @@ import {
   getWaistHistory, calculateLeanMass, calculateFatMass, getUserAge, localDateOf,
 } from '../lib/calculations'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
+import { C, SERIF, Label, BackLink, SectionLabel } from '../lib/almanacTheme'
 
 const RANGES = [
   { label: '30d', days: 30 },
@@ -34,10 +35,10 @@ function DeltaChip({ value, unit, lowerIsBetter = false }) {
   if (value == null) return null
   const improved = lowerIsBetter ? value < 0 : value > 0
   const neutral = value === 0
-  const color = neutral ? '#9a8f7e' : improved ? '#3E9C7E' : '#ef4444'
+  const color = neutral ? C.faint : improved ? '#3E9C7E' : '#ef4444'
   const sign = value > 0 ? '+' : ''
   return (
-    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-2" style={{ background: color + '18', color }}>
+    <span style={{ fontFamily: SERIF, fontSize: 13, fontStyle: 'italic', color, marginLeft: 8 }}>
       {sign}{value}{unit}
     </span>
   )
@@ -45,16 +46,17 @@ function DeltaChip({ value, unit, lowerIsBetter = false }) {
 
 function RangeSelector({ value, onChange }) {
   return (
-    <div className="flex gap-1.5">
+    <div className="flex gap-4">
       {RANGES.map(r => (
         <button
           key={r.label}
           onClick={() => onChange(r.label)}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
           style={{
-            background: value === r.label ? '#3E9C7E' : '#fff',
-            color: value === r.label ? '#fff' : '#9a8f7e',
-            boxShadow: value === r.label ? 'none' : '0 4px 18px rgba(0,0,0,0.05)',
+            fontFamily: SERIF, fontVariant: 'small-caps', letterSpacing: '0.06em', fontSize: 13,
+            color: value === r.label ? C.ink : C.faint,
+            fontWeight: value === r.label ? 700 : 400,
+            borderBottom: value === r.label ? `2px solid ${C.gold}` : '2px solid transparent',
+            paddingBottom: 3,
           }}
         >
           {r.label}
@@ -64,28 +66,24 @@ function RangeSelector({ value, onChange }) {
   )
 }
 
-function VitalCard({ title, emoji, children, count, emptyMsg = 'No data yet — log in Settings' }) {
+function VitalCard({ title, children, count, emptyMsg = 'No data yet — log in Settings' }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-base leading-none">{emoji}</span>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">{title}</p>
-        </div>
-        {count != null && <p className="text-[10px] text-[#b3a890]">{count} entries</p>}
+    <div className="mt-9">
+      <SectionLabel right={count != null ? `${count} entries` : undefined}>{title}</SectionLabel>
+      <div className="mt-4">
+        {count === 0 ? (
+          <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{emptyMsg}</p>
+        ) : children}
       </div>
-      {count === 0 ? (
-        <p className="text-xs text-[#b3a890]">{emptyMsg}</p>
-      ) : children}
     </div>
   )
 }
 
 function StatRow({ label, value, unit }) {
   return (
-    <div className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #ece3d4' }}>
-      <p className="text-xs text-[#9a8f7e]">{label}</p>
-      <p className="text-sm font-semibold text-[#1a1a1a]">{value != null ? `${value}${unit}` : '—'}</p>
+    <div className="flex items-baseline justify-between py-1.5" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
+      <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{label}</p>
+      <p style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 600, color: C.ink }}>{value != null ? `${value}${unit}` : '—'}</p>
     </div>
   )
 }
@@ -184,37 +182,35 @@ export default function Vitals({ data, onNav }) {
   const vo2Delta = delta(vo2Latest?.vo2Max, vo2First?.vo2Max)
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-
-      {/* Header */}
-      <div className="pt-2 flex items-center gap-3">
-        <button onClick={() => onNav('chronos')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
-          <h1 className="text-xl font-bold">Vitals History</h1>
-          <p className="text-xs text-[#b3a890]">Manually tracked measurements</p>
-        </div>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} to="chronos" />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>VITALS</Label>
       </div>
 
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>Vitals history</h1>
+      <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint, marginTop: 2 }}>Manually tracked measurements</p>
+
       {/* Range selector */}
-      <RangeSelector value={range} onChange={setRange} />
+      <div className="mt-6">
+        <RangeSelector value={range} onChange={setRange} />
+      </div>
 
       {/* Blood Pressure */}
-      <VitalCard title="Blood Pressure" emoji="🩺" count={bpFiltered.length}>
+      <VitalCard title="Blood Pressure" count={bpFiltered.length}>
         <div className="flex items-baseline gap-2 mb-1">
-          <p className="text-3xl font-bold text-[#1a1a1a]">
+          <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>
             {bpLatest ? `${bpLatest.sys}/${bpLatest.dia}` : '—'}
           </p>
-          <span className="text-sm text-[#9a8f7e]">mmHg</span>
+          <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>mmHg</span>
           {bpSysDelta != null && (
             <DeltaChip value={bpSysDelta} unit="" lowerIsBetter />
           )}
         </div>
         {avgSys != null && (
-          <p className="text-[11px] text-[#b3a890] mb-4">10-reading avg: {avgSys}/{avgDia} mmHg</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginBottom: 14 }}>10-reading avg: {avgSys}/{avgDia} mmHg</p>
         )}
         {bpChartData.length >= 2 && (
           <DualLineGraph
@@ -229,16 +225,16 @@ export default function Vitals({ data, onNav }) {
             reference2={80}
           />
         )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Red = systolic · Blue = diastolic · Dashed at 120/80</p>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Red = systolic · Blue = diastolic · Dashed at 120/80</p>
       </VitalCard>
 
       {/* Body Weight */}
-      <VitalCard title="Body Weight" emoji="⚖️" count={weightFiltered.length}>
+      <VitalCard title="Body Weight" count={weightFiltered.length}>
         <div className="flex items-baseline gap-2 mb-4">
-          <p className="text-3xl font-bold text-[#1a1a1a]">
+          <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>
             {weightDisplay(weightLatest?.kg) ?? '—'}
           </p>
-          <span className="text-sm text-[#9a8f7e]">{imperial ? 'lbs' : 'kg'}</span>
+          <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{imperial ? 'lbs' : 'kg'}</span>
           {weightDelta != null && <DeltaChip value={weightDelta} unit={imperial ? ' lbs' : ' kg'} lowerIsBetter />}
         </div>
         {weightChartData.length >= 2 && (
@@ -248,28 +244,28 @@ export default function Vitals({ data, onNav }) {
 
       {/* Body Fat & Lean Mass — only if fat % data exists */}
       {bfFiltered.length > 0 && (
-        <VitalCard title="Body Composition" emoji="🔬" count={bfFiltered.length}>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-0.5">Body Fat</p>
-              <p className="text-xl font-bold text-[#1a1a1a]">{bfLatest?.fatPct ?? '—'}<span className="text-xs text-[#9a8f7e] ml-1">%</span></p>
+        <VitalCard title="Body Composition" count={bfFiltered.length}>
+          <div className="flex gap-6 mb-4">
+            <div className="flex-1">
+              <Label>Body Fat</Label>
+              <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 2 }}>{bfLatest?.fatPct ?? '—'}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginLeft: 4 }}>%</span></p>
               {bfDelta != null && <DeltaChip value={bfDelta} unit="%" lowerIsBetter />}
             </div>
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-0.5">Lean Mass</p>
-              <p className="text-xl font-bold text-[#1a1a1a]">{leanDisplay(leanLatest) ?? '—'}<span className="text-xs text-[#9a8f7e] ml-1">{imperial ? 'lbs' : 'kg'}</span></p>
+            <div className="flex-1">
+              <Label>Lean Mass</Label>
+              <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 2 }}>{leanDisplay(leanLatest) ?? '—'}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginLeft: 4 }}>{imperial ? 'lbs' : 'kg'}</span></p>
               {leanDelta != null && <DeltaChip value={leanDelta} unit={imperial ? ' lbs' : ' kg'} lowerIsBetter={false} />}
             </div>
           </div>
           {bfChartData.length >= 2 && (
             <>
-              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-1.5">Body Fat % Trend</p>
+              <Label style={{ marginBottom: 6, display: 'block' }}>Body Fat % Trend</Label>
               <LineGraph data={bfChartData} dataKey="fatPct" color="#D9A23F" unit="%" height={80} />
             </>
           )}
           {leanChartData.length >= 2 && (
             <div className="mt-3">
-              <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-1.5">Lean Mass Trend</p>
+              <Label style={{ marginBottom: 6, display: 'block' }}>Lean Mass Trend</Label>
               <LineGraph data={leanChartData} dataKey="lean" color="#3E9C7E" unit={weightUnit} height={80} />
             </div>
           )}
@@ -277,98 +273,98 @@ export default function Vitals({ data, onNav }) {
       )}
 
       {/* Waist Circumference */}
-      <VitalCard title="Waist Circumference" emoji="📏" count={waistFiltered.length}>
+      <VitalCard title="Waist Circumference" count={waistFiltered.length}>
         <div className="flex items-baseline gap-2 mb-4">
-          <p className="text-3xl font-bold text-[#1a1a1a]">
+          <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>
             {waistDisplay(waistLatest?.cm) ?? '—'}
           </p>
-          <span className="text-sm text-[#9a8f7e]">{imperial ? 'in' : 'cm'}</span>
+          <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{imperial ? 'in' : 'cm'}</span>
           {waistDelta != null && <DeltaChip value={waistDelta} unit={waistUnit} lowerIsBetter />}
         </div>
         {waistChartData.length >= 2 && (
           <LineGraph data={waistChartData} dataKey="waist" color="#D9A23F" unit={waistUnit} height={90} reference={waistRef} />
         )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Dashed line = {waistRef}{waistUnit.trim()} metabolic risk threshold (men)</p>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Dashed line = {waistRef}{waistUnit.trim()} metabolic risk threshold (men)</p>
       </VitalCard>
 
       {/* Grip Strength */}
-      <VitalCard title="Grip Strength" emoji="✊" count={gripFiltered.length}>
+      <VitalCard title="Grip Strength" count={gripFiltered.length}>
         <div className="flex items-baseline gap-2 mb-4">
-          <p className="text-3xl font-bold text-[#1a1a1a]">
+          <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>
             {gripDisplay(gripLatest?.kg) ?? '—'}
           </p>
-          <span className="text-sm text-[#9a8f7e]">{imperial ? 'lbs' : 'kg'}</span>
+          <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{imperial ? 'lbs' : 'kg'}</span>
           {gripDelta != null && <DeltaChip value={gripDelta} unit={gripUnit} lowerIsBetter={false} />}
         </div>
         {gripChartData.length >= 2 && (
           <LineGraph data={gripChartData} dataKey="grip" color="#3E9C7E" unit={gripUnit} height={90} reference={gripNormDisplay} />
         )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Dashed line = age-adjusted norm for men (Dodds 2014)</p>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Dashed line = age-adjusted norm for men (Dodds 2014)</p>
       </VitalCard>
 
       {/* Divider: Fitbit-derived */}
       {(rhrFiltered.length > 0 || hrvFiltered.length > 0 || vo2Filtered.length > 0) && (
-        <div className="flex items-center gap-3 py-1">
-          <div className="flex-1 h-px" style={{ background: '#ece3d4' }} />
-          <p className="text-[10px] text-[#b3a890] uppercase tracking-widest">From Fitbit Air</p>
-          <div className="flex-1 h-px" style={{ background: '#ece3d4' }} />
+        <div className="flex items-center gap-3 mt-9">
+          <div style={{ flex: 1, height: 1, background: C.rule }} />
+          <Label>From Fitbit Air</Label>
+          <div style={{ flex: 1, height: 1, background: C.rule }} />
         </div>
       )}
 
       {/* Resting Heart Rate */}
       {rhrFiltered.length > 0 && (
-        <VitalCard title="Resting Heart Rate" emoji="❤️" count={rhrFiltered.length}>
+        <VitalCard title="Resting Heart Rate" count={rhrFiltered.length}>
           <div className="flex items-baseline gap-2 mb-4">
-            <p className="text-3xl font-bold text-[#1a1a1a]">{rhrLatest?.rhr ?? '—'}</p>
-            <span className="text-sm text-[#9a8f7e]">bpm</span>
+            <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>{rhrLatest?.rhr ?? '—'}</p>
+            <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>bpm</span>
             {rhrDelta != null && <DeltaChip value={rhrDelta} unit=" bpm" lowerIsBetter />}
           </div>
           {rhrChartData.length >= 2 && (
             <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={90} reference={60} />
           )}
-          <p className="text-[10px] text-[#b3a890] mt-2">Dashed = 60 bpm · Lower is generally better at rest</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Dashed = 60 bpm · Lower is generally better at rest</p>
         </VitalCard>
       )}
 
       {/* HRV */}
       {hrvFiltered.length > 0 && (
-        <VitalCard title="HRV Baseline" emoji="⚡" count={hrvFiltered.length}>
+        <VitalCard title="HRV Baseline" count={hrvFiltered.length}>
           <div className="flex items-baseline gap-2 mb-4">
-            <p className="text-3xl font-bold text-[#1a1a1a]">{hrvLatest?.hrv ?? '—'}</p>
-            <span className="text-sm text-[#9a8f7e]">ms</span>
+            <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>{hrvLatest?.hrv ?? '—'}</p>
+            <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>ms</span>
             {hrvDelta != null && <DeltaChip value={hrvDelta} unit=" ms" lowerIsBetter={false} />}
           </div>
           {hrvChartData.length >= 2 && (
             <LineGraph data={hrvChartData} dataKey="hrv" color="#3E9C7E" unit=" ms" height={90} />
           )}
-          <p className="text-[10px] text-[#b3a890] mt-2">Higher is better · Fitbit overnight rmsSD</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Higher is better · Fitbit overnight rmsSD</p>
         </VitalCard>
       )}
 
       {/* VO2 Max */}
       {vo2Filtered.length > 0 && (
-        <VitalCard title="VO₂ Max" emoji="🫁" count={vo2Filtered.length}>
+        <VitalCard title="VO₂ Max" count={vo2Filtered.length}>
           <div className="flex items-baseline gap-2 mb-4">
-            <p className="text-3xl font-bold text-[#1a1a1a]">{vo2Latest?.vo2Max ?? '—'}</p>
-            <span className="text-sm text-[#9a8f7e]">ml/kg/min</span>
+            <p style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.ink }}>{vo2Latest?.vo2Max ?? '—'}</p>
+            <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>ml/kg/min</span>
             {vo2Delta != null && <DeltaChip value={vo2Delta} unit="" lowerIsBetter={false} />}
           </div>
           {vo2ChartData.length >= 2 && (
             <LineGraph data={vo2ChartData} dataKey="vo2" color="#a78bfa" unit=" ml/kg/min" height={90} />
           )}
-          <p className="text-[10px] text-[#b3a890] mt-2">Estimated by Fitbit · Higher is better</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Estimated by Fitbit · Higher is better</p>
         </VitalCard>
       )}
 
       {/* Empty state when no data at all */}
       {bpAll.length === 0 && weightAll.length === 0 && gripAll.length === 0 && waistAll.length === 0 && (
-        <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-2xl mb-2">📊</p>
-          <p className="text-sm font-semibold text-[#5c5648] mb-1">No vitals logged yet</p>
-          <p className="text-xs text-[#b3a890]">Open Settings to log your first blood pressure, weight, grip strength, and waist measurements.</p>
+        <div className="mt-9 mb-4 text-center" style={{ borderTop: `1px solid ${C.rule}`, paddingTop: 24 }}>
+          <p style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 600, color: C.ink, marginBottom: 4 }}>No vitals logged yet</p>
+          <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>Open Settings to log your first blood pressure, weight, grip strength, and waist measurements.</p>
         </div>
       )}
 
+      <div className="mb-4" />
     </div>
   )
 }

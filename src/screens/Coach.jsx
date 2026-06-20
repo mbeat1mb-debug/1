@@ -7,6 +7,7 @@ import {
 } from '../lib/calculations'
 import { getPhenoAgeResult, getLabResults } from '../lib/labs'
 import { getJournalEntries, getAllTags } from '../lib/storage'
+import { C, SERIF, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
 const REPORT_KEY = 'weekly_report'
@@ -200,24 +201,40 @@ function WeeklyReport({ data, apiKey }) {
   }
 
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Report</p>
-        {report && <span className="text-xs text-[#b3a890]">{report.generatedAt}</span>}
+    <div>
+      <div className="flex items-baseline justify-between">
+        <Label>Weekly Report</Label>
+        {report && <Label style={{ color: C.faint }}>{report.generatedAt}</Label>}
       </div>
       {report ? (
-        <p className="text-sm text-[#5c5648] leading-relaxed whitespace-pre-line">{report.text}</p>
+        <p style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.6, color: C.inkSoft, marginTop: 12, whiteSpace: 'pre-line' }}>{report.text}</p>
       ) : (
-        <p className="text-sm text-[#9a8f7e]">Get a full AI analysis of your week — what went well, what to improve, one focus for next week.</p>
+        <p style={{ fontFamily: SERIF, fontSize: 14, color: C.faint, marginTop: 10 }}>
+          Get a full analysis of your week — what went well, what to improve, one focus for next week.
+        </p>
       )}
       <button
         onClick={generate}
         disabled={generating || !apiKey}
-        className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-40"
-        style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
+        className="mt-4 active:opacity-50 transition-opacity disabled:opacity-40"
+        style={{ borderTop: `1px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 8, paddingBottom: 8, width: '100%', textAlign: 'left' }}
       >
-        {generating ? 'Generating…' : report ? 'Regenerate Report' : 'Generate This Week\'s Report'}
+        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: C.ink }}>
+          {generating ? 'Generating…' : report ? 'Regenerate Report' : 'Generate This Week\'s Report'}
+        </span>
       </button>
+    </div>
+  )
+}
+
+function Turn({ role, content }) {
+  const isUser = role === 'user'
+  return (
+    <div style={{ borderLeft: `2px solid ${isUser ? C.rule : C.gold}`, paddingLeft: 14 }}>
+      <Label style={{ color: isUser ? C.faint : C.inkSoft }}>{isUser ? 'You' : 'Coach'}</Label>
+      <p style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.6, color: isUser ? C.inkSoft : C.ink, marginTop: 4, fontStyle: isUser ? 'italic' : 'normal' }}>
+        {content}
+      </p>
     </div>
   )
 }
@@ -279,33 +296,30 @@ export default function Coach({ data, onNav }) {
 
   if (!hasKey || showKeyInput) {
     return (
-      <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-        <div className="pt-2 flex items-center gap-3">
-          {onNav && (
-            <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          <div>
-            <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">AI Coach</p>
-            <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>Set Up Coaching</h1>
-          </div>
+      <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+        <div className="pt-3">
+          <BackLink onNav={onNav} />
         </div>
-        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[#5c5648] text-sm">
+        <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+          <Label style={{ color: C.inkSoft }}>COACH</Label>
+        </div>
+
+        <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>Set up coaching</h1>
+
+        <div className="mt-7">
+          <p style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.6, color: C.inkSoft }}>
             Coaching uses Claude AI to answer questions about your specific health data.
             You need a free Anthropic API key — you pay only for what you use (~$0.01–0.05/day for daily use).
           </p>
-          <ol className="space-y-2 text-sm text-[#9a8f7e]">
-            <li>1. Go to <span className="text-[#1a1a1a]">console.anthropic.com</span></li>
-            <li>2. Create account → API Keys → Create Key</li>
-            <li>3. Paste it below</li>
+          <ol className="mt-4 space-y-1.5">
+            <li style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>1. Go to <span style={{ color: C.ink }}>console.anthropic.com</span></li>
+            <li style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>2. Create account → API Keys → Create Key</li>
+            <li style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>3. Paste it below</li>
           </ol>
           <input
             type="password"
-            className="w-full bg-[#F6F1E9] border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+            className="w-full outline-none mt-5"
+            style={{ fontFamily: SERIF, fontSize: 14, color: C.ink, background: 'transparent', borderBottom: `1px solid ${C.rule}`, paddingBottom: 8 }}
             placeholder="sk-ant-..."
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
@@ -313,10 +327,10 @@ export default function Coach({ data, onNav }) {
           />
           <button
             onClick={() => saveKey(keyInput)}
-            className="w-full py-3 rounded-xl font-bold text-sm"
-            style={{ background: '#3E9C7E', color: '#fff' }}
+            className="mt-6 active:opacity-50 transition-opacity"
+            style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 8, paddingBottom: 8, width: '100%', textAlign: 'left' }}
           >
-            Save & Start Coaching
+            <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: C.ink }}>Save &amp; Start Coaching</span>
           </button>
         </div>
       </div>
@@ -324,45 +338,37 @@ export default function Coach({ data, onNav }) {
   }
 
   return (
-    <div className="flex flex-col pt-safe" style={{ height: '100dvh', background: '#F6F1E9' }}>
-      <div className="px-4 pt-2 pb-3 flex items-center justify-between" style={{ borderBottom: '1px solid #ece3d4' }}>
-        <div className="flex items-center gap-3">
-          {onNav && (
-            <button onClick={() => onNav('home')} className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          <div>
-            <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">AI Coach</p>
-            <h1 className="text-lg font-bold" style={{ color: '#1a1a1a' }}>Ask anything</h1>
-          </div>
-        </div>
-        <button onClick={() => { setKeyInput(apiKey); setShowKeyInput(true) }} className="text-xs text-[#9a8f7e] px-2 py-1 rounded-lg bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          API Key
+    <div className="flex flex-col pt-safe" style={{ height: '100dvh', background: C.paper, color: C.ink }}>
+      <div className="px-5 pt-3 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.rule}` }}>
+        <BackLink onNav={onNav} />
+        <button onClick={() => { setKeyInput(apiKey); setShowKeyInput(true) }} className="active:opacity-50 transition-opacity">
+          <Label style={{ color: C.faint }}>API Key</Label>
         </button>
       </div>
 
+      <div className="px-5">
+        <div style={{ borderBottom: `1px solid ${C.rule}`, paddingTop: 10, paddingBottom: 6 }}>
+          <Label style={{ color: C.inkSoft }}>COACH</Label>
+        </div>
+        <h1 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, marginTop: 10 }}>Ask anything</h1>
+      </div>
+
       {/* Tabs */}
-      <div className="flex px-4 pt-3 gap-4 overflow-x-auto" style={{ borderBottom: '1px solid #ece3d4' }}>
+      <div className="flex px-5 pt-4 gap-5 overflow-x-auto" style={{ borderBottom: `1px solid ${C.rule}` }}>
         {[['chat', 'Chat'], ['report', 'Weekly'], ['morning', 'Morning'], ['evening', 'Evening']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className="pb-2 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0"
-            style={{
-              color: activeTab === id ? '#3E9C7E' : '#9a8f7e',
-              borderBottom: activeTab === id ? '2px solid #3E9C7E' : '2px solid transparent',
-            }}
+            className="pb-2 whitespace-nowrap flex-shrink-0"
+            style={{ borderBottom: activeTab === id ? `2px solid ${C.ink}` : '2px solid transparent' }}
           >
-            {label}
+            <Label style={{ color: activeTab === id ? C.ink : C.faint }}>{label}</Label>
           </button>
         ))}
       </div>
 
       {activeTab === 'report' && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+        <div className="flex-1 overflow-y-auto px-5 py-5 pb-24">
           <WeeklyReport data={data} apiKey={apiKey} />
         </div>
       )}
@@ -380,50 +386,39 @@ export default function Coach({ data, onNav }) {
       )}
 
       {/* Messages */}
-      {activeTab === 'chat' && <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32">
+      {activeTab === 'chat' && <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 pb-32">
         {messages.length === 0 && (
-          <div className="space-y-4">
-            <p className="text-[#9a8f7e] text-sm text-center pt-4">Your coach knows today's data. Ask anything.</p>
-            <div className="grid grid-cols-2 gap-2">
-              {STARTERS.map(s => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="text-left px-3 py-3 rounded-xl text-xs text-[#5c5648] transition-opacity active:opacity-60"
-                  style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
-                >
-                  {s}
-                </button>
-              ))}
+          <div className="space-y-5">
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: C.faint, textAlign: 'center', paddingTop: 8 }}>
+              Your coach knows today's data. Ask anything.
+            </p>
+            <div>
+              <SectionLabel>Suggestions</SectionLabel>
+              <div className="mt-1">
+                {STARTERS.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="w-full text-left py-2.5 active:opacity-50 transition-opacity"
+                    style={{ borderBottom: `1px solid ${C.ruleSoft}` }}
+                  >
+                    <span style={{ fontFamily: SERIF, fontSize: 14, color: C.inkSoft }}>{s}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
-              style={{
-                background: m.role === 'user' ? '#3E9C7E' : '#fff',
-                color: m.role === 'user' ? '#fff' : '#1a1a1a',
-                borderBottomRightRadius: m.role === 'user' ? 4 : undefined,
-                borderBottomLeftRadius: m.role === 'assistant' ? 4 : undefined,
-              }}
-            >
-              {m.content}
-            </div>
-          </div>
-        ))}
+        {messages.map((m, i) => <Turn key={i} role={m.role} content={m.content} />)}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl px-4 py-3" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderBottomLeftRadius: 4 }}>
-              <div className="flex gap-1">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-[#cabfa9]"
-                    style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-                ))}
-              </div>
+          <div style={{ borderLeft: `2px solid ${C.gold}`, paddingLeft: 14 }}>
+            <Label style={{ color: C.inkSoft }}>Coach</Label>
+            <div className="flex gap-1 mt-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: C.faint, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              ))}
             </div>
           </div>
         )}
@@ -433,28 +428,27 @@ export default function Coach({ data, onNav }) {
       {/* Input — chat tab only */}
       {activeTab === 'chat' &&
       <div
-        className="fixed bottom-0 left-0 right-0 px-4 pb-safe pt-2"
-        style={{ background: 'rgba(246,241,233,0.95)', backdropFilter: 'blur(12px)', borderTop: '1px solid #ece3d4' }}
+        className="fixed bottom-0 left-0 right-0 px-5 pb-safe pt-2"
+        style={{ background: `${C.paper}f2`, backdropFilter: 'blur(12px)', borderTop: `1px solid ${C.rule}` }}
       >
-        <div className="flex gap-2 items-end pb-16">
+        <div className="flex gap-3 items-end pb-16">
           <textarea
-            className="flex-1 bg-white border border-[#ece3d4] rounded-2xl px-4 py-3 text-[#1a1a1a] text-sm outline-none resize-none focus:border-[#3E9C7E]"
+            className="flex-1 outline-none resize-none bg-transparent"
+            style={{ fontFamily: SERIF, fontSize: 15, color: C.ink, borderBottom: `1px solid ${C.rule}`, paddingBottom: 8, maxHeight: 100 }}
             rows={1}
-            placeholder="Ask your coach..."
+            placeholder="Ask your coach…"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            style={{ maxHeight: 100 }}
           />
           <button
             onClick={() => send()}
             disabled={!input.trim() || loading}
-            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity disabled:opacity-40"
-            style={{ background: '#3E9C7E' }}
+            className="flex items-center justify-center flex-shrink-0 active:opacity-50 transition-opacity disabled:opacity-30"
+            style={{ paddingBottom: 8 }}
+            aria-label="Send"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m-7 7l7-7 7 7" />
-            </svg>
+            <span style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1, color: C.ink }}>↑</span>
           </button>
         </div>
       </div>}

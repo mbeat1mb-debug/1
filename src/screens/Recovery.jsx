@@ -5,16 +5,7 @@ import { StatRow } from '../components/MetricCard'
 import { getRecoveryColor, getRecoveryLabel, getAverageBP, getBPReadings, getHRVNorm, getUserAge, getRHRMortalityContext, localToday, localDateOf } from '../lib/calculations'
 import { getHistory } from '../lib/db'
 import { getTimingForDate, TIMING_SUBSTANCES, analyzeTimingCorrelation } from '../lib/storage'
-
-function BackButton({ onNav }) {
-  return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  )
-}
+import { C, SERIF, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
 export default function Recovery({ data, onNav }) {
   const { recoveryScore = 0, todayHRV = 0, todayRHR = 0, todaySpO2 = 0, todayBR = 0,
@@ -91,7 +82,7 @@ export default function Recovery({ data, onNav }) {
   const isCalibrating = daysOfData < 14
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
 
-  const skinTempColor = skinTempDev == null ? '#9a8f7e'
+  const skinTempColor = skinTempDev == null ? C.faint
     : Math.abs(skinTempDev) < 0.1 ? '#3E9C7E'
     : Math.abs(skinTempDev) < 0.3 ? '#D9A23F'
     : '#ef4444'
@@ -101,68 +92,56 @@ export default function Recovery({ data, onNav }) {
     : 'Normal'
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-      <div className="pt-2 flex items-center gap-3">
-        {onNav && <BackButton onNav={onNav} />}
-        <div>
-          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Recovery</p>
-          <h1 className="text-xl font-bold" style={{ color: '#1a1a1a' }}>How recovered are you?</h1>
-        </div>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>RECOVERY</Label>
       </div>
 
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>How recovered are you?</h1>
+
       {/* Main score */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <div className="flex items-center gap-5">
-          <ScoreRing score={recoveryScore} color={color} size={130} strokeWidth={11} label={label} />
-          <div className="flex-1">
-            <div className="pb-3 mb-4" style={{ borderBottom: '1px solid #ece3d4' }}>
-              <p className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest mb-0.5">HRV</p>
-              <p className="text-3xl font-bold text-[#1a1a1a] leading-tight">{todayHRV > 0 ? todayHRV : '--'}<span className="text-sm font-normal text-[#9a8f7e] ml-1">ms</span></p>
-            </div>
-            <div className="pb-3 mb-4" style={{ borderBottom: '1px solid #ece3d4' }}>
-              <p className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest mb-0.5">Resting HR</p>
-              <p className="text-3xl font-bold text-[#1a1a1a] leading-tight">{todayRHR > 0 ? todayRHR : '--'}<span className="text-sm font-normal text-[#9a8f7e] ml-1">bpm</span></p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest mb-0.5">Sleep</p>
-              <p className="text-3xl font-bold text-[#1a1a1a] leading-tight">{sleepHours}</p>
-            </div>
-          </div>
+      <div className="flex items-center gap-6 mt-6">
+        <ScoreRing score={recoveryScore} color={color} size={130} label={label} />
+        <div className="flex-1">
+          <StatRow label="HRV" value={todayHRV > 0 ? todayHRV : '--'} unit="ms" />
+          <StatRow label="Resting HR" value={todayRHR > 0 ? todayRHR : '--'} unit="bpm" />
+          <StatRow label="Sleep" value={sleepHours} />
         </div>
-        {isCalibrating && (
-          <p className="text-[10px] text-yellow-600 mt-3">{daysOfData}/14 days calibrated</p>
-        )}
       </div>
+      {isCalibrating && (
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: '#D9A23F', marginTop: 8, fontStyle: 'italic' }}>{daysOfData}/14 days calibrated</p>
+      )}
 
       {/* Recovery Stability */}
       {avgRecovery30 !== null && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Recovery Stability — 30 Days</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">30-Day Avg</p>
-              <p className="text-2xl font-bold" style={{ color: getRecoveryColor(avgRecovery30) }}>{avgRecovery30}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: getRecoveryColor(avgRecovery30) }}>{getRecoveryLabel(avgRecovery30)}</p>
+        <div className="mt-9">
+          <SectionLabel>Recovery Stability — 30 Days</SectionLabel>
+          <div className="grid grid-cols-2 gap-6 mt-4">
+            <div>
+              <Label style={{ fontSize: 11 }}>30-Day Avg</Label>
+              <p style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: getRecoveryColor(avgRecovery30), marginTop: 2 }}>{avgRecovery30}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: getRecoveryColor(avgRecovery30) }}>{getRecoveryLabel(avgRecovery30)}</p>
             </div>
-            <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Volatility (σ)</p>
-              <p className="text-2xl font-bold" style={{ color: volatility30 <= 8 ? '#3E9C7E' : volatility30 <= 15 ? '#D9A23F' : '#ef4444' }}>{volatility30}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: volatility30 <= 8 ? '#3E9C7E' : volatility30 <= 15 ? '#D9A23F' : '#ef4444' }}>
+            <div>
+              <Label style={{ fontSize: 11 }}>Volatility (σ)</Label>
+              <p style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: volatility30 <= 8 ? '#3E9C7E' : volatility30 <= 15 ? '#D9A23F' : '#ef4444', marginTop: 2 }}>{volatility30}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: volatility30 <= 8 ? '#3E9C7E' : volatility30 <= 15 ? '#D9A23F' : '#ef4444' }}>
                 {volatility30 <= 8 ? 'Stable' : volatility30 <= 15 ? 'Moderate swings' : 'High variability'}
               </p>
             </div>
           </div>
-          <p className="text-[10px] text-[#9a8f7e] mt-2">Low σ = consistent recovery. High σ = frequent hard efforts or lifestyle swings.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>Low σ = consistent recovery. High σ = frequent hard efforts or lifestyle swings.</p>
         </div>
       )}
 
       {/* Key metrics */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <div className="px-4 pt-4 pb-2">
-          <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Today's Metrics</span>
-        </div>
-        <div className="px-4">
-          <StatRow label="Heart Rate Variability" value={todayHRV} unit="ms" color={avgHRV > 0 ? (todayHRV >= avgHRV ? '#3E9C7E' : '#D9A23F') : '#9a8f7e'} />
+      <div className="mt-9">
+        <SectionLabel>Today's Metrics</SectionLabel>
+        <div className="mt-1">
+          <StatRow label="Heart Rate Variability" value={todayHRV} unit="ms" color={avgHRV > 0 ? (todayHRV >= avgHRV ? '#3E9C7E' : '#D9A23F') : C.faint} />
           <StatRow label="30-Day HRV Average" value={avgHRV || '—'} unit={avgHRV ? 'ms' : ''} />
           <StatRow label="Resting Heart Rate" value={todayRHR} unit="bpm" />
           <StatRow label="Sleep Duration" value={sleepHours} />
@@ -183,23 +162,23 @@ export default function Recovery({ data, onNav }) {
 
       {/* Skin temperature */}
       {skinTempDev !== undefined && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Skin Temperature</p>
-          <div className="flex items-center justify-between">
+        <div className="mt-9">
+          <SectionLabel>Skin Temperature</SectionLabel>
+          <div className="flex items-center justify-between mt-4">
             <div>
-              <p className="text-sm text-[#5c5648]">{skinTempLabel}</p>
-              <p className="text-xs text-[#9a8f7e] mt-1">
+              <p style={{ fontFamily: SERIF, fontSize: 15, color: C.inkSoft }}>{skinTempLabel}</p>
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 4 }}>
                 {skinTempDev == null
                   ? 'Not supported on your device or no recent sleep data'
                   : `${skinTempDev > 0 ? '+' : ''}${skinTempDev?.toFixed(2)}°C vs personal baseline`}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: skinTempColor + '20' }}>
-              <span className="text-xl">🌡️</span>
-            </div>
+            <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: skinTempColor }}>
+              {skinTempDev == null ? '--' : `${skinTempDev > 0 ? '+' : ''}${skinTempDev?.toFixed(1)}°`}
+            </span>
           </div>
           {skinTempDev != null && Math.abs(skinTempDev) >= 0.3 && (
-            <p className="text-xs mt-2 p-2 rounded-lg" style={{ background: skinTempColor + '15', color: skinTempColor }}>
+            <p style={{ fontFamily: SERIF, fontSize: 12, color: skinTempColor, marginTop: 10, fontStyle: 'italic' }}>
               {skinTempDev > 0.3
                 ? 'Elevated skin temp can signal early illness, inflammation, or ovulation. Cross-check with HRV and RHR.'
                 : 'Below-baseline skin temp may indicate cold exposure, adequate recovery, or device variability.'}
@@ -209,20 +188,20 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {/* HRV trend */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">HRV — 14 Days</p>
-        <LineGraph data={hrvChartData} dataKey="hrv" color="#3E9C7E" unit="ms" reference={avgHRV} height={100} />
+      <div className="mt-9">
+        <SectionLabel>HRV — 14 Days</SectionLabel>
+        <div className="mt-3"><LineGraph data={hrvChartData} dataKey="hrv" color="#3E9C7E" unit="ms" reference={avgHRV} height={100} /></div>
         {todayHRV > 0 && (() => {
           const age = getUserAge()
           const norm = getHRVNorm(age)
           const pct = Math.round((todayHRV / norm) * 100)
-          const color = todayHRV >= norm ? '#3E9C7E' : todayHRV >= norm * 0.8 ? '#D9A23F' : '#ef4444'
-          const label = todayHRV >= norm * 1.1 ? 'Above age norm' : todayHRV >= norm ? 'At age norm' : todayHRV >= norm * 0.8 ? 'Near age norm' : 'Below age norm'
+          const c = todayHRV >= norm ? '#3E9C7E' : todayHRV >= norm * 0.8 ? '#D9A23F' : '#ef4444'
+          const lbl = todayHRV >= norm * 1.1 ? 'Above age norm' : todayHRV >= norm ? 'At age norm' : todayHRV >= norm * 0.8 ? 'Near age norm' : 'Below age norm'
           return (
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-[10px] text-[#9a8f7e]">vs age-adjusted norm ({norm} ms) · Shaffer & Ginsberg 2017</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0" style={{ background: color + '20', color }}>
-                {pct}% · {label}
+            <div className="mt-3 flex items-baseline justify-between">
+              <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>vs age-adjusted norm ({norm} ms) · Shaffer &amp; Ginsberg 2017</p>
+              <span style={{ fontFamily: SERIF, fontSize: 11, fontWeight: 600, color: c, marginLeft: 8, flexShrink: 0 }}>
+                {pct}% · {lbl}
               </span>
             </div>
           )
@@ -230,16 +209,16 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {/* RHR trend */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Resting HR — 14 Days</p>
-        <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} />
+      <div className="mt-9">
+        <SectionLabel>Resting HR — 14 Days</SectionLabel>
+        <div className="mt-3"><LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} /></div>
         {todayRHR > 0 && (() => {
           const ctx = getRHRMortalityContext(todayRHR)
           if (!ctx) return null
           return (
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-[10px] text-[#9a8f7e]">{ctx.detail}</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0" style={{ background: ctx.color + '20', color: ctx.color }}>
+            <div className="mt-3 flex items-baseline justify-between">
+              <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>{ctx.detail}</p>
+              <span style={{ fontFamily: SERIF, fontSize: 11, fontWeight: 600, color: ctx.color, marginLeft: 8, flexShrink: 0 }}>
                 {ctx.label}
               </span>
             </div>
@@ -248,28 +227,28 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {spo2History.length >= 3 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Blood Oxygen — 14 Days</p>
-          <LineGraph data={spo2History} dataKey="spo2" color="#9B7FD4" unit="%" reference={97} height={80} />
-          <p className="text-xs text-[#9a8f7e] mt-2">Normal range: 95–100%. Below 95% warrants attention.</p>
+        <div className="mt-9">
+          <SectionLabel>Blood Oxygen — 14 Days</SectionLabel>
+          <div className="mt-3"><LineGraph data={spo2History} dataKey="spo2" color="#9B7FD4" unit="%" reference={97} height={80} /></div>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>Normal range: 95–100%. Below 95% warrants attention.</p>
         </div>
       )}
 
       {brHistory.length >= 3 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Respiratory Rate — 14 Days</p>
-          <LineGraph data={brHistory} dataKey="br" color="#8b5cf6" unit=" br/m" height={80} />
-          <p className="text-xs text-[#9a8f7e] mt-2">Normal range: 12–20 br/min. Elevated rate may indicate stress or illness.</p>
+        <div className="mt-9">
+          <SectionLabel>Respiratory Rate — 14 Days</SectionLabel>
+          <div className="mt-3"><LineGraph data={brHistory} dataKey="br" color="#8b5cf6" unit=" br/m" height={80} /></div>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 10 }}>Normal range: 12–20 br/min. Elevated rate may indicate stress or illness.</p>
         </div>
       )}
 
       {/* Recovery : Strain ratio trend */}
       {data.rsTrend?.length >= 3 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Recovery:Strain Ratio — 14 Days</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-4">Above 4 = well-recovered · Below 2 = accumulated load</p>
-          <LineGraph data={data.rsTrend} dataKey="ratio" color="#3E9C7E" unit="" reference={4} height={80} />
-          <p className="text-[10px] text-[#9a8f7e] mt-2">
+        <div className="mt-9">
+          <SectionLabel>Recovery:Strain Ratio — 14 Days</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 6 }}>Above 4 = well-recovered · Below 2 = accumulated load</p>
+          <div className="mt-3"><LineGraph data={data.rsTrend} dataKey="ratio" color="#3E9C7E" unit="" reference={4} height={80} /></div>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 10 }}>
             {(() => {
               const latest = data.rsTrend[data.rsTrend.length - 1]?.ratio
               if (!latest) return null
@@ -281,53 +260,51 @@ export default function Recovery({ data, onNav }) {
 
       {/* Yesterday's substance log */}
       {yesterdayTiming.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Yesterday's Substances</p>
-          <div className="space-y-2 mb-2">
+        <div className="mt-9">
+          <SectionLabel>Yesterday's Substances</SectionLabel>
+          <div className="mt-4 space-y-2">
             {yesterdayTiming.map(entry => {
               const sub = TIMING_SUBSTANCES.find(s => s.id === entry.substance)
               const lateStim = ['caffeine', 'preworkout'].includes(entry.substance) && entry.time >= '14:00'
               const lateAlc = entry.substance === 'alcohol' && entry.time >= '19:00'
               const timeDisplay = new Date(`2000-01-01T${entry.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
               return (
-                <div key={entry.id} className="flex items-center gap-3">
-                  <span className="text-base">{sub?.emoji ?? '💊'}</span>
-                  <span className="text-sm text-[#1a1a1a]">{sub?.label ?? entry.substance}</span>
-                  <span className="text-sm text-[#9a8f7e]">{timeDisplay}</span>
+                <div key={entry.id} className="flex items-baseline gap-3">
+                  <span style={{ fontFamily: SERIF, fontSize: 15, color: C.ink }}>{sub?.label ?? entry.substance}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{timeDisplay}</span>
                   {(lateStim || lateAlc) && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#D9A23F20', color: '#D9A23F' }}>late</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 11, color: '#D9A23F', fontStyle: 'italic' }}>late</span>
                   )}
                 </div>
               )
             })}
           </div>
           {timingInsights.length > 0 && (
-            <div className="space-y-1.5 pt-2 mt-1" style={{ borderTop: '1px solid #ece3d4' }}>
-              <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1.5">Your patterns — next-day recovery</p>
+            <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: `1px solid ${C.ruleSoft}` }}>
+              <Label style={{ fontSize: 11 }}>Your patterns — next-day recovery</Label>
               {timingInsights.map(ins => (
-                <div key={ins.label} className="flex items-center justify-between">
-                  <span className="text-xs text-[#9a8f7e]">{ins.label}</span>
-                  <span className="text-xs font-bold" style={{ color: ins.diff >= 0 ? '#3E9C7E' : '#ef4444' }}>
+                <div key={ins.label} className="flex items-baseline justify-between mt-1.5">
+                  <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{ins.label}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 700, color: ins.diff >= 0 ? '#3E9C7E' : '#ef4444' }}>
                     {ins.diff > 0 ? '+' : ''}{ins.diff} pts
                   </span>
                 </div>
               ))}
             </div>
           )}
-          <p className="text-[10px] text-[#9a8f7e] mt-2">Today's recovery above reflects last night — shaped by these inputs.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 10 }}>Today's recovery above reflects last night — shaped by these inputs.</p>
         </div>
       )}
 
       {/* Recovery guidance */}
-      <div className="rounded-2xl p-5" style={{ background: color + '10', border: `1px solid ${color}33` }}>
-        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color }}>Recommendation</p>
-        <p className="text-sm text-[#5c5648]">
+      <div className="mt-9 mb-4">
+        <Note accent={color}>
           {recoveryScore >= 67
             ? 'Your body is well recovered and primed to perform. Today is a great day to push hard or try a new PR.'
             : recoveryScore >= 34
             ? 'Your body is maintaining. Moderate activity is appropriate — avoid going all out today.'
             : 'Your body needs rest. Prioritize sleep, hydration, and light movement only today.'}
-        </p>
+        </Note>
       </div>
     </div>
   )

@@ -6,20 +6,9 @@ import {
 import { LineGraph } from '../components/TrendChart'
 import { getHRVNorm, getUserAge, getRecoveryColor, localToday } from '../lib/calculations'
 import { getHistory } from '../lib/db'
+import { C, SERIF, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
-function BackButton({ onNav }) {
-  return (
-    <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  )
-}
-
-const CARD = { background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }
-const TITLE = 'text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4'
-const EMPTY = 'text-[#b3a890] text-sm italic'
+const axisTick = { fill: C.faint, fontSize: 11, fontFamily: SERIF }
 
 function formatMonthDay(dateStr) {
   if (!dateStr) return ''
@@ -34,15 +23,29 @@ function dayLabel(dateStr, todayStr) {
   return `-${diff}d`
 }
 
+function ChartTooltip({ active, payload, label, unit = '', color }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="px-3 py-2" style={{ background: C.paper, border: `1px solid ${C.rule}` }}>
+      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 11, color: C.faint, marginBottom: 2 }}>{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 600, color: color || p.color }}>
+          {Math.round(p.value ?? 0)}{unit}
+        </p>
+      ))}
+    </div>
+  )
+}
+
 function ScatterTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
   if (!d) return null
   return (
-    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-      <p className="text-[#9a8f7e] text-xs mb-1">{d.dateLabel}</p>
-      <p style={{ color: d.dotColor }} className="font-semibold">Recovery: {d.recovery}%</p>
-      <p className="text-[#5c5648] font-semibold">Strain: {d.strain}</p>
+    <div className="px-3 py-2" style={{ background: C.paper, border: `1px solid ${C.rule}` }}>
+      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 11, color: C.faint, marginBottom: 2 }}>{d.dateLabel}</p>
+      <p style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: d.dotColor }}>Recovery: {d.recovery}%</p>
+      <p style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: C.inkSoft }}>Strain: {d.strain}</p>
     </div>
   )
 }
@@ -50,27 +53,16 @@ function ScatterTooltip({ active, payload }) {
 function HRVTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-      <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
+    <div className="px-3 py-2" style={{ background: C.paper, border: `1px solid ${C.rule}` }}>
+      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 11, color: C.faint, marginBottom: 2 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="font-semibold">
+        <p key={i} style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: p.color }}>
           {p.name === 'ma7' ? 'MA7: ' : ''}{Math.round(p.value ?? 0)} ms
         </p>
       ))}
     </div>
   )
 }
-
-function BRTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-      <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
-      <p style={{ color: '#06b6d4' }} className="font-semibold">{Math.round(payload[0]?.value ?? 0)} br/min</p>
-    </div>
-  )
-}
-
 
 function getVO2Norms(age) {
   if (age <= 29) return [34, 42, 53]
@@ -98,6 +90,10 @@ function weekLabel(isoWeekStr) {
   startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7))
   const weekStart = new Date(startOfWeek1.getTime() + (w - 1) * 604800000)
   return weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function EmptyNote({ children }) {
+  return <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.faint }}>{children}</p>
 }
 
 export default function Trends({ data, onNav }) {
@@ -188,7 +184,7 @@ export default function Trends({ data, onNav }) {
     return rows.map(d => ({
       label: dayLabel(d.date, todayStr),
       dev: d.skinTempDev,
-      barColor: d.skinTempDev <= 0 ? '#3E9C7E' : d.skinTempDev <= 0.3 ? '#D9A23F' : '#ef4444',
+      barColor: d.skinTempDev <= 0 ? '#3E9C7E' : d.skinTempDev <= 0.3 ? C.gold : '#ef4444',
     }))
   }, [dbHistory, todayStr])
 
@@ -217,260 +213,252 @@ export default function Trends({ data, onNav }) {
   const hasMA7 = hrvChartData.some(p => p.ma7 != null)
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>TRENDS</Label>
+      </div>
 
-      <div className="pt-2 flex items-center gap-3">
-        <BackButton onNav={onNav} />
-        <div>
-          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">Trends</p>
-          <h1 className="text-xl font-bold">30-Day History</h1>
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>30-day history</h1>
+
+      {/* Recovery × Strain Quadrant */}
+      <div className="mt-9">
+        <SectionLabel>Recovery × Strain Quadrant</SectionLabel>
+        <div className="mt-3">
+          {scatterPoints.length < 2 ? (
+            <EmptyNote>Need more data to plot the quadrant.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <ScatterChart margin={{ top: 8, right: 16, left: -16, bottom: 8 }}>
+                <XAxis
+                  type="number" dataKey="strain" name="Strain"
+                  domain={[0, 21]} label={{ value: 'Strain', position: 'insideBottom', offset: -2, fill: C.faint, fontSize: 10, fontFamily: SERIF }}
+                  tick={axisTick} axisLine={false} tickLine={false}
+                />
+                <YAxis
+                  type="number" dataKey="recovery" name="Recovery"
+                  domain={[0, 100]} unit="%"
+                  tick={axisTick} axisLine={false} tickLine={false}
+                />
+                <ZAxis range={[32, 32]} />
+                <ReferenceLine x={10} stroke={C.ruleSoft} strokeDasharray="3 3" />
+                <ReferenceLine y={50} stroke={C.ruleSoft} strokeDasharray="3 3" />
+                <RechartTooltip content={<ScatterTooltip />} />
+                <Scatter data={scatterPoints} isAnimationActive={false}>
+                  {scatterPoints.map((pt, i) => (
+                    <Cell key={i} fill={pt.dotColor} fillOpacity={0.85} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          )}
+          <div className="grid grid-cols-2 mt-2" style={{ borderTop: `1px solid ${C.ruleSoft}` }}>
+            {[
+              { label: 'Optimal', sub: 'High recovery · High strain', color: '#3E9C7E' },
+              { label: 'Overreaching', sub: 'Low recovery · High strain', color: '#ef4444' },
+              { label: 'Recovery', sub: 'High recovery · Low strain', color: '#9B7FD4' },
+              { label: 'Undertraining', sub: 'Low recovery · Low strain', color: C.faint },
+            ].map((q, i) => (
+              <div key={q.label} className="py-2" style={{ borderRight: i % 2 === 0 ? `1px solid ${C.ruleSoft}` : 'none', paddingLeft: i % 2 === 0 ? 0 : 12 }}>
+                <p style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 600, color: q.color }}>{q.label}</p>
+                <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>{q.sub}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Recovery × Strain Quadrant</p>
-        {scatterPoints.length < 2 ? (
-          <p className={EMPTY}>Need more data to plot the quadrant.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <ScatterChart margin={{ top: 8, right: 16, left: -16, bottom: 8 }}>
-              <XAxis
-                type="number" dataKey="strain" name="Strain"
-                domain={[0, 21]} label={{ value: 'Strain', position: 'insideBottom', offset: -2, fill: '#9a8f7e', fontSize: 10 }}
-                tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false}
-              />
-              <YAxis
-                type="number" dataKey="recovery" name="Recovery"
-                domain={[0, 100]} unit="%"
-                tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false}
-              />
-              <ZAxis range={[32, 32]} />
-              <ReferenceLine x={10} stroke="#ece3d4" strokeDasharray="3 3" />
-              <ReferenceLine y={50} stroke="#ece3d4" strokeDasharray="3 3" />
-              <RechartTooltip content={<ScatterTooltip />} />
-              <Scatter data={scatterPoints} isAnimationActive={false}>
-                {scatterPoints.map((pt, i) => (
-                  <Cell key={i} fill={pt.dotColor} fillOpacity={0.85} />
-                ))}
-              </Scatter>
-            </ScatterChart>
-          </ResponsiveContainer>
-        )}
-        <div className="grid grid-cols-2 gap-1 mt-2">
-          {[
-            { label: 'Optimal', sub: 'High recovery · High strain', color: '#3E9C7E' },
-            { label: 'Overreaching', sub: 'Low recovery · High strain', color: '#ef4444' },
-            { label: 'Recovery', sub: 'High recovery · Low strain', color: '#9B7FD4' },
-            { label: 'Undertraining', sub: 'Low recovery · Low strain', color: '#9a8f7e' },
-          ].map(q => (
-            <div key={q.label} className="rounded-lg px-2 py-1.5" style={{ background: '#F6F1E9' }}>
-              <p className="text-[10px] font-semibold" style={{ color: q.color }}>{q.label}</p>
-              <p className="text-[9px] text-[#b3a890]">{q.sub}</p>
-            </div>
-          ))}
+      {/* Recovery Score */}
+      <div className="mt-9">
+        <SectionLabel>Recovery Score — 30 Days</SectionLabel>
+        <div className="mt-3">
+          {recoveryChartData.length < 3 ? (
+            <EmptyNote>Need more data to show trend.</EmptyNote>
+          ) : (
+            <LineGraph data={recoveryChartData} dataKey="recovery" color="#3E9C7E" unit="%" height={100} />
+          )}
         </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Recovery Score — 30 Days</p>
-        {recoveryChartData.length < 3 ? (
-          <p className={EMPTY}>Need more data to show trend.</p>
-        ) : (
-          <LineGraph data={recoveryChartData} dataKey="recovery" color="#3E9C7E" unit="%" height={100} />
-        )}
-      </div>
-
-      <div className="rounded-2xl p-5" style={CARD}>
-        <div className="flex items-center justify-between mb-4">
-          <p className={TITLE} style={{ marginBottom: 0 }}>HRV Trend</p>
-          {todayHRV != null && (
-            <div className="text-right">
-              <p className="text-[10px] text-[#b3a890]">Today vs norm</p>
-              <p className="text-xs font-semibold" style={{ color: todayHRV >= hrvNorm ? '#3E9C7E' : '#D9A23F' }}>
-                {todayHRV} ms / {hrvNorm} ms
-              </p>
+      {/* HRV Trend */}
+      <div className="mt-9">
+        <SectionLabel right={todayHRV != null ? `${todayHRV} ms / ${hrvNorm} ms norm` : undefined}>HRV Trend</SectionLabel>
+        <div className="mt-3">
+          {hrvChartData.length < 2 ? (
+            <EmptyNote>Need more data to show HRV trend.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={110}>
+              <LineChart data={hrvChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={hrvNorm} stroke={C.gold} strokeDasharray="4 3" label={{ value: `Norm ${hrvNorm}`, position: 'right', fill: C.gold, fontSize: 9, fontFamily: SERIF }} />
+                <RechartTooltip content={<HRVTooltip />} />
+                <Line type="monotone" dataKey="hrv" stroke="#9B7FD4" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#9B7FD4' }} />
+                {hasMA7 && (
+                  <Line type="monotone" dataKey="ma7" stroke="#CDC3E6" strokeWidth={1.5} strokeDasharray="4 2" dot={false} activeDot={{ r: 3, fill: '#CDC3E6' }} name="ma7" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+          {hasMA7 && (
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 14, height: 1.5, background: '#9B7FD4' }} />
+                <Label style={{ fontSize: 10 }}>Daily</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 14, height: 1.5, background: '#CDC3E6' }} />
+                <Label style={{ fontSize: 10 }}>7-day MA</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 14, height: 1.5, background: C.gold }} />
+                <Label style={{ fontSize: 10 }}>Age norm</Label>
+              </div>
             </div>
           )}
         </div>
-        {hrvChartData.length < 2 ? (
-          <p className={EMPTY}>Need more data to show HRV trend.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={110}>
-            <LineChart data={hrvChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={hrvNorm} stroke="#C9A84C" strokeDasharray="4 3" label={{ value: `Norm ${hrvNorm}`, position: 'right', fill: '#C9A84C', fontSize: 9 }} />
-              <RechartTooltip content={<HRVTooltip />} />
-              <Line type="monotone" dataKey="hrv" stroke="#a78bfa" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#a78bfa' }} />
-              {hasMA7 && (
-                <Line type="monotone" dataKey="ma7" stroke="#c4b5fd" strokeWidth={1.5} strokeDasharray="4 2" dot={false} activeDot={{ r: 3, fill: '#c4b5fd' }} name="ma7" />
+      </div>
+
+      {/* Resting HR */}
+      <div className="mt-9">
+        <SectionLabel>Resting HR Trend</SectionLabel>
+        <div className="mt-3">
+          {rhrChartData.length < 2 ? (
+            <EmptyNote>Need more data to show RHR trend.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={100}>
+              <LineChart data={rhrChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={60} stroke={C.ruleSoft} strokeDasharray="3 3" label={{ value: '60', position: 'right', fill: C.faint, fontSize: 9, fontFamily: SERIF }} />
+                <RechartTooltip content={<ChartTooltip unit=" bpm" color="#ef4444" />} />
+                <Line type="monotone" dataKey="rhr" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#ef4444' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Reference at 60 bpm — below is athletic range.</p>
+        </div>
+      </div>
+
+      {/* VO2 Max */}
+      <div className="mt-9">
+        <SectionLabel>VO₂ Max Trend</SectionLabel>
+        <div className="mt-3">
+          {vo2ChartData.length < 2 ? (
+            <div>
+              <EmptyNote>Need at least 2 cardio fitness updates to show a trend.</EmptyNote>
+              {vo2ChartData.length === 1 && (
+                <p style={{ fontFamily: SERIF, fontSize: 14, color: C.inkSoft, marginTop: 8 }}>Current: {vo2ChartData[0].vo2Max} ml/kg/min</p>
               )}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-        {hasMA7 && (
-          <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-0.5 rounded" style={{ background: '#a78bfa' }} />
-              <p className="text-[10px] text-[#9a8f7e]">Daily</p>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-0.5 rounded" style={{ background: '#c4b5fd', opacity: 0.7 }} />
-              <p className="text-[10px] text-[#9a8f7e]">7-day MA</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-0.5 rounded" style={{ background: '#C9A84C' }} />
-              <p className="text-[10px] text-[#9a8f7e]">Age norm</p>
-            </div>
-          </div>
-        )}
+          ) : (
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={vo2ChartData} margin={{ top: 4, right: 40, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={vo2Norms[0]} stroke={C.gold} strokeDasharray="3 3" label={{ value: 'Fair', position: 'right', fill: C.gold, fontSize: 9, fontFamily: SERIF }} />
+                <ReferenceLine y={vo2Norms[1]} stroke="#9B7FD4" strokeDasharray="3 3" label={{ value: 'Good', position: 'right', fill: '#9B7FD4', fontSize: 9, fontFamily: SERIF }} />
+                <ReferenceLine y={vo2Norms[2]} stroke="#3E9C7E" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#3E9C7E', fontSize: 9, fontFamily: SERIF }} />
+                <RechartTooltip content={<ChartTooltip unit=" ml/kg/min" color="#3E9C7E" />} />
+                <Line type="monotone" dataKey="vo2Max" stroke="#3E9C7E" strokeWidth={2} dot={{ r: 4, fill: '#3E9C7E' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Resting HR Trend</p>
-        {rhrChartData.length < 2 ? (
-          <p className={EMPTY}>Need more data to show RHR trend.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={rhrChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={60} stroke="#ece3d4" strokeDasharray="3 3" label={{ value: '60', position: 'right', fill: '#9a8f7e', fontSize: 9 }} />
-              <RechartTooltip content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null
-                return (
-                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
-                    <p style={{ color: '#ef4444' }} className="font-semibold">{Math.round(payload[0]?.value ?? 0)} bpm</p>
-                  </div>
-                )
-              }} />
-              <Line type="monotone" dataKey="rhr" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#ef4444' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Reference at 60 bpm — below is athletic range.</p>
+      {/* Sleep Score */}
+      <div className="mt-9">
+        <SectionLabel>Sleep Score — 30 Days</SectionLabel>
+        <div className="mt-3">
+          {sleepChartData.length < 3 ? (
+            <EmptyNote>Need more sleep data to show trend.</EmptyNote>
+          ) : (
+            <LineGraph data={sleepChartData} dataKey="sleepScore" color="#9B7FD4" unit="%" height={100} />
+          )}
+        </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>VO₂ Max Trend</p>
-        {vo2ChartData.length < 2 ? (
-          <div>
-            <p className={EMPTY}>Need at least 2 cardio fitness updates to show a trend.</p>
-            {vo2ChartData.length === 1 && (
-              <p className="text-[#5c5648] text-sm mt-2">Current: {vo2ChartData[0].vo2Max} ml/kg/min</p>
-            )}
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={120}>
-            <LineChart data={vo2ChartData} margin={{ top: 4, right: 40, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={vo2Norms[0]} stroke="#D9A23F" strokeDasharray="3 3" label={{ value: 'Fair', position: 'right', fill: '#D9A23F', fontSize: 9 }} />
-              <ReferenceLine y={vo2Norms[1]} stroke="#9B7FD4" strokeDasharray="3 3" label={{ value: 'Good', position: 'right', fill: '#9B7FD4', fontSize: 9 }} />
-              <ReferenceLine y={vo2Norms[2]} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#10b981', fontSize: 9 }} />
-              <RechartTooltip content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null
-                return (
-                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
-                    <p style={{ color: '#10b981' }} className="font-semibold">{payload[0]?.value} ml/kg/min</p>
-                  </div>
-                )
-              }} />
-              <Line type="monotone" dataKey="vo2Max" stroke="#10b981" strokeWidth={2} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+      {/* Skin Temp */}
+      <div className="mt-9">
+        <SectionLabel>Skin Temp Deviation</SectionLabel>
+        <div className="mt-3">
+          {skinTempData.length === 0 ? (
+            <EmptyNote>No skin temperature data. Requires a device with a skin temp sensor.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={100}>
+              <BarChart data={skinTempData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={0} stroke={C.ruleSoft} strokeDasharray="3 3" />
+                <RechartTooltip content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null
+                  const v = payload[0]?.value
+                  return (
+                    <div className="px-3 py-2" style={{ background: C.paper, border: `1px solid ${C.rule}` }}>
+                      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 11, color: C.faint, marginBottom: 2 }}>{label}</p>
+                      <p style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: v <= 0 ? '#3E9C7E' : v <= 0.3 ? C.gold : '#ef4444' }}>
+                        {v > 0 ? '+' : ''}{v?.toFixed(2)}°C
+                      </p>
+                    </div>
+                  )
+                }} />
+                <Bar dataKey="dev" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  {skinTempData.map((d, i) => (
+                    <Cell key={i} fill={d.barColor} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Green (≤0°C) = cooler baseline, favorable for recovery. Amber/red = elevated, may signal stress or illness.</p>
+        </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Sleep Score — 30 Days</p>
-        {sleepChartData.length < 3 ? (
-          <p className={EMPTY}>Need more sleep data to show trend.</p>
-        ) : (
-          <LineGraph data={sleepChartData} dataKey="sleepScore" color="#8b5cf6" unit="%" height={100} />
-        )}
+      {/* Weekly AZM */}
+      <div className="mt-9">
+        <SectionLabel>Weekly Active Zone Minutes</SectionLabel>
+        <div className="mt-3">
+          {azmWeeklyData.length === 0 ? (
+            <EmptyNote>No weekly activity data available yet.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart data={azmWeeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={150} stroke={C.gold} strokeDasharray="3 3" label={{ value: 'WHO 150', position: 'right', fill: C.gold, fontSize: 9, fontFamily: SERIF }} />
+                <ReferenceLine y={300} stroke="#3E9C7E" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#3E9C7E', fontSize: 9, fontFamily: SERIF }} />
+                <RechartTooltip content={<ChartTooltip unit=" min" color={C.gold} />} />
+                <Bar dataKey="azm" fill={C.gold} radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>WHO recommends 150 min/week moderate or 75 min vigorous. 300+ min = excellent.</p>
+        </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Skin Temp Deviation</p>
-        {skinTempData.length === 0 ? (
-          <p className={EMPTY}>No skin temperature data. Requires a device with a skin temp sensor.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={skinTempData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={0} stroke="#ece3d4" strokeDasharray="3 3" />
-              <RechartTooltip content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null
-                const v = payload[0]?.value
-                return (
-                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
-                    <p style={{ color: v <= 0 ? '#3E9C7E' : v <= 0.3 ? '#D9A23F' : '#ef4444' }} className="font-semibold">
-                      {v > 0 ? '+' : ''}{v?.toFixed(2)}°C
-                    </p>
-                  </div>
-                )
-              }} />
-              <Bar dataKey="dev" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                {skinTempData.map((d, i) => (
-                  <Cell key={i} fill={d.barColor} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Green (≤0°C) = cooler baseline, favorable for recovery. Amber/red = elevated, may signal stress or illness.</p>
+      {/* Breathing Rate */}
+      <div className="mt-9 mb-4">
+        <SectionLabel>Breathing Rate Trend</SectionLabel>
+        <div className="mt-3">
+          {brChartData.length < 2 ? (
+            <EmptyNote>Need more data to show breathing rate trend.</EmptyNote>
+          ) : (
+            <ResponsiveContainer width="100%" height={100}>
+              <LineChart data={brChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <ReferenceLine y={18} stroke={C.ruleSoft} strokeDasharray="3 3" label={{ value: '18', position: 'right', fill: C.faint, fontSize: 9, fontFamily: SERIF }} />
+                <RechartTooltip content={<ChartTooltip unit=" br/min" color="#5E5198" />} />
+                <Line type="monotone" dataKey="br" stroke="#5E5198" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#5E5198' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Normal: 12–18 br/min during sleep. Above 18 may indicate stress, illness, or elevated load.</p>
+        </div>
       </div>
-
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Weekly Active Zone Minutes</p>
-        {azmWeeklyData.length === 0 ? (
-          <p className={EMPTY}>No weekly activity data available yet.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={azmWeeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={150} stroke="#D9A23F" strokeDasharray="3 3" label={{ value: 'WHO 150', position: 'right', fill: '#D9A23F', fontSize: 9 }} />
-              <ReferenceLine y={300} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Excellent', position: 'right', fill: '#10b981', fontSize: 9 }} />
-              <RechartTooltip content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null
-                return (
-                  <div className="bg-white rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 18px rgba(0,0,0,0.12)' }}>
-                    <p className="text-[#9a8f7e] text-xs mb-1">{label}</p>
-                    <p style={{ color: '#D9A23F' }} className="font-semibold">{payload[0]?.value} min</p>
-                  </div>
-                )
-              }} />
-              <Bar dataKey="azm" fill="#D9A23F" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-        <p className="text-[10px] text-[#b3a890] mt-2">WHO recommends 150 min/week moderate or 75 min vigorous. 300+ min = excellent.</p>
-      </div>
-
-      <div className="rounded-2xl p-5" style={CARD}>
-        <p className={TITLE}>Breathing Rate Trend</p>
-        {brChartData.length < 2 ? (
-          <p className={EMPTY}>Need more data to show breathing rate trend.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={brChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fill: '#9a8f7e', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <ReferenceLine y={18} stroke="#ece3d4" strokeDasharray="3 3" label={{ value: '18', position: 'right', fill: '#9a8f7e', fontSize: 9 }} />
-              <RechartTooltip content={<BRTooltip />} />
-              <Line type="monotone" dataKey="br" stroke="#06b6d4" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#06b6d4' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-        <p className="text-[10px] text-[#b3a890] mt-2">Normal: 12–18 br/min during sleep. Above 18 may indicate stress, illness, or elevated load.</p>
-      </div>
-
     </div>
   )
 }

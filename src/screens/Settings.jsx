@@ -12,6 +12,7 @@ import { isPinSet, setPin, verifyPin, removePin } from '../lib/pin'
 import { createBackup, restoreBackup, getLastBackupAt } from '../lib/backup'
 import LabResultsSection from '../components/LabResultsSection'
 import { getDataFreshness } from '../lib/dataFreshness'
+import { C, SERIF, Label, SectionLabel } from '../lib/almanacTheme'
 
 // ── Time options ──────────────────────────────────────────────────────────────
 
@@ -130,8 +131,8 @@ function PushNotificationsSection() {
 
   if (!pushSupported) {
     return (
-      <div className="rounded-2xl p-5 space-y-2" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-sm font-semibold text-[#1a1a1a]">Push Notifications</p>
+      <div className="pt-5 pb-1 space-y-2" style={{ borderTop: `2px solid ${C.rule}` }}>
+        <p className="text-sm font-semibold text-[#28231C]">Push Notifications</p>
         <p className="text-xs text-[#9a8f7e]">
           Add this app to your Home Screen first (Share → Add to Home Screen), then push notifications will be available.
         </p>
@@ -140,11 +141,11 @@ function PushNotificationsSection() {
   }
 
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a]">Push Notifications</p>
+          <p className="text-sm font-semibold text-[#28231C]">Push Notifications</p>
           <p className="text-xs mt-0.5" style={{ color: subscribed ? '#3E9C7E' : '#9a8f7e' }}>
             {subscribed ? '● Active — fires even when app is closed' : '○ Not set up'}
           </p>
@@ -176,7 +177,7 @@ function PushNotificationsSection() {
       {/* Morning toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[#1a1a1a]">🌅 Morning Brief</span>
+          <span className="text-sm text-[#28231C]">Morning Brief</span>
           <button
             onClick={() => setPrefs(p => ({ ...p, morningEnabled: !p.morningEnabled }))}
             className="w-10 h-6 rounded-full transition-colors relative"
@@ -190,7 +191,7 @@ function PushNotificationsSection() {
           <select
             value={prefs.morningTime}
             onChange={e => setPrefs(p => ({ ...p, morningTime: e.target.value }))}
-            className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
+            className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-2.5 text-[#28231C] text-sm outline-none"
           >
             {MORNING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -200,7 +201,7 @@ function PushNotificationsSection() {
       {/* Evening toggle */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[#1a1a1a]">🌙 Nightly Wind-Down</span>
+          <span className="text-sm text-[#28231C]">Nightly Wind-Down</span>
           <button
             onClick={() => setPrefs(p => ({ ...p, eveningEnabled: !p.eveningEnabled }))}
             className="w-10 h-6 rounded-full transition-colors relative"
@@ -214,7 +215,7 @@ function PushNotificationsSection() {
           <select
             value={prefs.eveningTime}
             onChange={e => setPrefs(p => ({ ...p, eveningTime: e.target.value }))}
-            className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
+            className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-2.5 text-[#28231C] text-sm outline-none"
           >
             {EVENING_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -225,7 +226,7 @@ function PushNotificationsSection() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-sm text-[#1a1a1a]">💤 Bedtime Reminder</span>
+            <span className="text-sm text-[#28231C]">Bedtime Reminder</span>
             <p className="text-[11px] text-[#b3a890] mt-0.5">30-min heads-up before your target bedtime</p>
           </div>
           <button
@@ -242,7 +243,7 @@ function PushNotificationsSection() {
             <select
               value={prefs.winddownTime || '22:00'}
               onChange={e => setPrefs(p => ({ ...p, winddownTime: e.target.value }))}
-              className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
+              className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-2.5 text-[#28231C] text-sm outline-none"
             >
               {WINDDOWN_TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
@@ -267,7 +268,7 @@ function PushNotificationsSection() {
         ].map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-[#1a1a1a]">{label}</span>
+              <span className="text-sm text-[#28231C]">{label}</span>
               <p className="text-[11px] text-[#b3a890]">{desc}</p>
             </div>
             <button
@@ -292,7 +293,7 @@ function PushNotificationsSection() {
         ].map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-[#1a1a1a]">{label}</span>
+              <span className="text-sm text-[#28231C]">{label}</span>
               <p className="text-[11px] text-[#b3a890]">{desc}</p>
             </div>
             <button
@@ -313,7 +314,7 @@ function PushNotificationsSection() {
         <select
           value={prefs.timezone}
           onChange={e => setPrefs(p => ({ ...p, timezone: e.target.value }))}
-          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-2.5 text-[#1a1a1a] text-sm outline-none"
+          className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-2.5 text-[#28231C] text-sm outline-none"
         >
           {TIMEZONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -324,7 +325,7 @@ function PushNotificationsSection() {
         <div className="rounded-xl p-3 space-y-2" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
           <p className="text-xs text-[#D9A23F] font-semibold">One more step to apply your times</p>
           <p className="text-xs text-[#9a8f7e]">
-            Update <span className="text-[#1a1a1a] font-mono">vercel.json</span> crons:
+            Update <span className="text-[#28231C] font-mono">vercel.json</span> crons:
           </p>
           <pre className="rounded-lg p-2 overflow-x-auto text-[11px] font-mono text-[#3E9C7E]" style={{ background: '#F6F1E9' }}>
 {`"crons": [
@@ -366,10 +367,10 @@ function PushNotificationsSection() {
           ].map(s => (
             <div key={s.step} className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-[10px] font-bold text-[#9a8f7e] flex-shrink-0">{s.step}</span>
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-[#9a8f7e] flex-shrink-0" style={{ border: `1px solid ${C.rule}` }}>{s.step}</span>
                 <p className="text-xs font-semibold text-[#5c5648]">{s.title}</p>
               </div>
-              {s.code && <pre className="text-[11px] font-mono text-[#3E9C7E] rounded-lg p-2 overflow-x-auto ml-7" style={{ background: '#fff' }}>{s.code}</pre>}
+              {s.code && <pre className="text-[11px] font-mono text-[#3E9C7E] rounded-lg p-2 overflow-x-auto ml-7" style={{ background: C.paper, border: `1px solid ${C.rule}` }}>{s.code}</pre>}
               <p className="text-[11px] text-[#b3a890] ml-7">{s.desc}</p>
             </div>
           ))}
@@ -410,15 +411,15 @@ function PinKeypad({ onComplete, onCancel, label }) {
       <div className="grid grid-cols-3 gap-2 max-w-[220px] mx-auto">
         {[1,2,3,4,5,6,7,8,9].map(n => (
           <button key={n} onClick={() => handleDigit(String(n))}
-            className="h-14 rounded-2xl text-xl font-light text-[#1a1a1a] active:opacity-60 transition-opacity"
-            style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            className="h-14 rounded-2xl text-xl font-light text-[#28231C] active:opacity-60 transition-opacity"
+            style={{ background: 'transparent', border: `1px solid ${C.rule}` }}>
             {n}
           </button>
         ))}
         <div />
         <button onClick={() => handleDigit('0')}
-          className="h-14 rounded-2xl text-xl font-light text-[#1a1a1a] active:opacity-60 transition-opacity"
-          style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          className="h-14 rounded-2xl text-xl font-light text-[#28231C] active:opacity-60 transition-opacity"
+          style={{ background: 'transparent', border: `1px solid ${C.rule}` }}>
           0
         </button>
         <button onClick={handleBack}
@@ -499,10 +500,10 @@ function PinSection() {
   }
 
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a]">App PIN Lock</p>
+          <p className="text-sm font-semibold text-[#28231C]">App PIN Lock</p>
           <p className="text-xs mt-0.5" style={{ color: pinActive ? '#3E9C7E' : '#9a8f7e' }}>
             {pinActive ? '● Enabled — required on every open' : '○ Off'}
           </p>
@@ -702,10 +703,10 @@ function DataFreshnessSection() {
   const headerColor = needsAttention.length === 0 ? '#3E9C7E' : needsAttention.some(m => m.status === 'overdue' || m.status === 'never') ? '#ef4444' : '#D9A23F'
 
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a]">Data Freshness</p>
+          <p className="text-sm font-semibold text-[#28231C]">Data Freshness</p>
           <p className="text-xs text-[#9a8f7e] mt-0.5">
             {needsAttention.length === 0 ? 'All metrics are up to date' : `${needsAttention.length} metric${needsAttention.length > 1 ? 's' : ''} need attention`}
           </p>
@@ -719,9 +720,9 @@ function DataFreshnessSection() {
           return (
             <div key={m.id} className="flex items-center justify-between py-2" style={{ borderTop: '1px solid #ece3d4' }}>
               <div className="flex items-center gap-2.5">
-                <span className="text-lg leading-none">{m.emoji}</span>
+                
                 <div>
-                  <p className="text-sm text-[#1a1a1a]">{m.label}</p>
+                  <p className="text-sm text-[#28231C]">{m.label}</p>
                   <p className="text-[11px] text-[#b3a890] mt-0.5">
                     {m.status === 'never'
                       ? m.action
@@ -1088,22 +1089,21 @@ export default function Settings({ onBack }) {
   }
 
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-      <div className="pt-2 flex items-center gap-3">
-        <button onClick={onBack} className="w-9 h-9 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-xl font-bold text-[#1a1a1a]">Settings</h1>
+    <div className="px-5 pt-safe pb-28 space-y-4" style={{ background: C.paper, minHeight: '100vh', color: C.ink, fontFamily: SERIF }}>
+      <div className="pt-3">
+        <button onClick={onBack} style={{ fontFamily: SERIF, fontSize: 14, color: C.faint }}>‹ Back</button>
       </div>
+      <div style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <Label style={{ color: C.inkSoft }}>SETTINGS</Label>
+      </div>
+      <h1 style={{ fontSize: 26, fontWeight: 700, marginTop: 14 }}>Configuration</h1>
 
       {/* Connection status */}
-      <div className="rounded-2xl p-5 flex items-center justify-between" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 flex items-center justify-between" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: connected ? '#3E9C7E' : '#cabfa9' }} />
           <div>
-            <p className="text-sm font-semibold text-[#1a1a1a]">Google Health</p>
+            <p className="text-sm font-semibold text-[#28231C]">Google Health</p>
             <p className="text-xs text-[#9a8f7e]">{connected ? 'Connected' : 'Not connected'}</p>
           </div>
         </div>
@@ -1115,7 +1115,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {connected && (
-        <div className="rounded-2xl p-5 flex items-center justify-between gap-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="pt-5 pb-1 flex items-center justify-between gap-3" style={{ borderTop: `2px solid ${C.rule}` }}>
           <p className="text-xs text-[#9a8f7e]">{debugCopyMsg || 'Copy the raw data from your last sync (for troubleshooting)'}</p>
           <button onClick={handleCopyDebugData} className="text-xs text-[#5c5648] px-3 py-1.5 rounded-xl bg-[#F6F1E9] flex-shrink-0">
             Copy debug data
@@ -1125,23 +1125,23 @@ export default function Settings({ onBack }) {
 
       {/* Google Health credentials */}
       {!connected && (
-        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
           <div>
-            <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Connect Google Health</p>
+            <p className="text-sm font-semibold text-[#28231C] mb-1">Connect Google Health</p>
             <p className="text-xs text-[#9a8f7e]">You'll need a Google Cloud project with the Health API enabled</p>
           </div>
           <div className="space-y-4">
             <div>
               <p className="text-xs text-[#9a8f7e] mb-1.5 uppercase tracking-wider">Steps to get your Client ID:</p>
               <ol className="space-y-1 text-xs text-[#9a8f7e]">
-                <li>1. Go to <span className="text-[#1a1a1a]">console.cloud.google.com</span> → create a project</li>
-                <li>2. Enable the <span className="text-[#1a1a1a]">Google Health API</span></li>
+                <li>1. Go to <span className="text-[#28231C]">console.cloud.google.com</span> → create a project</li>
+                <li>2. Enable the <span className="text-[#28231C]">Google Health API</span></li>
                 <li>3. Create an OAuth 2.0 Client ID, set the redirect URI to your Vercel app URL</li>
-                <li>4. Copy the <span className="text-[#1a1a1a]">Client ID</span> below</li>
+                <li>4. Copy the <span className="text-[#28231C]">Client ID</span> below</li>
               </ol>
             </div>
             <input
-              className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+              className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-3 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
               placeholder="Google Client ID (e.g. 1234-abc.apps.googleusercontent.com)"
               value={clientId}
               onChange={e => setClientId(e.target.value)}
@@ -1162,15 +1162,15 @@ export default function Settings({ onBack }) {
       <PinSection />
 
       {/* Age */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Your Age</p>
+          <p className="text-sm font-semibold text-[#28231C] mb-1">Your Age</p>
           <p className="text-xs text-[#9a8f7e]">Used for max HR zones and physiological age calculations.</p>
         </div>
         <input
           type="number"
           min={15} max={100}
-          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+          className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-3 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
           placeholder="39"
           value={userAge}
           onChange={e => setUserAge(e.target.value)}
@@ -1178,10 +1178,10 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Height & Weight */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#1a1a1a]">Height & Weight</p>
+            <p className="text-sm font-semibold text-[#28231C]">Height & Weight</p>
             <p className="text-xs text-[#9a8f7e] mt-0.5">Used for BMI, distance, and biological age.</p>
           </div>
           <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid #ece3d4' }}>
@@ -1205,13 +1205,13 @@ export default function Settings({ onBack }) {
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={3} max={8}
-                  className="w-14 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-14 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="5" value={heightFt} onChange={e => setHeightFt(e.target.value)}
                 />
                 <span className="text-xs text-[#b3a890]">ft</span>
                 <input
                   type="number" min={0} max={11}
-                  className="w-14 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-14 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="10" value={heightIn} onChange={e => setHeightIn(e.target.value)}
                 />
                 <span className="text-xs text-[#b3a890]">in</span>
@@ -1222,7 +1222,7 @@ export default function Settings({ onBack }) {
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={50} max={600}
-                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+                  className="flex-1 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="176" value={weightLbs} onChange={e => setWeightLbs(e.target.value)}
                 />
                 <span className="text-xs text-[#b3a890]">lbs</span>
@@ -1236,7 +1236,7 @@ export default function Settings({ onBack }) {
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={100} max={250}
-                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+                  className="flex-1 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="178" value={heightCm} onChange={e => setHeightCm(e.target.value)}
                 />
                 <span className="text-xs text-[#b3a890]">cm</span>
@@ -1247,7 +1247,7 @@ export default function Settings({ onBack }) {
               <div className="flex gap-2 items-center">
                 <input
                   type="number" min={30} max={300}
-                  className="flex-1 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+                  className="flex-1 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
                   placeholder="80" value={weightKg} onChange={e => setWeightKg(e.target.value)}
                 />
                 <span className="text-xs text-[#b3a890]">kg</span>
@@ -1261,7 +1261,7 @@ export default function Settings({ onBack }) {
           <div className="flex gap-2 items-center">
             <input
               type="number" min={3} max={60} step={0.1}
-              className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+              className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
               placeholder="18"
               value={bodyFatPct}
               onChange={e => setBodyFatPct(e.target.value)}
@@ -1293,7 +1293,7 @@ export default function Settings({ onBack }) {
               <>
                 <input
                   type="number" min={20} max={80} step={0.5}
-                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="34"
                   value={waistIn}
                   onChange={e => setWaistIn(e.target.value)}
@@ -1304,7 +1304,7 @@ export default function Settings({ onBack }) {
               <>
                 <input
                   type="number" min={50} max={200} step={0.5}
-                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="87"
                   value={waistCmVal}
                   onChange={e => setWaistCmVal(e.target.value)}
@@ -1324,7 +1324,7 @@ export default function Settings({ onBack }) {
               <>
                 <input
                   type="number" min={20} max={200} step={1}
-                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="95"
                   value={gripLbs}
                   onChange={e => setGripLbs(e.target.value)}
@@ -1335,7 +1335,7 @@ export default function Settings({ onBack }) {
               <>
                 <input
                   type="number" min={10} max={100} step={0.5}
-                  className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+                  className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
                   placeholder="43"
                   value={gripKgVal}
                   onChange={e => setGripKgVal(e.target.value)}
@@ -1353,7 +1353,7 @@ export default function Settings({ onBack }) {
           <div className="flex gap-2 items-center">
             <input
               type="number" min={10} max={90} step={1}
-              className="w-20 bg-white border rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+              className="w-20 bg-transparent border-b rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
               style={{ borderColor: vo2MaxError ? '#ef4444' : '#ece3d4' }}
               placeholder="e.g. 46"
               value={vo2MaxVal}
@@ -1366,9 +1366,9 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Lifestyle factors */}
-      <div className="rounded-2xl p-5 space-y-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-5" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a]">Lifestyle Factors</p>
+          <p className="text-sm font-semibold text-[#28231C]">Lifestyle Factors</p>
           <p className="text-xs text-[#9a8f7e] mt-0.5">Factored into your biological age calculation.</p>
         </div>
 
@@ -1398,7 +1398,7 @@ export default function Settings({ onBack }) {
           <div className="flex gap-2 items-center">
             <input
               type="number" min={0} max={50}
-              className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+              className="w-20 bg-transparent border-b border-[#DBD1BF] rounded-none px-3 py-2.5 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E] text-center"
               placeholder="0"
               value={alcoholWeek}
               onChange={e => setAlcoholWeek(e.target.value)}
@@ -1420,14 +1420,14 @@ export default function Settings({ onBack }) {
       <LabResultsSection />
 
       {/* Claude API key */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">AI Coach (Claude)</p>
+          <p className="text-sm font-semibold text-[#28231C] mb-1">AI Coach (Claude)</p>
           <p className="text-xs text-[#9a8f7e]">Optional. Powers the coach tab. ~$0.01–0.05/day.</p>
         </div>
         <input
           type="password"
-          className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+          className="w-full bg-transparent border-b border-[#DBD1BF] rounded-none px-4 py-3 text-[#28231C] text-sm outline-none focus:border-[#3E9C7E]"
           placeholder="sk-ant-..."
           value={claudeKey}
           onChange={e => setClaudeKey(e.target.value)}
@@ -1450,9 +1450,9 @@ export default function Settings({ onBack }) {
       <PushNotificationsSection />
 
       {/* Apple Health Import */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Apple Health — Body Composition</p>
+          <p className="text-sm font-semibold text-[#28231C] mb-1">Apple Health — Body Composition</p>
           <p className="text-xs text-[#9a8f7e]">Import weight and body fat % history from your Hume scale (or any Apple Health source) directly into Soma.</p>
         </div>
 
@@ -1500,9 +1500,9 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Hume Health Import */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Hume Health — Full Body Composition</p>
+          <p className="text-sm font-semibold text-[#28231C] mb-1">Hume Health — Full Body Composition</p>
           <p className="text-xs text-[#9a8f7e]">Screenshot your Hume progress report and import all body composition metrics directly into Soma's biological age algorithm.</p>
         </div>
 
@@ -1550,9 +1550,9 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Data import / export */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <div>
-          <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Data</p>
+          <p className="text-sm font-semibold text-[#28231C] mb-1">Data</p>
           <p className="text-xs text-[#9a8f7e]">Import blood pressure or lab results from CSV, or export your full history.</p>
         </div>
 
@@ -1630,7 +1630,7 @@ Labs: marker,value,date`}</pre>
       <DataFreshnessSection />
 
       {/* Note on data source */}
-      <div className="rounded-2xl p-5" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
+      <div className="pt-5 pb-1" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
         <p className="text-xs text-[#D9A23F] font-semibold uppercase tracking-wider mb-2">Note</p>
         <p className="text-xs text-[#9a8f7e]">
           This app syncs through the Google Health API. If a sync ever fails after reconnecting, check that your Google Cloud OAuth credentials are still valid — your data and settings will not be affected.
@@ -1638,26 +1638,23 @@ Labs: marker,value,date`}</pre>
       </div>
 
       {/* Native app upgrade */}
-      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1 space-y-4" style={{ borderTop: `2px solid ${C.rule}` }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Upgrade to Native App</p>
         <p className="text-xs text-[#9a8f7e]">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
         {[
-          { icon: '🏠', label: 'Home Screen Widget', desc: 'Recovery ring on your home screen without opening the app' },
-          { icon: '🍎', label: 'Apple Health Write-Back', desc: 'Push your Soma recovery/strain scores into the Apple Health app' },
-          { icon: '🔄', label: 'Background Sync', desc: 'Data refreshes at 6am — numbers waiting before you open it' },
+          { label: 'Home Screen Widget', desc: 'Recovery ring on your home screen without opening the app' },
+          { label: 'Apple Health Write-Back', desc: 'Push your Soma recovery/strain scores into the Apple Health app' },
+          { label: 'Background Sync', desc: 'Data refreshes at 6am — numbers waiting before you open it' },
         ].map(f => (
-          <div key={f.label} className="flex items-start gap-3 py-2" style={{ borderTop: '1px solid #ece3d4' }}>
-            <span className="text-xl">{f.icon}</span>
-            <div>
-              <p className="text-sm text-[#5c5648] font-medium">{f.label}</p>
-              <p className="text-xs text-[#b3a890]">{f.desc}</p>
-            </div>
+          <div key={f.label} className="py-2" style={{ borderTop: '1px solid #ece3d4' }}>
+            <p className="text-sm text-[#5c5648] font-medium">{f.label}</p>
+            <p className="text-xs text-[#b3a890]">{f.desc}</p>
           </div>
         ))}
       </div>
 
       {/* About */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="pt-5 pb-1" style={{ borderTop: `2px solid ${C.rule}` }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</p>
         <p className="text-xs text-[#b3a890]">σῶμα · Your body, understood. Data stays on your device. No third-party servers. Built for personal use only.</p>
       </div>

@@ -3,6 +3,7 @@ import { getAllTags, getEntryForDate, saveJournalEntry, analyzeTagCorrelation, a
 import { getIllnessAlertAccuracy } from '../lib/alerts'
 import { getBPReadings, saveBPReading, localToday } from '../lib/calculations'
 import { haptic } from '../lib/haptics'
+import { C, SERIF, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
 function today() {
   return localToday()
@@ -27,10 +28,10 @@ function timeToMins(t) {
 }
 
 const TIMED_ITEMS = [
-  { id: 'sunlight',  label: 'First Sunlight', emoji: '☀️', minMins: 300,  maxMins: 720,  defaultMins: 420,  warnAfter: null,    warnMsg: null },
-  { id: 'caffeine',  label: 'Last Caffeine',  emoji: '☕', minMins: 360,  maxMins: 1320, defaultMins: 480,  warnAfter: '14:00', warnMsg: 'Late caffeine delays sleep onset and reduces REM' },
-  { id: 'sauna',     label: 'Sauna',          emoji: '🧖', minMins: 360,  maxMins: 1380, defaultMins: 1080, warnAfter: null,    warnMsg: null },
-  { id: 'last_meal', label: 'Last Meal',      emoji: '🍽️', minMins: 600,  maxMins: 1380, defaultMins: 1140, warnAfter: '20:00', warnMsg: 'Late meals can reduce overnight HRV and recovery' },
+  { id: 'sunlight',  label: 'First Sunlight', minMins: 300,  maxMins: 720,  defaultMins: 420,  warnAfter: null,    warnMsg: null },
+  { id: 'caffeine',  label: 'Last Caffeine',  minMins: 360,  maxMins: 1320, defaultMins: 480,  warnAfter: '14:00', warnMsg: 'Late caffeine delays sleep onset and reduces REM' },
+  { id: 'sauna',     label: 'Sauna',          minMins: 360,  maxMins: 1380, defaultMins: 1080, warnAfter: null,    warnMsg: null },
+  { id: 'last_meal', label: 'Last Meal',      minMins: 600,  maxMins: 1380, defaultMins: 1140, warnAfter: '20:00', warnMsg: 'Late meals can reduce overnight HRV and recovery' },
 ]
 
 function TimeSlider({ item, value, onToggle, onChange }) {
@@ -40,19 +41,19 @@ function TimeSlider({ item, value, onToggle, onChange }) {
   const isLate = active && item.warnAfter && value >= item.warnAfter
 
   return (
-    <div className="py-2.5" style={{ borderBottom: '1px solid #ece3d4' }}>
+    <div className="py-3" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => onToggle(item.id)}
-            className="w-10 h-[22px] rounded-full flex items-center transition-colors duration-200 flex-shrink-0 px-0.5"
-            style={{ background: active ? '#3E9C7E' : '#EAE2D2', justifyContent: active ? 'flex-end' : 'flex-start' }}
+            className="w-9 h-5 flex items-center transition-colors duration-200 flex-shrink-0 px-0.5"
+            style={{ border: `1px solid ${active ? C.ink : C.rule}`, background: active ? C.ink : 'transparent', justifyContent: active ? 'flex-end' : 'flex-start' }}
           >
-            <div className="w-[18px] h-[18px] rounded-full bg-white shadow" />
+            <div className="w-3 h-3" style={{ background: active ? C.paper : C.faint }} />
           </button>
-          <span className="text-sm" style={{ color: active ? '#1a1a1a' : '#9a8f7e' }}>{item.emoji} {item.label}</span>
+          <span style={{ fontFamily: SERIF, fontSize: 15, color: active ? C.ink : C.faint }}>{item.label}</span>
         </div>
-        <span className="text-sm font-bold tabular-nums" style={{ color: isLate ? '#D9A23F' : active ? '#3E9C7E' : '#9a8f7e' }}>
+        <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 600, color: isLate ? C.gold : active ? C.ink : C.faint }} className="tabular">
           {active ? timeStr : '--'}
         </span>
       </div>
@@ -66,15 +67,15 @@ function TimeSlider({ item, value, onToggle, onChange }) {
             value={mins}
             onChange={e => onChange(item.id, minsToTime(parseInt(e.target.value)))}
             className="w-full"
-            style={{ accentColor: isLate ? '#D9A23F' : '#3E9C7E', height: '4px' }}
+            style={{ accentColor: isLate ? C.gold : C.ink, height: '4px' }}
           />
           <div className="flex justify-between mt-0.5">
-            <span className="text-[9px] text-[#cabfa9]">{fmtTime(minsToTime(item.minMins))}</span>
-            <span className="text-[9px] text-[#cabfa9]">{fmtTime(minsToTime(item.maxMins))}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 10, color: C.faint }}>{fmtTime(minsToTime(item.minMins))}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 10, color: C.faint }}>{fmtTime(minsToTime(item.maxMins))}</span>
           </div>
           {isLate && (
-            <p className="text-[10px] mt-1 px-2 py-1 rounded-lg" style={{ color: '#D9A23F', background: '#D9A23F10' }}>
-              ⚠️ {item.warnMsg}
+            <p style={{ fontFamily: SERIF, fontSize: 12, fontStyle: 'italic', color: C.gold, marginTop: 6 }}>
+              {item.warnMsg}
             </p>
           )}
         </>
@@ -101,27 +102,25 @@ function CategoryInsightCard({ category, filteredTags, correlations, healthHisto
   if (withData.length === 0 && healthHistory.length < 10) return null
 
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#4a9fd4' }}>
-        {category.charAt(0).toUpperCase() + category.slice(1)} Insights
-      </p>
+    <div className="pt-5">
+      <Label style={{ color: C.inkSoft }}>{category.charAt(0).toUpperCase() + category.slice(1)} Insights</Label>
       {withData.length > 0 ? (
-        <div className="space-y-4">
+        <div className="mt-3 space-y-4">
           {withData.map(({ tag, corr }) => {
-            const color = corr.diff > 0 ? '#3E9C7E' : '#ef4444'
+            const color = corr.diff > 0 ? C.ink : C.gold
             const dir = corr.diff > 0 ? 'higher' : 'lower'
             return (
               <div key={tag.id}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs text-[#5c5648] flex-1">
-                    When you log <span className="font-semibold text-[#1a1a1a]">{tag.emoji} {tag.label}</span>, recovery averages{' '}
-                    <span className="font-bold" style={{ color }}>{Math.abs(corr.diff)}% {dir}</span>
-                    <span className="text-[#b3a890]"> ({corr.withAvg} vs {corr.withoutAvg})</span>
+                  <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft, flex: 1 }}>
+                    When you log <span style={{ color: C.ink, fontWeight: 600 }}>{tag.emoji} {tag.label}</span>, recovery averages{' '}
+                    <span style={{ color, fontWeight: 700 }}>{Math.abs(corr.diff)}% {dir}</span>
+                    <span style={{ color: C.faint }}> ({corr.withAvg} vs {corr.withoutAvg})</span>
                   </p>
-                  <span className="text-[10px] text-[#b3a890] flex-shrink-0 mt-0.5">{corr.sampleSize}d</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, flexShrink: 0, marginTop: 2 }}>{corr.sampleSize}d</span>
                 </div>
                 {(corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1) || (corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5) || (corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10) ? (
-                  <p className="text-[10px] text-[#b3a890] mt-0.5">
+                  <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 2 }}>
                     {corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1 && `HRV ${corr.hrvDiff > 0 ? '+' : ''}${corr.hrvDiff}ms`}
                     {corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5 && ` · RHR ${corr.rhrDiff > 0 ? '+' : ''}${corr.rhrDiff}bpm`}
                     {corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10 && ` · Sleep ${fmtSleep(corr.sleepDiff)}`}
@@ -132,10 +131,10 @@ function CategoryInsightCard({ category, filteredTags, correlations, healthHisto
           })}
         </div>
       ) : (
-        <p className="text-xs text-[#b3a890]">{10 - healthHistory.length} more days needed to unlock insights for this category.</p>
+        <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint, marginTop: 8 }}>{10 - healthHistory.length} more days needed to unlock insights for this category.</p>
       )}
       {building.length > 0 && withData.length > 0 && (
-        <p className="text-[10px] text-[#cabfa9] mt-3 pt-3" style={{ borderTop: '1px solid #ece3d4' }}>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.ruleSoft}` }}>
           Still building: {building.map(x => `${x.tag.emoji} ${x.tag.label}`).join(' · ')}
         </p>
       )}
@@ -145,13 +144,13 @@ function CategoryInsightCard({ category, filteredTags, correlations, healthHisto
 
 function ImpactBar({ diff, maxDiff = 30 }) {
   const pct = Math.min(100, (Math.abs(diff) / maxDiff) * 100)
-  const color = diff > 0 ? '#3E9C7E' : '#ef4444'
+  const color = diff > 0 ? C.ink : C.gold
   return (
     <div className="flex items-center gap-2 flex-1">
-      <div className="flex-1 h-1.5 rounded-full bg-white overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      <div className="flex-1" style={{ height: 3, background: C.ruleSoft }}>
+        <div style={{ height: 3, width: `${pct}%`, background: color }} />
       </div>
-      <span className="text-xs font-bold w-10 text-right" style={{ color }}>
+      <span style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 700, color, width: 40, textAlign: 'right' }}>
         {diff > 0 ? '+' : ''}{diff}%
       </span>
     </div>
@@ -160,65 +159,63 @@ function ImpactBar({ diff, maxDiff = 30 }) {
 
 function MetricChip({ label, value, unit, positive }) {
   if (value === null || value === undefined) return null
-  const color = positive ? '#3E9C7E' : '#ef4444'
+  const color = positive ? C.ink : C.gold
   const sign = value > 0 ? '+' : ''
   return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: color + '15', color }}>
+    <span style={{ fontFamily: SERIF, fontSize: 11, color, borderBottom: `1px solid ${color}55` }}>
       {label} {sign}{value}{unit}
     </span>
   )
 }
 
 const CATEGORY_META = {
-  all:       { emoji: '✦',  label: 'All' },
-  longevity: { emoji: '🧬', label: 'Longevity' },
-  intake:    { emoji: '🥩', label: 'Intake' },
-  sleep:     { emoji: '😴', label: 'Sleep' },
-  mental:    { emoji: '🧠', label: 'Mental' },
-  activity:  { emoji: '🏃', label: 'Activity' },
-  health:    { emoji: '❤️', label: 'Health' },
-  recovery:  { emoji: '⚡', label: 'Recovery' },
-  custom:    { emoji: '✨', label: 'Custom' },
+  all:       { label: 'All' },
+  longevity: { label: 'Longevity' },
+  intake:    { label: 'Intake' },
+  sleep:     { label: 'Sleep' },
+  mental:    { label: 'Mental' },
+  activity:  { label: 'Activity' },
+  health:    { label: 'Health' },
+  recovery:  { label: 'Recovery' },
+  custom:    { label: 'Custom' },
 }
 
 function TagCard({ tag, selected, streak, onToggle }) {
   return (
     <button
       onClick={() => onToggle(tag.id)}
-      className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl transition-all duration-200 relative"
+      className="flex flex-col items-center justify-center gap-1 py-3 relative transition-colors"
       style={{
-        background: selected ? '#3E9C7E14' : '#fff',
-        border: `1px solid ${selected ? '#3E9C7E45' : '#ece3d4'}`,
-        boxShadow: selected ? 'none' : '0 4px 18px rgba(0,0,0,0.05)',
-        minHeight: 76,
+        border: `1px solid ${selected ? C.ink : C.ruleSoft}`,
+        background: selected ? `${C.ink}08` : 'transparent',
+        minHeight: 72,
       }}
     >
-      <span className="text-2xl leading-none">{tag.emoji}</span>
-      <span className="text-[10px] font-medium text-center leading-tight mt-0.5" style={{ color: selected ? '#3E9C7E' : '#7d7363' }}>
+      <span className="text-xl leading-none">{tag.emoji}</span>
+      <span style={{ fontFamily: SERIF, fontSize: 11, color: selected ? C.ink : C.inkSoft, textAlign: 'center', lineHeight: 1.2, marginTop: 2 }}>
         {tag.label}
       </span>
       {streak >= 2 && (
-        <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[18px] text-center leading-none" style={{ background: '#D9A23F', color: '#fff' }}>
+        <span className="absolute -top-2 -right-2 flex items-center justify-center" style={{
+          fontFamily: SERIF, fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, padding: '0 4px',
+          color: C.paper, background: C.gold, borderRadius: '50%',
+        }}>
           {streak}
         </span>
       )}
       {selected && (
-        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#3E9C7E' }}>
-          <svg viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth={2.5} className="w-2 h-2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2 5l2.5 2.5 3.5-4" />
-          </svg>
-        </div>
+        <span style={{ position: 'absolute', top: 4, right: 6, fontFamily: SERIF, fontSize: 12, color: C.ink }}>✓</span>
       )}
     </button>
   )
 }
 
 const ENERGY_OPTIONS = [
-  { n: 1, emoji: '😴', label: 'Drained',   color: '#ef4444' },
-  { n: 2, emoji: '😕', label: 'Low',        color: '#D9A23F' },
-  { n: 3, emoji: '😐', label: 'Okay',       color: '#9a8f7e' },
-  { n: 4, emoji: '🙂', label: 'Good',       color: '#9B7FD4' },
-  { n: 5, emoji: '⚡', label: 'Energized',  color: '#3E9C7E' },
+  { n: 1, label: 'Drained' },
+  { n: 2, label: 'Low' },
+  { n: 3, label: 'Okay' },
+  { n: 4, label: 'Good' },
+  { n: 5, label: 'Energized' },
 ]
 
 export default function Journal({ data, onNav }) {
@@ -401,35 +398,35 @@ export default function Journal({ data, onNav }) {
     return result
   }, [recentActivity])
 
+  const inputStyle = {
+    fontFamily: SERIF, fontSize: 15, color: C.ink, background: 'transparent',
+    border: 'none', borderBottom: `1px solid ${C.rule}`, outline: 'none', borderRadius: 0,
+  }
+
   return (
-    <div className="px-4 pt-safe pb-28 space-y-4" style={{ background: '#F6F1E9', minHeight: '100vh' }}>
-      {/* Header */}
-      <div className="pt-2 flex items-center gap-3">
-        {onNav && (
-          <button onClick={() => onNav('home')} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#7d7363" strokeWidth={2} className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        )}
-        <div>
-          <p className="text-[#9a8f7e] text-xs uppercase tracking-wider">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-          </p>
-          <h1 className="text-xl font-bold">Daily Journal</h1>
+    <div className="px-5 pt-safe pb-28" style={{ background: C.paper, minHeight: '100vh', color: C.ink }}>
+      <div className="pt-3">
+        <BackLink onNav={onNav} />
+      </div>
+      <div className="mt-1" style={{ borderTop: `2px solid ${C.ink}`, borderBottom: `1px solid ${C.rule}`, paddingTop: 6, paddingBottom: 6, marginTop: 10 }}>
+        <div className="flex items-baseline justify-between">
+          <Label style={{ color: C.inkSoft }}>JOURNAL</Label>
+          <Label style={{ fontSize: 11 }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Label>
         </div>
       </div>
 
+      <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, marginTop: 14 }}>Today's log</h1>
+
       {/* Predictive Tomorrow */}
       {predictedRecovery && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: `1px solid ${predictedRecovery.totalDiff >= 0 ? '#3E9C7E33' : '#ef444433'}` }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#3E9C7E' }}>Tomorrow's Outlook</p>
-          <div className="flex items-center justify-between">
+        <div className="mt-9">
+          <SectionLabel>Tomorrow's Outlook</SectionLabel>
+          <div className="flex items-center justify-between mt-3">
             <div>
-              <p className="text-3xl font-bold" style={{ color: predictedRecovery.predicted >= 67 ? '#3E9C7E' : predictedRecovery.predicted >= 34 ? '#D9A23F' : '#ef4444' }}>
+              <p style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 700, color: C.ink }} className="tabular">
                 {predictedRecovery.predicted}%
               </p>
-              <p className="text-xs text-[#9a8f7e] mt-0.5">
+              <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 2 }}>
                 baseline {predictedRecovery.baseline}% {predictedRecovery.totalDiff > 0 ? `+${predictedRecovery.totalDiff}` : predictedRecovery.totalDiff}% from today's log
               </p>
             </div>
@@ -438,8 +435,8 @@ export default function Journal({ data, onNav }) {
                 const tag = tags.find(t => t.id === c.tagId)
                 return tag ? (
                   <div key={c.tagId} className="flex items-center gap-1.5 justify-end">
-                    <span className="text-[11px] text-[#9a8f7e]">{tag.emoji} {tag.label}</span>
-                    <span className="text-[11px] font-bold" style={{ color: c.diff > 0 ? '#3E9C7E' : '#ef4444' }}>
+                    <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>{tag.emoji} {tag.label}</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 700, color: c.diff > 0 ? C.ink : C.gold }}>
                       {c.diff > 0 ? '+' : ''}{c.diff}%
                     </span>
                   </div>
@@ -447,75 +444,65 @@ export default function Journal({ data, onNav }) {
               })}
             </div>
           </div>
-          <p className="text-[10px] text-[#b3a890] mt-2">Based on your last 14 days · personal data only</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Based on your last 14 days · personal data only</p>
         </div>
       )}
 
       {/* Compound stacking warning */}
       {negativeStackWarning && (
-        <div className="rounded-2xl p-3 flex items-start gap-2.5" style={{ background: '#ef444410', border: '1px solid #ef444433' }}>
-          <span className="text-base mt-0.5">⚠️</span>
-          <div>
-            <p className="text-xs font-semibold text-red-500">Stacking effect detected</p>
-            <p className="text-[11px] text-[#9a8f7e] mt-0.5">
-              {negativeStackWarning.map(x => tags.find(t => t.id === x.id)?.label).filter(Boolean).join(' + ')} together typically compound recovery impact. Expect lower HRV tomorrow.
-            </p>
-          </div>
+        <div className="mt-7">
+          <Note accent={C.gold}>
+            <span style={{ fontWeight: 700, color: C.ink }}>Stacking effect detected.</span>{' '}
+            {negativeStackWarning.map(x => tags.find(t => t.id === x.id)?.label).filter(Boolean).join(' + ')} together typically compound recovery impact. Expect lower HRV tomorrow.
+          </Note>
         </div>
       )}
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+      <div className="mt-7 flex gap-4 overflow-x-auto pb-1" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
         {categories.map(cat => {
-          const meta = CATEGORY_META[cat] || { emoji: '', label: cat }
+          const meta = CATEGORY_META[cat] || { label: cat }
           const active = activeCategory === cat
           return (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0"
-              style={{
-                background: active ? '#3E9C7E' : '#fff',
-                color: active ? '#fff' : '#9a8f7e',
-                border: `1px solid ${active ? '#3E9C7E' : '#ece3d4'}`,
-                boxShadow: active ? '0 0 12px #3E9C7E40' : 'none',
-              }}
+              className="whitespace-nowrap pb-2 flex-shrink-0"
+              style={{ borderBottom: active ? `2px solid ${C.ink}` : '2px solid transparent', marginBottom: -1 }}
             >
-              <span className="text-sm leading-none">{meta.emoji}</span>
-              <span>{meta.label}</span>
+              <Label style={{ color: active ? C.ink : C.faint }}>{meta.label}</Label>
             </button>
           )
         })}
       </div>
 
       {/* Tag grid */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>What happened today?</p>
+      <div className="mt-7">
+        <SectionLabel>What happened today?</SectionLabel>
 
         {activeCategory === 'longevity' && (
-          <div className="mb-4 p-3 rounded-xl space-y-1.5" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E22' }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#3E9C7E' }}>Evidence-backed longevity behaviors</p>
-            {[
-              ['🏋️', 'Strength 2×/wk',        '23% lower all-cause mortality',                            'Liu et al., BJSM 2019'],
-              ['🚴', 'Zone 2 cardio',           '3–5× lower mortality: high vs low fitness',                'Mandsager et al., JAMA 2018'],
-              ['🧖', 'Sauna 4×/wk',             '40% lower all-cause, 57% lower CVD mortality',            'Laukkanen et al., JAMA 2018'],
-              ['🧊', 'Cold exposure',            'Reduces inflammation, improves autonomic tone',           'Tipton et al., 2017'],
-              ['🥩', 'Protein ≥1.6 g/kg',       'Preserves muscle mass and prevents sarcopenia',           'Morton et al., BJSM 2018'],
-              ['⏱️', 'Time-restricted eating',   'Improves metabolic markers and circadian alignment',      'Wilkinson et al., Cell Metab 2020'],
-              ['☀️', 'Morning sunlight',         'Anchors circadian rhythm, improves sleep and mood',       'Panda, 2022'],
-            ].map(([emoji, label, effect, source]) => (
-              <div key={label} className="flex items-start gap-1.5">
-                <span className="text-xs mt-0.5 flex-shrink-0">{emoji}</span>
-                <p className="text-[10px] leading-relaxed">
-                  <span className="text-[#1a1a1a] font-medium">{label} </span>
-                  <span className="text-[#9a8f7e]">— {effect} · <em>{source}</em></span>
+          <div className="mt-3 mb-4" style={{ borderLeft: `2px solid ${C.gold}`, paddingLeft: 14 }}>
+            <Label style={{ color: C.faint }}>Evidence-backed longevity behaviors</Label>
+            <div className="mt-2 space-y-1.5">
+              {[
+                ['Strength 2×/wk',        '23% lower all-cause mortality',                            'Liu et al., BJSM 2019'],
+                ['Zone 2 cardio',           '3–5× lower mortality: high vs low fitness',                'Mandsager et al., JAMA 2018'],
+                ['Sauna 4×/wk',             '40% lower all-cause, 57% lower CVD mortality',            'Laukkanen et al., JAMA 2018'],
+                ['Cold exposure',            'Reduces inflammation, improves autonomic tone',           'Tipton et al., 2017'],
+                ['Protein ≥1.6 g/kg',       'Preserves muscle mass and prevents sarcopenia',           'Morton et al., BJSM 2018'],
+                ['Time-restricted eating',   'Improves metabolic markers and circadian alignment',      'Wilkinson et al., Cell Metab 2020'],
+                ['Morning sunlight',         'Anchors circadian rhythm, improves sleep and mood',       'Panda, 2022'],
+              ].map(([label, effect, source]) => (
+                <p key={label} style={{ fontFamily: SERIF, fontSize: 12, lineHeight: 1.5, color: C.inkSoft }}>
+                  <span style={{ color: C.ink, fontWeight: 600 }}>{label} </span>
+                  <span style={{ color: C.faint }}>— {effect} · <em>{source}</em></span>
                 </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 mt-3">
           {filteredTags.map(tag => (
             <TagCard
               key={tag.id}
@@ -527,34 +514,35 @@ export default function Journal({ data, onNav }) {
           ))}
           <button
             onClick={() => setShowAdd(true)}
-            className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl transition-all"
-            style={{ background: '#fff', border: '1px dashed #cabfa9', minHeight: 76 }}
+            className="flex flex-col items-center justify-center gap-1 py-3"
+            style={{ border: `1px dashed ${C.rule}`, minHeight: 72 }}
           >
-            <span className="text-2xl leading-none text-[#b3a890]">+</span>
-            <span className="text-[10px] text-[#b3a890] font-medium">Custom</span>
+            <span style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1, color: C.faint }}>+</span>
+            <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint }}>Custom</span>
           </button>
         </div>
       </div>
 
       {/* Add custom tag */}
       {showAdd && (
-        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', border: '1px solid #3E9C7E33' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#3E9C7E' }}>New Tag</p>
+        <div className="mt-5" style={{ borderTop: `1px solid ${C.rule}`, paddingTop: 14 }}>
+          <Label style={{ color: C.inkSoft }}>New Tag</Label>
           <input
-            className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
+            className="w-full mt-3 py-2"
+            style={inputStyle}
             placeholder="Tag name (e.g. Cold plunge)"
             value={newTagLabel}
             onChange={e => setNewTagLabel(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addTag()}
           />
-          <div className="flex gap-2">
-            <button onClick={addTag} className="flex-1 py-2 rounded-xl text-sm font-semibold" style={{ background: '#3E9C7E', color: '#fff' }}>Add</button>
-            <button onClick={() => setShowAdd(false)} className="flex-1 py-2 rounded-xl text-sm font-semibold" style={{ background: '#F6F1E9', color: '#9a8f7e', border: '1px solid #ece3d4' }}>Cancel</button>
+          <div className="flex gap-4 mt-3">
+            <button onClick={addTag} style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.ink}` }}>Add</button>
+            <button onClick={() => setShowAdd(false)} style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* Category insights — inline, sentence-style, WHOOP-phrasing */}
+      {/* Category insights — inline, sentence-style */}
       {activeCategory !== 'all' && (
         <CategoryInsightCard
           category={activeCategory}
@@ -565,29 +553,30 @@ export default function Journal({ data, onNav }) {
       )}
 
       {/* Daily Timing */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>Daily Timing</p>
-        <p className="text-[10px] text-[#b3a890] mb-4">Toggle on, then drag to set time</p>
-        {TIMED_ITEMS.map(item => (
-          <TimeSlider
-            key={item.id}
-            item={item}
-            value={sliderTimes[item.id]}
-            onToggle={handleSliderToggle}
-            onChange={handleSliderChange}
-          />
-        ))}
+      <div className="mt-9">
+        <SectionLabel right="toggle, then drag">Daily Timing</SectionLabel>
+        <div className="mt-1">
+          {TIMED_ITEMS.map(item => (
+            <TimeSlider
+              key={item.id}
+              item={item}
+              value={sliderTimes[item.id]}
+              onToggle={handleSliderToggle}
+              onChange={handleSliderChange}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Substance Log */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Substance Log</p>
-        <div className="flex gap-2 mb-4">
+      <div className="mt-9">
+        <SectionLabel>Substance Log</SectionLabel>
+        <div className="flex gap-2 mt-4 items-end">
           <select
             value={timingSubstance}
             onChange={e => setTimingSubstance(e.target.value)}
-            className="flex-1 appearance-none bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
-            style={{ colorScheme: 'light' }}
+            className="flex-1 py-2"
+            style={{ ...inputStyle, colorScheme: 'light' }}
           >
             {TIMING_SUBSTANCES.map(s => (
               <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
@@ -597,62 +586,57 @@ export default function Journal({ data, onNav }) {
             type="time"
             value={timingTime}
             onChange={e => setTimingTime(e.target.value)}
-            className="w-28 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
-            style={{ colorScheme: 'light' }}
+            className="w-28 py-2"
+            style={{ ...inputStyle, colorScheme: 'light' }}
           />
           <button
             onClick={handleAddTiming}
-            className="px-4 py-2.5 rounded-xl text-sm font-bold"
-            style={{ background: '#3E9C7E20', color: '#3E9C7E', border: '1px solid #3E9C7E33' }}
+            style={{ fontFamily: SERIF, fontSize: 13, fontWeight: 600, color: C.ink, borderBottom: `1px solid ${C.ink}`, paddingBottom: 9 }}
           >
             Add
           </button>
         </div>
         {timingEntries.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="mt-4">
             {timingEntries.map(entry => {
               const sub = TIMING_SUBSTANCES.find(s => s.id === entry.substance)
               const lateStim = ['caffeine', 'preworkout'].includes(entry.substance) && entry.time >= '14:00'
               const lateAlc = entry.substance === 'alcohol' && entry.time >= '19:00'
               return (
-                <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: '#F6F1E9' }}>
+                <div key={entry.id} className="flex items-center justify-between py-2" style={{ borderBottom: `1px solid ${C.ruleSoft}` }}>
                   <div className="flex items-center gap-2">
-                    <span>{sub?.emoji ?? '💊'}</span>
-                    <span className="text-sm text-[#1a1a1a]">{sub?.label ?? entry.substance}</span>
-                    <span className="text-sm text-[#9a8f7e]">{fmtTime(entry.time)}</span>
+                    <span>{sub?.emoji ?? '·'}</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 14, color: C.ink }}>{sub?.label ?? entry.substance}</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 13, color: C.faint }}>{fmtTime(entry.time)}</span>
                     {(lateStim || lateAlc) && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#D9A23F20', color: '#D9A23F' }}>late</span>
+                      <span style={{ fontFamily: SERIF, fontSize: 11, color: C.gold, fontStyle: 'italic' }}>late</span>
                     )}
                   </div>
-                  <button onClick={() => handleRemoveTiming(entry.id)} className="text-[#b3a890] pl-2 text-xl leading-none">×</button>
+                  <button onClick={() => handleRemoveTiming(entry.id)} style={{ color: C.faint, fontSize: 18, lineHeight: 1, paddingLeft: 8 }}>×</button>
                 </div>
               )
             })}
           </div>
         ) : (
-          <p className="text-xs text-[#b3a890]">Log what you took and when — timing effects show in Recovery insights.</p>
+          <p style={{ fontFamily: SERIF, fontSize: 13, color: C.faint, marginTop: 12 }}>Log what you took and when — timing effects show in Recovery insights.</p>
         )}
       </div>
 
       {/* Energy level */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Energy Level</p>
-        <div className="flex gap-2">
-          {ENERGY_OPTIONS.map(({ n, emoji, label, color }) => {
+      <div className="mt-9">
+        <SectionLabel>Energy Level</SectionLabel>
+        <div className="flex gap-2 mt-4">
+          {ENERGY_OPTIONS.map(({ n, label }) => {
             const sel = energy === n
             return (
               <button
                 key={n}
                 onClick={() => { setEnergy(sel ? null : n); setSaved(false) }}
-                className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all duration-200"
-                style={{
-                  background: sel ? color + '18' : '#fff',
-                  border: `1px solid ${sel ? color + '55' : '#242424'}`,
-                  boxShadow: sel ? `0 0 14px ${color}25` : 'none',
-                }}
+                className="flex-1 flex flex-col items-center gap-1 py-3"
+                style={{ border: `1px solid ${sel ? C.ink : C.ruleSoft}`, background: sel ? `${C.ink}08` : 'transparent' }}
               >
-                <span className="text-xl leading-none">{emoji}</span>
-                <span className="text-[9px] font-semibold" style={{ color: sel ? color : '#9a8f7e' }}>{label}</span>
+                <span style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, color: sel ? C.ink : C.faint }}>{n}</span>
+                <span style={{ fontFamily: SERIF, fontSize: 10, color: sel ? C.ink : C.faint }}>{label}</span>
               </button>
             )
           })}
@@ -660,41 +644,45 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Blood Pressure */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Blood Pressure <span className="normal-case font-normal" style={{ color: '#9a8f7e' }}>(optional)</span></p>
-        <div className="flex items-center gap-3">
+      <div className="mt-9">
+        <SectionLabel right="optional">Blood Pressure</SectionLabel>
+        <div className="flex items-center gap-3 mt-4">
           <input
             type="number" min={70} max={220}
-            className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+            className="w-20 py-2 text-center"
+            style={inputStyle}
             placeholder="120"
             value={bpSys}
             onChange={e => { setBpSys(e.target.value); setSaved(false) }}
           />
-          <span className="text-[#b3a890] text-sm">/</span>
+          <span style={{ fontFamily: SERIF, fontSize: 15, color: C.faint }}>/</span>
           <input
             type="number" min={40} max={140}
-            className="w-20 bg-white border border-[#ece3d4] rounded-xl px-3 py-2.5 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E] text-center"
+            className="w-20 py-2 text-center"
+            style={inputStyle}
             placeholder="80"
             value={bpDia}
             onChange={e => { setBpDia(e.target.value); setSaved(false) }}
           />
-          <span className="text-xs text-[#b3a890]">mmHg</span>
+          <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>mmHg</span>
           {bpSys && bpDia && (
-            <span className="text-xs font-semibold" style={{
-              color: parseInt(bpSys) >= 160 ? '#ef4444' : parseInt(bpSys) >= 140 ? '#f97316' : parseInt(bpSys) >= 130 ? '#D9A23F' : '#3E9C7E'
+            <span style={{
+              fontFamily: SERIF, fontSize: 12, fontWeight: 600,
+              color: parseInt(bpSys) >= 160 ? '#B5482E' : parseInt(bpSys) >= 140 ? '#C07A2E' : parseInt(bpSys) >= 130 ? C.gold : C.ink
             }}>
               {parseInt(bpSys) >= 160 ? 'Stage 2 HTN' : parseInt(bpSys) >= 140 ? 'Stage 1 HTN' : parseInt(bpSys) >= 130 ? 'Elevated' : parseInt(bpSys) < 120 ? 'Optimal' : 'Normal'}
             </span>
           )}
         </div>
-        <p className="text-[10px] text-[#b3a890] mt-2">Saved readings build a rolling average used in your biological age.</p>
+        <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Saved readings build a rolling average used in your biological age.</p>
       </div>
 
       {/* Notes */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Notes</p>
+      <div className="mt-9">
+        <SectionLabel>Notes</SectionLabel>
         <textarea
-          className="w-full bg-transparent text-sm text-[#1a1a1a] placeholder-[#cabfa9] outline-none resize-none"
+          className="w-full mt-4 bg-transparent resize-none outline-none"
+          style={{ fontFamily: SERIF, fontSize: 15, color: C.ink, border: 'none' }}
           rows={3}
           placeholder="Anything else to note about today..."
           value={notes}
@@ -705,34 +693,34 @@ export default function Journal({ data, onNav }) {
       {/* Save */}
       <button
         onClick={save}
-        className="w-full py-4 rounded-2xl font-bold text-sm transition-all"
-        style={{ background: saved ? '#3E9C7E' : '#3E9C7E20', color: saved ? '#fff' : '#3E9C7E', border: '1px solid #3E9C7E' }}
+        className="w-full mt-9 py-4"
+        style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: saved ? C.paper : C.ink, background: saved ? C.ink : 'transparent', border: `1px solid ${C.ink}` }}
       >
-        {saved ? '✓ Saved' : "Save Today's Log"}
+        {saved ? 'Saved' : "Save Today's Log"}
       </button>
 
       {/* All-behavior insights — sentence format, ranked by impact */}
       {correlations.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>What Moves Your Recovery</p>
-          <p className="text-[10px] text-[#b3a890] mb-4">Ranked by impact · your data only · {healthHistory.length} days tracked</p>
-          <div className="space-y-4">
+        <div className="mt-9">
+          <SectionLabel right={`${healthHistory.length}d tracked`}>What Moves Your Recovery</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Ranked by impact · your data only</p>
+          <div className="mt-4 space-y-4">
             {correlations.map(({ tag, corr }) => {
-              const color = corr.diff > 0 ? '#3E9C7E' : '#ef4444'
+              const color = corr.diff > 0 ? C.ink : C.gold
               const dir = corr.diff > 0 ? 'higher' : 'lower'
               return (
                 <div key={tag.id}>
                   <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-xs text-[#5c5648] flex-1">
-                      When you log <span className="font-semibold text-[#1a1a1a]">{tag.emoji} {tag.label}</span>, recovery averages{' '}
-                      <span className="font-bold" style={{ color }}>{Math.abs(corr.diff)}% {dir}</span>
-                      <span className="text-[#b3a890]"> ({corr.withAvg} vs {corr.withoutAvg})</span>
+                    <p style={{ fontFamily: SERIF, fontSize: 13, color: C.inkSoft, flex: 1 }}>
+                      When you log <span style={{ color: C.ink, fontWeight: 600 }}>{tag.emoji} {tag.label}</span>, recovery averages{' '}
+                      <span style={{ color, fontWeight: 700 }}>{Math.abs(corr.diff)}% {dir}</span>
+                      <span style={{ color: C.faint }}> ({corr.withAvg} vs {corr.withoutAvg})</span>
                     </p>
-                    <span className="text-[10px] text-[#b3a890] flex-shrink-0 mt-0.5">{corr.sampleSize}d</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, flexShrink: 0, marginTop: 2 }}>{corr.sampleSize}d</span>
                   </div>
                   <ImpactBar diff={corr.diff} maxDiff={maxAbsDiff} />
                   {((corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1) || (corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5) || (corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10)) && (
-                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    <div className="flex gap-3 mt-1.5 flex-wrap">
                       {corr.hrvDiff !== null && Math.abs(corr.hrvDiff) >= 1 && <MetricChip label="HRV" value={corr.hrvDiff} unit="ms" positive={corr.hrvDiff > 0} />}
                       {corr.rhrDiff !== null && Math.abs(corr.rhrDiff) >= 0.5 && <MetricChip label="RHR" value={corr.rhrDiff} unit="bpm" positive={corr.rhrDiff < 0} />}
                       {corr.sleepDiff !== null && Math.abs(corr.sleepDiff) >= 10 && <MetricChip label="Sleep" value={fmtSleep(corr.sleepDiff)} unit="" positive={corr.sleepDiff > 0} />}
@@ -742,34 +730,36 @@ export default function Journal({ data, onNav }) {
               )
             })}
           </div>
-          <p className="text-[10px] text-[#cabfa9] mt-4">Correlation, not causation · based on your personal history</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 16, fontStyle: 'italic' }}>Correlation, not causation · based on your personal history</p>
         </div>
       )}
 
       {/* Illness alert calibration — personal hit-rate of the proactive alert engine */}
       {illnessAlertAccuracy && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>Alert Accuracy</p>
-          <p className="text-[10px] text-[#b3a890] mb-4">Illness-signal alerts followed by a 🤒 Feeling Sick log within 3 days</p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold" style={{ color: illnessAlertAccuracy.rate >= 50 ? '#3E9C7E' : '#D9A23F' }}>
+        <div className="mt-9">
+          <SectionLabel>Alert Accuracy</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Illness-signal alerts followed by a Feeling Sick log within 3 days</p>
+          <div className="flex items-baseline gap-2 mt-3">
+            <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: illnessAlertAccuracy.rate >= 50 ? C.ink : C.gold }}>
               {illnessAlertAccuracy.rate}%
             </span>
-            <span className="text-xs text-[#b3a890]">{illnessAlertAccuracy.hits} of {illnessAlertAccuracy.total} alerts</span>
+            <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>{illnessAlertAccuracy.hits} of {illnessAlertAccuracy.total} alerts</span>
           </div>
         </div>
       )}
 
       {healthHistory.length < 30 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#3E9C7E' }}>Insights Calibrating</p>
-            <span className="text-xs font-bold text-[#9a8f7e]">{healthHistory.length}/30 days</span>
+        <div className="mt-9">
+          <div className="flex items-center justify-between">
+            <SectionLabel style={{ flex: 1, marginRight: 12 }}>Insights Calibrating</SectionLabel>
           </div>
-          <div className="w-full h-1.5 rounded-full mb-2" style={{ background: '#F6F1E9' }}>
-            <div className="h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (healthHistory.length / 30) * 100)}%`, background: healthHistory.length >= 10 ? '#3E9C7E' : '#D9A23F' }} />
+          <div className="flex items-baseline justify-between mt-3">
+            <span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint }}>{healthHistory.length}/30 days</span>
           </div>
-          <p className="text-xs text-[#b3a890]">
+          <div style={{ height: 3, marginTop: 6, background: C.ruleSoft }}>
+            <div style={{ height: 3, width: `${Math.min(100, (healthHistory.length / 30) * 100)}%`, background: healthHistory.length >= 10 ? C.ink : C.gold }} />
+          </div>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 8 }}>
             {healthHistory.length < 10
               ? `${10 - healthHistory.length} more days until first insights unlock`
               : healthHistory.length < 30
@@ -781,9 +771,9 @@ export default function Journal({ data, onNav }) {
 
       {/* Building data — selected tags that don't have enough history yet */}
       {buildingTagsToday.length > 0 && healthHistory.length >= 10 && (
-        <div className="rounded-2xl p-3" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
-          <p className="text-[10px] text-[#9a8f7e] uppercase tracking-widest mb-1.5">Building data</p>
-          <p className="text-xs text-[#b3a890]">
+        <div className="mt-7" style={{ borderLeft: `2px solid ${C.rule}`, paddingLeft: 14 }}>
+          <Label style={{ color: C.faint }}>Building data</Label>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 4 }}>
             {buildingTagsToday.map(t => `${t.emoji} ${t.label}`).join(' · ')} — log a few more days to unlock impact
           </p>
         </div>
@@ -791,61 +781,59 @@ export default function Journal({ data, onNav }) {
 
       {/* Your Week — 7-day behavior grid */}
       {recentActivity.some(d => d.tagIds.length > 0) && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Your Week</p>
-          <div className="grid grid-cols-7 gap-1">
+        <div className="mt-9">
+          <SectionLabel>Your Week</SectionLabel>
+          <div className="grid grid-cols-7 gap-1 mt-4">
             {recentActivity.map((day, i) => {
               const rec = recentRecovery[day.date]
               const isToday = day.date === today()
               const dayLabel = i === 6 ? 'Today' : new Date(day.date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2)
               return (
                 <div key={day.date} className="flex flex-col items-center gap-1">
-                  <p className="text-[9px] text-[#b3a890]">{dayLabel}</p>
+                  <p style={{ fontFamily: SERIF, fontSize: 10, color: C.faint }}>{dayLabel}</p>
                   <div
-                    className="w-full aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 overflow-hidden"
-                    style={{ background: isToday ? '#3E9C7E10' : '#F6F1E9', border: `1px solid ${isToday ? '#3E9C7E33' : '#ece3d4'}` }}
+                    className="w-full aspect-square flex flex-col items-center justify-center gap-0.5 overflow-hidden"
+                    style={{ border: `1px solid ${isToday ? C.ink : C.ruleSoft}` }}
                   >
                     {day.tagIds.slice(0, 3).map(id => {
                       const tag = tags.find(t => t.id === id)
                       return tag ? <span key={id} className="text-[10px] leading-none">{tag.emoji}</span> : null
                     })}
-                    {day.tagIds.length === 0 && <span className="text-[10px] text-[#cabfa9]">—</span>}
+                    {day.tagIds.length === 0 && <span style={{ fontFamily: SERIF, fontSize: 10, color: C.faint }}>—</span>}
                   </div>
                   {rec != null && (
                     <div
-                      className="w-full h-1 rounded-full"
-                      style={{ background: rec >= 67 ? '#3E9C7E' : rec >= 34 ? '#D9A23F' : '#ef4444' }}
+                      className="w-full"
+                      style={{ height: 2, background: rec >= 67 ? C.ink : rec >= 34 ? C.gold : '#B5482E' }}
                     />
                   )}
                 </div>
               )
             })}
           </div>
-          <p className="text-[10px] text-[#b3a890] mt-2">Bottom bar = recovery score · up to 3 behaviors shown per day</p>
+          <p style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 8 }}>Bottom bar = recovery score · up to 3 behaviors shown per day</p>
         </div>
       )}
 
       {/* Energy vs Recovery */}
       {energyCorrelation && energyCorrelation.length >= 3 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#3E9C7E' }}>Energy vs Recovery</p>
-            <p className="text-xs text-[#b3a890] mt-1">How your self-rated energy relates to physiological recovery</p>
-          </div>
-          <div className="px-4 pb-4 flex items-end gap-2 mt-3 h-16">
+        <div className="mt-9 mb-4">
+          <SectionLabel>Energy vs Recovery</SectionLabel>
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 8 }}>How your self-rated energy relates to physiological recovery</p>
+          <div className="flex items-end gap-2 mt-4 h-16">
             {energyCorrelation.map(e => {
               const h = Math.max(8, (e.avgRecovery / 100) * 48)
-              const color = e.avgRecovery >= 67 ? '#3E9C7E' : e.avgRecovery >= 34 ? '#D9A23F' : '#ef4444'
+              const color = e.avgRecovery >= 67 ? C.ink : e.avgRecovery >= 34 ? C.gold : '#B5482E'
               return (
                 <div key={e.energy} className="flex flex-col items-center flex-1">
-                  <span className="text-[9px] text-[#9a8f7e] mb-1">{e.avgRecovery}%</span>
-                  <div className="w-full rounded-sm" style={{ height: `${h}px`, background: color }} />
-                  <span className="text-[10px] text-[#b3a890] mt-1">{e.energy}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 10, color: C.faint, marginBottom: 4 }}>{e.avgRecovery}%</span>
+                  <div className="w-full" style={{ height: `${h}px`, background: color }} />
+                  <span style={{ fontFamily: SERIF, fontSize: 11, color: C.faint, marginTop: 4 }}>{e.energy}</span>
                 </div>
               )
             })}
           </div>
-          <p className="text-[11px] text-[#b3a890] px-4 pb-3">
+          <p style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginTop: 12 }}>
             {energyCorrelation.length >= 2
               ? `Energy ${energyCorrelation[energyCorrelation.length - 1].avgRecovery > energyCorrelation[0].avgRecovery ? 'strongly tracks' : 'inversely tracks'} recovery in your data.`
               : 'Keep logging energy levels to see the pattern.'}
