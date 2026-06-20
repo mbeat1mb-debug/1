@@ -913,12 +913,28 @@ function normalizeSleepPoint(point) {
 const SLEEP_SESSION_GAP_MS = 2 * 60 * 60 * 1000
 
 function mergeSleepCluster(points) {
+  if (points.length === 1) {
+    return { ...points[0], sessionIntervals: [{ startTime: points[0].startTime, endTime: points[0].endTime }] }
+  }
+  // The time between merged sub-sessions is real awake time (the person was up,
+  // not just briefly stirring mid-session) — count it as minutesAwake and give
+  // it its own AWAKE stage segment, otherwise cycle detection and the first/
+  // second-half deep/REM split in parseSleepArchitecture would treat the gap as
+  // if sleep continued straight through it.
+  let gapMinutes = 0
+  const gapSegments = []
+  for (let i = 1; i < points.length; i++) {
+    const gapStart = points[i - 1].endTime
+    const gapEnd = points[i].startTime
+    gapMinutes += (new Date(gapEnd) - new Date(gapStart)) / 60000
+    gapSegments.push({ startTime: gapStart, endTime: gapEnd, type: 'AWAKE' })
+  }
   const minutesAsleep = points.reduce((sum, p) => sum + p.minutesAsleep, 0)
-  const minutesAwake = points.reduce((sum, p) => sum + p.minutesAwake, 0)
+  const minutesAwake = points.reduce((sum, p) => sum + p.minutesAwake, 0) + Math.round(gapMinutes)
   const deepMinutes = points.reduce((sum, p) => sum + p.deepMinutes, 0)
   const remMinutes = points.reduce((sum, p) => sum + p.remMinutes, 0)
-  const awakenings = points.reduce((sum, p) => sum + p.awakenings, 0)
-  const stageSegments = points.flatMap(p => p.stageSegments)
+  const awakenings = points.reduce((sum, p) => sum + p.awakenings, 0) + gapSegments.length
+  const stageSegments = [...points.flatMap(p => p.stageSegments), ...gapSegments]
   const last = points[points.length - 1]
   return {
     date: last.date,
@@ -933,6 +949,11 @@ function mergeSleepCluster(points) {
     sleepLatency: points[0].sleepLatency,
     awakenings,
     stageSegments,
+    // The actual sleep sub-intervals making up this merged session, excluding
+    // the awake gap(s) between them — used by anything that needs to know
+    // exactly when the person was asleep rather than just the outer bedtime/
+    // wake-time span (e.g. SpO2 windowing for apnea risk).
+    sessionIntervals: points.map(p => ({ startTime: p.startTime, endTime: p.endTime })),
   }
 }
 
@@ -1546,10 +1567,15 @@ export function calculateSleepApneaRisk({ spo2Intraday, br, todaySleep }) {
   const readings = spo2Intraday?.minutes
   if (!readings?.length) return null
 
-  const sleepStart = todaySleep?.startTime ? new Date(todaySleep.startTime) : null
-  const sleepEnd   = todaySleep?.endTime   ? new Date(todaySleep.endTime)   : null
-  const sleepReads = sleepStart && sleepEnd
-    ? readings.filter(r => { const t = new Date(r.minute); return t >= sleepStart && t <= sleepEnd })
+  // Prefer the actual sleep sub-intervals over the outer startTime/endTime span —
+  // a night stitched back together from two sessions (see clusterSleepSessions)
+  // has a real awake gap in between that isn't sleep, and including it here would
+  // count motion/awake SpO2 dips as desaturation events.
+  const intervals = (todaySleep?.sessionIntervals?.length ? todaySleep.sessionIntervals : todaySleep ? [todaySleep] : [])
+    .map(({ startTime, endTime }) => ({ start: startTime && new Date(startTime), end: endTime && new Date(endTime) }))
+    .filter(({ start, end }) => start && end)
+  const sleepReads = intervals.length
+    ? readings.filter(r => { const t = new Date(r.minute); return intervals.some(({ start, end }) => t >= start && t <= end) })
     : readings
   if (!sleepReads.length) return null
 
