@@ -548,7 +548,7 @@ export default function App() {
   const screenCls = transDir >= 0 ? 'screen-fwd' : 'screen-back'
 
   return (
-    <div className="bg-black" style={{ minHeight: '100dvh' }}>
+    <div className="bg-[#F6F1E9]" style={{ minHeight: '100dvh' }}>
       {showAlerts && (
         <div className="pt-safe">
           <AlertBanner alerts={data.alerts} onCoach={() => setTab('coach')} />
