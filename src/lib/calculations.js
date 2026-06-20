@@ -915,7 +915,7 @@ function toLegacySpo2Minutes(spo2Intraday) {
 }
 
 export function parseGoogleHealthData(raw) {
-  const { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday } = raw
+  const { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday } = raw
 
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
@@ -936,7 +936,8 @@ export function parseGoogleHealthData(raw) {
 
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
   const todayHRV = todayHRVRaw != null ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
-  const todayRHR = rhrByDate[historyDates.at(-1)] ?? 0
+  const todayRHRRaw = pick(rhr?.dataPoints?.[0], 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.avg')
+  const todayRHR = todayRHRRaw != null ? Math.round(Number(todayRHRRaw)) : (rhrByDate[historyDates.at(-1)] ?? 0)
   const sleepPoints = sleep?.dataPoints ?? []
   // Google Health can return more than one sleep session for the same calendar
   // date (e.g. a daytime nap alongside the main overnight sleep). Treating every

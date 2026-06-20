@@ -70,7 +70,8 @@ export async function handleOAuthCallback(clientId) {
 }
 
 export function saveTokens({ access_token, refresh_token, expires_in }) {
-  const expiry = Date.now() + ((Number(expires_in) || 3600) - 60) * 1000
+  const expiresInSec = Number(expires_in)
+  const expiry = Date.now() + ((Number.isFinite(expiresInSec) && expiresInSec > 0 ? expiresInSec : 3600) - 60) * 1000
   localStorage.setItem('access_token', access_token)
   // Google omits refresh_token on routine refreshes (no rotation) — keep the
   // existing one rather than clobbering it with undefined.

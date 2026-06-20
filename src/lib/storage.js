@@ -108,7 +108,10 @@ export function analyzeTagCorrelation(tagId, healthHistory) {
     hrvDiff: withHRV !== null && withoutHRV !== null ? Math.round((withHRV - withoutHRV) * 10) / 10 : null,
     rhrDiff: withRHR !== null && withoutRHR !== null ? Math.round((withRHR - withoutRHR) * 10) / 10 : null,
     sleepDiff: withSleep !== null && withoutSleep !== null ? Math.round(withSleep - withoutSleep) : null,
-    sampleSize: withTag.length,
+    // Count only the days that actually fed the recovery average above —
+    // withTag.length includes days with no recovery value, which would
+    // overstate confidence in the diff.
+    sampleSize: withTag.filter(d => d.recovery != null && !isNaN(d.recovery)).length,
     trend: diff > 5 ? 'positive' : diff < -5 ? 'negative' : 'neutral',
   }
 }

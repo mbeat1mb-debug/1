@@ -73,17 +73,26 @@ function daysAgo(n) {
   return localDateString(d)
 }
 
+// `date` is a local calendar date (e.g. "2026-06-20"); parsing it as
+// "...T00:00:00" with no Z makes JS treat it as local midnight, then
+// toISOString() converts that instant to the matching UTC timestamp the API
+// needs. Using "...T00:00:00Z" directly (literal UTC midnight) would shift
+// every non-UTC user's day boundary by their UTC offset.
+function toApiTimestamp(d) {
+  return d.toISOString().split('.')[0] + 'Z'
+}
+
 function startOfDay(date) {
-  return `${date}T00:00:00Z`
+  return toApiTimestamp(new Date(`${date}T00:00:00`))
 }
 
 // Exclusive upper bound (start of the day AFTER endDate) — the API's interval/
 // sample/date filters only accept GREATER_THAN_EQUALS and LESS_THAN comparators,
 // so an inclusive "<=" end-of-day bound is rejected with INVALID_ARGUMENT.
 function startOfNextDay(date) {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().split('.')[0] + 'Z'
+  const d = new Date(`${date}T00:00:00`)
+  d.setDate(d.getDate() + 1)
+  return toApiTimestamp(d)
 }
 
 // Plain civil date one day after `date` (no time/Z suffix) — Daily-category
@@ -187,6 +196,10 @@ export async function getHeartRateRange(startDate, endDate) {
   return listDataPoints('daily-resting-heart-rate', startDate, endDate, 'date')
 }
 
+export async function getRestingHeartRate(date = today()) {
+  return listDataPoints('daily-resting-heart-rate', date, date, 'date')
+}
+
 export async function getSleep(date = today()) {
   return listDataPoints('sleep', date, date, 'interval.end_time')
 }
@@ -243,6 +256,7 @@ export async function loadDashboardData() {
     hrIntraday,
     sleep,
     hrv,
+    rhr,
     spo2,
     br,
     hrvRange,
@@ -259,6 +273,7 @@ export async function loadDashboardData() {
     getHeartRateIntraday(date),
     getSleep(date),
     getHRV(date),
+    getRestingHeartRate(date),
     getSpO2(date),
     getRespiratoryRate(date),
     getHRVRange(daysAgo(30), date),
@@ -272,5 +287,5 @@ export async function loadDashboardData() {
     getActivityLogs(daysAgo(30)),
   ])
 
-  return { summary, hrIntraday, sleep, hrv, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, date }
+  return { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, date }
 }

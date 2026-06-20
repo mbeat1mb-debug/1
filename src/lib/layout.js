@@ -20,11 +20,11 @@ export function getHomeLayout() {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY))
     if (Array.isArray(saved) && saved.length > 0) {
       // 'healthspan' was renamed to 'chronos' — migrate any previously saved order in place.
-      const merged = saved.map(id => id === 'healthspan' ? 'chronos' : id)
+      const merged = saved.map(id => id === 'healthspan' ? 'chronos' : id).filter(id => id in SECTION_META)
       for (const id of DEFAULT_ORDER) {
         if (!merged.includes(id)) merged.push(id)
       }
-      return merged
+      return merged.length > 0 ? merged : DEFAULT_ORDER
     }
   } catch {}
   return DEFAULT_ORDER

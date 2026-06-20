@@ -222,10 +222,15 @@ export default function App() {
 
     const optimalSleepHours = computeOptimalSleepHours(parsed.sleepHistory)
 
+    // Exclude today's own reading from its baseline — otherwise an abnormal
+    // HRV/RHR spike pulls the average toward itself, masking the spike it's
+    // supposed to be measured against (matches the historical loop below).
+    const priorHRVHistory = parsed.hrvHistory.slice(0, -1)
+    const priorRHRHistory = parsed.rhrHistory.slice(0, -1)
     const recoveryScore = calculateRecovery({
       hrv: parsed.todayHRV, rhr: parsed.todayRHR, sleep: parsed.todaySleep,
       spo2: parsed.todaySpO2, br: parsed.todayBR, skinTempDev: parsed.skinTempDev,
-      hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
+      hrvHistory: priorHRVHistory, rhrHistory: priorRHRHistory,
       preOptimalSleepHours: optimalSleepHours,
     })
     const strainScore = calculateStrain(parsed.hrIntradayData)
@@ -234,7 +239,7 @@ export default function App() {
     const daytimeStress = calculateDaytimeStress(parsed.hrIntradayData, parsed.sleepEndHour, parsed.todayRHR)
     const stressScore = calculateStressScore({
       hrv: parsed.todayHRV, rhr: parsed.todayRHR,
-      hrvHistory: parsed.hrvHistory, rhrHistory: parsed.rhrHistory,
+      hrvHistory: priorHRVHistory, rhrHistory: priorRHRHistory,
     })
     const sleepScore = calculateSleepScore(parsed.todaySleep)
     const sleepDebt = calculateSleepDebt(parsed.sleepHistory)

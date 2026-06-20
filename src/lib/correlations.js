@@ -15,5 +15,8 @@ export async function getTopCorrelations(limit = 5) {
     }
   }
 
-  return results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, limit)
+  // Weight by sample size too — a 3-day diff is noisier than a 30-day diff
+  // of the same magnitude and shouldn't outrank it just because it's bigger.
+  const score = r => Math.abs(r.diff) * Math.sqrt(r.sampleSize)
+  return results.sort((a, b) => score(b) - score(a)).slice(0, limit)
 }
