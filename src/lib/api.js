@@ -135,11 +135,19 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
   let pageCount = 0
   // Hard cap so a flaky/looping nextPageToken (server repeats the same or an
   // empty page forever) can't hang the sync indefinitely - bail out with
-  // whatever was collected so far instead of spinning forever.
-  const MAX_PAGES = 50
+  // whatever was collected so far instead of spinning forever. Raised well
+  // above what a normal day needs (a high-frequency type like heart-rate can
+  // span many pages) so a busy day's later, more active hours don't get
+  // silently truncated.
+  const MAX_PAGES = 500
   do {
     const params = { filter, ...(pageToken ? { pageToken } : {}) }
-    const page = await ghFetch(`/dataTypes/${dataType}/dataPoints?${new URLSearchParams(params).toString()}`)
+    const path = `/dataTypes/${dataType}/dataPoints?${new URLSearchParams(params).toString()}`
+    let page = await ghFetch(path)
+    // Pages are returned in chronological order, so a single flaky page fetch
+    // (network blip, transient 5xx) mid-pagination would otherwise silently
+    // truncate the rest of the day — retry once before giving up on it.
+    if (!page) page = await ghFetch(path)
     if (!page) return combined
     if (!combined) {
       combined = page
