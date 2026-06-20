@@ -22,6 +22,7 @@ import BottomNav from './components/BottomNav'
 import AlertBanner from './components/AlertBanner'
 import PinLock from './components/PinLock'
 import Home from './screens/Home'
+import HomeAlmanac from './screens/HomeAlmanac'
 import { isPinSet } from './lib/pin'
 
 const Recovery = lazy(() => import('./screens/Recovery'))
@@ -98,8 +99,37 @@ const DEMO = {
     deepMinutes: 72, remMinutes: 98,
     startTime: new Date(new Date().setHours(23, 30, 0, 0) - 86400000).toISOString(),
     endTime: new Date(new Date().setHours(7, 17, 0, 0)).toISOString(),
-    sleepLatency: 12, awakenings: 2, stageSegments: [],
+    sleepLatency: 12, awakenings: 2,
+    stageSegments: (() => {
+      // Synthetic but plausible hypnogram for the demo Day Ribbon.
+      const base = new Date(new Date().setHours(23, 30, 0, 0) - 86400000).getTime()
+      const plan = [['light', 18], ['deep', 35], ['light', 22], ['rem', 20], ['deep', 30],
+        ['light', 25], ['awake', 6], ['rem', 28], ['light', 30], ['deep', 7],
+        ['light', 24], ['rem', 22], ['light', 20], ['awake', 4], ['rem', 18], ['light', 18]]
+      let t = base
+      return plan.map(([type, mins]) => {
+        const startTime = new Date(t).toISOString()
+        t += mins * 60000
+        return { type: type.toUpperCase(), startTime, endTime: new Date(t).toISOString() }
+      })
+    })(),
   },
+  hrIntradayData: (() => {
+    // A day of resting/active heart rate from wake to now, for the demo ribbon.
+    const wake = new Date().setHours(7, 17, 0, 0)
+    const now = Date.now()
+    const out = []
+    for (let t = wake; t <= now; t += 5 * 60000) {
+      const h = new Date(t).getHours() + new Date(t).getMinutes() / 60
+      // gentle diurnal curve + a late-morning activity bump + minute-to-minute jitter
+      let v = 60 + 8 * Math.sin((h - 6) / 24 * Math.PI * 2)
+      if (h > 9.5 && h < 10.4) v += 55 * Math.exp(-Math.pow(h - 9.9, 2) / 0.04)
+      if (h > 13 && h < 13.6) v += 22
+      v += (Math.sin(t / 137) + Math.cos(t / 91)) * 3
+      out.push({ time: new Date(t).toTimeString().slice(0, 8), value: Math.round(v) })
+    }
+    return { 'activities-heart-intraday': { dataset: out } }
+  })(),
   hrvHistory: [44, 48, 52, 55, 49, 53, 56, 58, 51, 54, 57, 60, 55, 58],
   rhrHistory: [57, 56, 55, 58, 54, 56, 55, 53, 55, 54, 56, 53, 54, 54],
   sleepHistory: Array.from({ length: 30 }, (_, i) => {
@@ -556,7 +586,7 @@ export default function App() {
       )}
 
       {tab === 'home' && (
-        <Home
+        <HomeAlmanac
           data={data}
           onNav={handleNav}
           onRefresh={connected && !demo ? () => doSync(false) : undefined}
