@@ -903,6 +903,62 @@ function normalizeSleepPoint(point) {
   }
 }
 
+// Health Connect sometimes logs one continuous night as two or more adjacent
+// session records (e.g. a brief wake-up to use the bathroom ends one session
+// and a new one starts when sleep resumes) rather than a single session with
+// an AWAKE stage in the middle. Picking only the single longest session then
+// throws away the rest of the night. Cluster sessions whose gap is small
+// enough to be the same sleep period and merge each cluster into one session;
+// a real, unrelated nap hours away from the main sleep stays its own cluster.
+const SLEEP_SESSION_GAP_MS = 2 * 60 * 60 * 1000
+
+function mergeSleepCluster(points) {
+  const minutesAsleep = points.reduce((sum, p) => sum + p.minutesAsleep, 0)
+  const minutesAwake = points.reduce((sum, p) => sum + p.minutesAwake, 0)
+  const deepMinutes = points.reduce((sum, p) => sum + p.deepMinutes, 0)
+  const remMinutes = points.reduce((sum, p) => sum + p.remMinutes, 0)
+  const awakenings = points.reduce((sum, p) => sum + p.awakenings, 0)
+  const stageSegments = points.flatMap(p => p.stageSegments)
+  const last = points[points.length - 1]
+  return {
+    date: last.date,
+    minutes: minutesAsleep,
+    minutesAsleep,
+    minutesAwake,
+    efficiency: minutesAsleep > 0 ? Math.round((minutesAsleep / (minutesAsleep + minutesAwake)) * 100) : 0,
+    startTime: points[0].startTime,
+    endTime: last.endTime,
+    deepMinutes,
+    remMinutes,
+    sleepLatency: points[0].sleepLatency,
+    awakenings,
+    stageSegments,
+  }
+}
+
+function clusterSleepSessions(normalizedPoints) {
+  if (!normalizedPoints.length) return []
+  const sorted = [...normalizedPoints].sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+  const clusters = [[sorted[0]]]
+  for (let i = 1; i < sorted.length; i++) {
+    const prevCluster = clusters[clusters.length - 1]
+    const gapMs = new Date(sorted[i].startTime) - new Date(prevCluster[prevCluster.length - 1].endTime)
+    if (gapMs <= SLEEP_SESSION_GAP_MS) {
+      prevCluster.push(sorted[i])
+    } else {
+      clusters.push([sorted[i]])
+    }
+  }
+  return clusters.map(mergeSleepCluster)
+}
+
+function longestSleepSession(normalizedPoints) {
+  const merged = clusterSleepSessions(normalizedPoints)
+  return merged.length
+    ? merged.reduce((longest, s) => s.minutesAsleep > longest.minutesAsleep ? s : longest)
+    : null
+}
+
 function toLegacySpo2Minutes(spo2Intraday) {
   // Spot SpO2 readings below 60% are sensor glitches, not real physiology
   // (sustained SpO2 that low is incompatible with consciousness) — drop them
@@ -940,30 +996,31 @@ export function parseGoogleHealthData(raw) {
   const todayRHR = todayRHRRaw != null ? Math.round(Number(todayRHRRaw)) : (rhrByDate[historyDates.at(-1)] ?? 0)
   const sleepPoints = sleep?.dataPoints ?? []
   // Google Health can return more than one sleep session for the same calendar
-  // date (e.g. a daytime nap alongside the main overnight sleep). Treating every
-  // session as its own "night" double-counts that date and lets a 20-minute nap
-  // get scored as a full night's deficit, wildly inflating sleep debt — so keep
-  // only the longest session per date. Sort ascending so "most recent" is always
-  // the last element, matching hrvHistory/rhrHistory and what every consumer
-  // (streaks, sleep debt, etc.) assumes.
-  const sleepByDate = {}
+  // date — either genuinely separate sleep (a daytime nap alongside the main
+  // overnight sleep) or the same continuous night split into adjacent session
+  // records by a brief wake gap. Group by date, then merge sessions that are
+  // close enough together (clusterSleepSessions) before picking the largest
+  // cluster, so a split night gets stitched back together instead of having
+  // its other half silently discarded. Sort ascending so "most recent" is
+  // always the last element, matching hrvHistory/rhrHistory and what every
+  // consumer (streaks, sleep debt, etc.) assumes.
+  const sleepPointsByDate = {}
   for (const point of (sleepRange?.dataPoints ?? [])) {
     const normalized = normalizeSleepPoint(point)
     if (!normalized) continue
-    const existing = sleepByDate[normalized.date]
-    if (!existing || normalized.minutesAsleep > existing.minutesAsleep) {
-      sleepByDate[normalized.date] = normalized
-    }
+    ;(sleepPointsByDate[normalized.date] ??= []).push(normalized)
+  }
+  const sleepByDate = {}
+  for (const [date, points] of Object.entries(sleepPointsByDate)) {
+    sleepByDate[date] = longestSleepSession(points)
   }
   const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
-  // Same "longest session wins" rule as sleepHistory above, applied to today's
-  // live query too — without it, a short fragment session (e.g. a brief
-  // return-to-sleep blip recorded as its own session) could be returned before
-  // the real overnight sleep and get shown as "last night's sleep" instead.
+  // Same cluster-merge rule as sleepHistory above, applied to today's live
+  // query too — without it, a night split by a brief wake gap into two session
+  // records would only show the longer fragment as "last night's sleep" and
+  // silently drop the rest.
   const todaySleepCandidates = sleepPoints.map(normalizeSleepPoint).filter(Boolean)
-  const todaySleepLive = todaySleepCandidates.length
-    ? todaySleepCandidates.reduce((longest, s) => s.minutesAsleep > longest.minutesAsleep ? s : longest)
-    : null
+  const todaySleepLive = longestSleepSession(todaySleepCandidates)
   const todaySleep = todaySleepLive ?? sleepHistory.at(-1) ?? null
   const todaySpO2Raw = pick(spo2?.dataPoints?.[0], 'dailyOxygenSaturation.averagePercentage', 'dailyOxygenSaturation.percentage', 'dailyOxygenSaturation.avg')
   // Same sensor-glitch range used by toLegacySpo2Minutes below (60-100%) — applied
