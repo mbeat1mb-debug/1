@@ -124,20 +124,35 @@ function DayRibbon({ data }) {
   const tMax = Math.max(now, (sleepEnd ?? 0) + 3600000)
   const span = Math.max(tMax - tMin, 3600000)
 
-  const W = 1000, H = 230
+  const W = 1000, H = 236
   const padL = 4, padR = 4
   const innerW = W - padL - padR
   const x = ms => padL + ((ms - tMin) / span) * innerW
 
-  // Sleep lane
-  const sleepTop = 14, sleepH = 56
+  // Sleep lane — drawn as a hypnogram: depth is vertical position (awake on top,
+  // deep at the bottom), not just colour, so the shape of the night reads at a
+  // glance the way it does on a polysomnograph.
+  const sleepTop = 12, rowH = 15, rowGap = 6, rowUnit = rowH + rowGap
+  const LEVELS = ['wake', 'rem', 'light', 'deep']
+  const levelIdx = t => {
+    const k = t === 'awake' ? 'wake' : t
+    const i = LEVELS.indexOf(k)
+    return i < 0 ? 2 : i
+  }
+  const rowTop = lvl => sleepTop + levelIdx(lvl) * rowUnit
+  const rowCenter = lvl => rowTop(lvl) + rowH / 2
   const segs = (sleep?.stageSegments || [])
     .map(s => ({ a: new Date(s.startTime).getTime(), b: new Date(s.endTime).getTime(), type: (s.type || '').toLowerCase() }))
     .filter(s => s.b > s.a)
+    .sort((a, b) => a.a - b.a)
   const stageColor = t => STAGE[t === 'deep' ? 'deep' : t === 'rem' ? 'rem' : t === 'awake' || t === 'wake' ? 'wake' : 'light'] || STAGE.light
+  // Stepped connector through the row centres — the recognisable hypnogram zig-zag.
+  const stepPath = segs.length
+    ? segs.map((s, i) => `${i ? 'L' : 'M'}${x(s.a).toFixed(1)} ${rowCenter(s.type).toFixed(1)} L${x(s.b).toFixed(1)} ${rowCenter(s.type).toFixed(1)}`).join(' ')
+    : ''
 
   // HR lane
-  const hrLaneTop = 92, hrLaneH = 110, hrBottom = hrLaneTop + hrLaneH
+  const hrLaneTop = 124, hrLaneH = 86, hrBottom = hrLaneTop + hrLaneH
   const ds = data.hrIntradayData?.['activities-heart-intraday']?.dataset || []
   const today = new Date()
   const hrPts = ds.map(p => {
@@ -178,17 +193,22 @@ function DayRibbon({ data }) {
         <line key={tk.ms} x1={x(tk.ms)} x2={x(tk.ms)} y1={sleepTop} y2={hrBottom} stroke={C.ruleSoft} strokeWidth={1} />
       ))}
 
-      {/* sleep lane */}
-      {segs.length ? segs.map((s, i) => (
-        <rect key={i} x={x(s.a)} y={sleepTop} width={Math.max(x(s.b) - x(s.a), 0.6)} height={sleepH}
-          fill={stageColor(s.type)} opacity={s.type === 'wake' || s.type === 'awake' ? 0.5 : 0.85} />
-      )) : (sleepStart && sleepEnd) ? (
-        <rect x={x(sleepStart)} y={sleepTop} width={Math.max(x(sleepEnd) - x(sleepStart), 1)} height={sleepH}
+      {/* sleep lane — hypnogram */}
+      {segs.length ? (
+        <>
+          {stepPath && <path d={stepPath} fill="none" stroke={C.inkSoft} strokeWidth={1} opacity={0.3} />}
+          {segs.map((s, i) => (
+            <rect key={i} x={x(s.a)} y={rowTop(s.type)} width={Math.max(x(s.b) - x(s.a), 0.8)} height={rowH} rx={2}
+              fill={stageColor(s.type)} opacity={s.type === 'wake' || s.type === 'awake' ? 0.55 : 0.92} />
+          ))}
+        </>
+      ) : (sleepStart && sleepEnd) ? (
+        <rect x={x(sleepStart)} y={rowTop('light')} width={Math.max(x(sleepEnd) - x(sleepStart), 1)} height={rowH} rx={2}
           fill={STAGE.asleep} opacity={0.7} />
       ) : null}
 
       {/* divider */}
-      <line x1={padL} x2={W - padR} y1={hrLaneTop - 10} y2={hrLaneTop - 10} stroke={C.rule} strokeWidth={1} />
+      <line x1={padL} x2={W - padR} y1={hrLaneTop - 12} y2={hrLaneTop - 12} stroke={C.rule} strokeWidth={1} />
 
       {/* HR area + line, or a note when intraday HR hasn't synced */}
       {hrThin.length > 1 ? (
@@ -444,9 +464,20 @@ export default function HomeAlmanac({ data, onNav, onRefresh, isSyncing, syncFai
           {reading.lede}
         </h1>
         <p style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.62, color: C.inkSoft, marginTop: 12 }}>
-          {reading.tokens.map((tk, i) => (
-            <span key={i} style={tk.em ? { color: C.ink, fontWeight: 600 } : undefined}>{tk.t}</span>
-          ))}
+          {reading.tokens.map((tk, i) => {
+            if (i === 0 && tk.t) {
+              // Editorial drop cap on the first letter of the reading.
+              return (
+                <span key={i}>
+                  <span style={{ float: 'left', fontFamily: SERIF, fontSize: 52, lineHeight: 0.82, color: C.ink, paddingRight: 7, paddingTop: 4, fontWeight: 700 }}>
+                    {tk.t.charAt(0)}
+                  </span>
+                  <span style={tk.em ? { color: C.ink, fontWeight: 600 } : undefined}>{tk.t.slice(1)}</span>
+                </span>
+              )
+            }
+            return <span key={i} style={tk.em ? { color: C.ink, fontWeight: 600 } : undefined}>{tk.t}</span>
+          })}
         </p>
       </div>
 
