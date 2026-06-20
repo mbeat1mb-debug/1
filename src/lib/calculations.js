@@ -1004,15 +1004,17 @@ export function parseGoogleHealthData(raw) {
   // its other half silently discarded. Sort ascending so "most recent" is
   // always the last element, matching hrvHistory/rhrHistory and what every
   // consumer (streaks, sleep debt, etc.) assumes.
-  const sleepPointsByDate = {}
-  for (const point of (sleepRange?.dataPoints ?? [])) {
-    const normalized = normalizeSleepPoint(point)
-    if (!normalized) continue
-    ;(sleepPointsByDate[normalized.date] ??= []).push(normalized)
-  }
+  // Cluster across the whole range BEFORE grouping by date — a night split by a
+  // wake gap can straddle local midnight (e.g. one fragment ends 11:58pm, the
+  // next starts 1:30am), so grouping by each fragment's own wake-date first
+  // would put them in different buckets and never let them merge.
+  const allSleepPoints = (sleepRange?.dataPoints ?? []).map(normalizeSleepPoint).filter(Boolean)
   const sleepByDate = {}
-  for (const [date, points] of Object.entries(sleepPointsByDate)) {
-    sleepByDate[date] = longestSleepSession(points)
+  for (const session of clusterSleepSessions(allSleepPoints)) {
+    const existing = sleepByDate[session.date]
+    if (!existing || session.minutesAsleep > existing.minutesAsleep) {
+      sleepByDate[session.date] = session
+    }
   }
   const sleepHistory = Object.values(sleepByDate).sort((a, b) => a.date.localeCompare(b.date))
   // Same cluster-merge rule as sleepHistory above, applied to today's live
