@@ -81,7 +81,7 @@ export default function Records({ data, onNav }) {
       </div>
 
       {/* 90-Day Calendar */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Recovery — 90 Days</p>
         <CalendarHeatmap days={calendarDays} />
       </div>
@@ -113,7 +113,7 @@ export default function Records({ data, onNav }) {
       </div>
 
       {/* Achievements */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div className="flex items-baseline justify-between mb-4">
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Achievements</p>
           <p className="text-xs text-[#9a8f7e]">{unlockedAchievements.length} / {ACHIEVEMENT_DEFS.length}</p>

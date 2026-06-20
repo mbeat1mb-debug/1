@@ -12,7 +12,7 @@ export default function AlertBanner({ alerts = [], onCoach }) {
 
   return (
     <div
-      className="mx-4 mb-3 rounded-2xl p-4"
+      className="mx-4 mb-4 rounded-2xl p-5"
       style={{ background: color + '12', border: `1px solid ${color}33` }}
     >
       <div className="flex items-start justify-between gap-2">

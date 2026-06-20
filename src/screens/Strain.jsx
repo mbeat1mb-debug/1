@@ -111,8 +111,8 @@ export default function Strain({ data, onNav }) {
 
       {/* Training Load (ATL/CTL/TSB) */}
       {trainingLoad && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Training Load</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Training Load</p>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl p-3 text-center" style={{ background: '#F6F1E9' }}>
               <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">Fatigue (ATL)</p>
@@ -152,8 +152,8 @@ export default function Strain({ data, onNav }) {
         </div>
       )}
 
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Strain Coach</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Strain Coach</p>
         {(() => {
           const remaining = Math.max(0, Math.round((optimalStrain - strainScore) * 10) / 10)
           const pct = Math.min(100, (strainScore / optimalStrain) * 100)
@@ -232,9 +232,9 @@ export default function Strain({ data, onNav }) {
       </div>
 
       {/* HR Zones breakdown */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Heart Rate Zones</p>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {ZONE_LABELS.map((zone, i) => {
             const mins = zoneMinutes[i] || 0
             const pct = totalZoneMinutes > 0 ? (mins / totalZoneMinutes) * 100 : 0
@@ -262,7 +262,7 @@ export default function Strain({ data, onNav }) {
 
       {/* Training Effect */}
       {trainingEffect && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Training Effect</p>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -299,7 +299,7 @@ export default function Strain({ data, onNav }) {
       )}
 
       {/* Strain guidance */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#D98E3F' }}>How Strain is Calculated</p>
         <p className="text-sm text-[#7d7363]">
           Based on time spent in each heart rate zone throughout the day. Higher zones count exponentially more.

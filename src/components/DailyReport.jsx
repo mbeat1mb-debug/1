@@ -139,7 +139,7 @@ export default function DailyReport({ data, type }) {
         </span>
       </div>
 
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-4">
         {isMorning ? (
           <>
             {/* Recovery highlight */}

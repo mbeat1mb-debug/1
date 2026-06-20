@@ -101,12 +101,12 @@ function CategoryInsightCard({ category, filteredTags, correlations, healthHisto
   if (withData.length === 0 && healthHistory.length < 10) return null
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#4a9fd4' }}>
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#4a9fd4' }}>
         {category.charAt(0).toUpperCase() + category.slice(1)} Insights
       </p>
       {withData.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {withData.map(({ tag, corr }) => {
             const color = corr.diff > 0 ? '#3E9C7E' : '#ef4444'
             const dir = corr.diff > 0 ? 'higher' : 'lower'
@@ -422,7 +422,7 @@ export default function Journal({ data, onNav }) {
 
       {/* Predictive Tomorrow */}
       {predictedRecovery && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', border: `1px solid ${predictedRecovery.totalDiff >= 0 ? '#3E9C7E33' : '#ef444433'}` }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', border: `1px solid ${predictedRecovery.totalDiff >= 0 ? '#3E9C7E33' : '#ef444433'}` }}>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#3E9C7E' }}>Tomorrow's Outlook</p>
           <div className="flex items-center justify-between">
             <div>
@@ -489,11 +489,11 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Tag grid */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>What happened today?</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>What happened today?</p>
 
         {activeCategory === 'longevity' && (
-          <div className="mb-3 p-3 rounded-xl space-y-1.5" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E22' }}>
+          <div className="mb-4 p-3 rounded-xl space-y-1.5" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E22' }}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#3E9C7E' }}>Evidence-backed longevity behaviors</p>
             {[
               ['🏋️', 'Strength 2×/wk',        '23% lower all-cause mortality',                            'Liu et al., BJSM 2019'],
@@ -538,7 +538,7 @@ export default function Journal({ data, onNav }) {
 
       {/* Add custom tag */}
       {showAdd && (
-        <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', border: '1px solid #3E9C7E33' }}>
+        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', border: '1px solid #3E9C7E33' }}>
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#3E9C7E' }}>New Tag</p>
           <input
             className="w-full bg-white border border-[#ece3d4] rounded-xl px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#3E9C7E]"
@@ -565,9 +565,9 @@ export default function Journal({ data, onNav }) {
       )}
 
       {/* Daily Timing */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>Daily Timing</p>
-        <p className="text-[10px] text-[#b3a890] mb-3">Toggle on, then drag to set time</p>
+        <p className="text-[10px] text-[#b3a890] mb-4">Toggle on, then drag to set time</p>
         {TIMED_ITEMS.map(item => (
           <TimeSlider
             key={item.id}
@@ -580,9 +580,9 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Substance Log */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>Substance Log</p>
-        <div className="flex gap-2 mb-3">
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Substance Log</p>
+        <div className="flex gap-2 mb-4">
           <select
             value={timingSubstance}
             onChange={e => setTimingSubstance(e.target.value)}
@@ -635,8 +635,8 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Energy level */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>Energy Level</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Energy Level</p>
         <div className="flex gap-2">
           {ENERGY_OPTIONS.map(({ n, emoji, label, color }) => {
             const sel = energy === n
@@ -660,8 +660,8 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Blood Pressure */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>Blood Pressure <span className="normal-case font-normal" style={{ color: '#9a8f7e' }}>(optional)</span></p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Blood Pressure <span className="normal-case font-normal" style={{ color: '#9a8f7e' }}>(optional)</span></p>
         <div className="flex items-center gap-3">
           <input
             type="number" min={70} max={220}
@@ -691,8 +691,8 @@ export default function Journal({ data, onNav }) {
       </div>
 
       {/* Notes */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>Notes</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Notes</p>
         <textarea
           className="w-full bg-transparent text-sm text-[#1a1a1a] placeholder-[#cabfa9] outline-none resize-none"
           rows={3}
@@ -713,7 +713,7 @@ export default function Journal({ data, onNav }) {
 
       {/* All-behavior insights — sentence format, ranked by impact */}
       {correlations.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>What Moves Your Recovery</p>
           <p className="text-[10px] text-[#b3a890] mb-4">Ranked by impact · your data only · {healthHistory.length} days tracked</p>
           <div className="space-y-4">
@@ -748,9 +748,9 @@ export default function Journal({ data, onNav }) {
 
       {/* Illness alert calibration — personal hit-rate of the proactive alert engine */}
       {illnessAlertAccuracy && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#3E9C7E' }}>Alert Accuracy</p>
-          <p className="text-[10px] text-[#b3a890] mb-3">Illness-signal alerts followed by a 🤒 Feeling Sick log within 3 days</p>
+          <p className="text-[10px] text-[#b3a890] mb-4">Illness-signal alerts followed by a 🤒 Feeling Sick log within 3 days</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold" style={{ color: illnessAlertAccuracy.rate >= 50 ? '#3E9C7E' : '#D9A23F' }}>
               {illnessAlertAccuracy.rate}%
@@ -761,7 +761,7 @@ export default function Journal({ data, onNav }) {
       )}
 
       {healthHistory.length < 30 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#3E9C7E' }}>Insights Calibrating</p>
             <span className="text-xs font-bold text-[#9a8f7e]">{healthHistory.length}/30 days</span>
@@ -791,8 +791,8 @@ export default function Journal({ data, onNav }) {
 
       {/* Your Week — 7-day behavior grid */}
       {recentActivity.some(d => d.tagIds.length > 0) && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#3E9C7E' }}>Your Week</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: '#3E9C7E' }}>Your Week</p>
           <div className="grid grid-cols-7 gap-1">
             {recentActivity.map((day, i) => {
               const rec = recentRecovery[day.date]

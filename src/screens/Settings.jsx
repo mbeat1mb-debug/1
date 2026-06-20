@@ -130,7 +130,7 @@ function PushNotificationsSection() {
 
   if (!pushSupported) {
     return (
-      <div className="rounded-2xl p-4 space-y-2" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-2" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-sm font-semibold text-[#1a1a1a]">Push Notifications</p>
         <p className="text-xs text-[#9a8f7e]">
           Add this app to your Home Screen first (Share → Add to Home Screen), then push notifications will be available.
@@ -140,7 +140,7 @@ function PushNotificationsSection() {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -260,7 +260,7 @@ function PushNotificationsSection() {
       </div>
 
       {/* Health alerts */}
-      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
+      <div className="space-y-4 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
         <p className="text-xs text-[#9a8f7e] uppercase tracking-wider pt-1">Health Alerts</p>
         {[
           { key: 'alertsEnabled', label: 'Illness & Red-Zone Alerts', desc: 'Pushes immediately when an illness signal or 3+ day low recovery streak is detected' },
@@ -283,7 +283,7 @@ function PushNotificationsSection() {
       </div>
 
       {/* Data reminders */}
-      <div className="space-y-3 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
+      <div className="space-y-4 pt-1" style={{ borderTop: '1px solid #ece3d4' }}>
         <p className="text-xs text-[#9a8f7e] uppercase tracking-wider pt-1">Data Entry Reminders</p>
         {[
           { key: 'bpReminderEnabled', label: 'Blood Pressure', desc: 'Reminds you Mon · Wed · Fri' },
@@ -355,7 +355,7 @@ function PushNotificationsSection() {
         <span>{showGuide ? '▲' : '▼'}</span>
       </button>
       {showGuide && (
-        <div className="rounded-xl p-3 space-y-3" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
+        <div className="rounded-xl p-3 space-y-4" style={{ background: '#F6F1E9', border: '1px solid #ece3d4' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-wider">One-time Vercel setup</p>
           {[
             { step: '1', title: 'Generate VAPID keys', code: 'npx web-push generate-vapid-keys', desc: 'Run in your terminal. Copy both keys.' },
@@ -499,7 +499,7 @@ function PinSection() {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a]">App PIN Lock</p>
@@ -702,7 +702,7 @@ function DataFreshnessSection() {
   const headerColor = needsAttention.length === 0 ? '#3E9C7E' : needsAttention.some(m => m.status === 'overdue' || m.status === 'never') ? '#ef4444' : '#D9A23F'
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a]">Data Freshness</p>
@@ -1099,7 +1099,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Connection status */}
-      <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 flex items-center justify-between" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: connected ? '#3E9C7E' : '#cabfa9' }} />
           <div>
@@ -1115,7 +1115,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {connected && (
-        <div className="rounded-2xl p-4 flex items-center justify-between gap-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5 flex items-center justify-between gap-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs text-[#9a8f7e]">{debugCopyMsg || 'Copy the raw data from your last sync (for troubleshooting)'}</p>
           <button onClick={handleCopyDebugData} className="text-xs text-[#5c5648] px-3 py-1.5 rounded-xl bg-[#F6F1E9] flex-shrink-0">
             Copy debug data
@@ -1125,12 +1125,12 @@ export default function Settings({ onBack }) {
 
       {/* Google Health credentials */}
       {!connected && (
-        <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <div>
             <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Connect Google Health</p>
             <p className="text-xs text-[#9a8f7e]">You'll need a Google Cloud project with the Health API enabled</p>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <p className="text-xs text-[#9a8f7e] mb-1.5 uppercase tracking-wider">Steps to get your Client ID:</p>
               <ol className="space-y-1 text-xs text-[#9a8f7e]">
@@ -1162,7 +1162,7 @@ export default function Settings({ onBack }) {
       <PinSection />
 
       {/* Age */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Your Age</p>
           <p className="text-xs text-[#9a8f7e]">Used for max HR zones and physiological age calculations.</p>
@@ -1178,7 +1178,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Height & Weight */}
-      <div className="rounded-2xl p-4 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-[#1a1a1a]">Height & Weight</p>
@@ -1366,7 +1366,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Lifestyle factors */}
-      <div className="rounded-2xl p-4 space-y-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a]">Lifestyle Factors</p>
           <p className="text-xs text-[#9a8f7e] mt-0.5">Factored into your biological age calculation.</p>
@@ -1420,7 +1420,7 @@ export default function Settings({ onBack }) {
       <LabResultsSection />
 
       {/* Claude API key */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">AI Coach (Claude)</p>
           <p className="text-xs text-[#9a8f7e]">Optional. Powers the coach tab. ~$0.01–0.05/day.</p>
@@ -1450,7 +1450,7 @@ export default function Settings({ onBack }) {
       <PushNotificationsSection />
 
       {/* Apple Health Import */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Apple Health — Body Composition</p>
           <p className="text-xs text-[#9a8f7e]">Import weight and body fat % history from your Hume scale (or any Apple Health source) directly into Soma.</p>
@@ -1500,7 +1500,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Hume Health Import */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Hume Health — Full Body Composition</p>
           <p className="text-xs text-[#9a8f7e]">Screenshot your Hume progress report and import all body composition metrics directly into Soma's biological age algorithm.</p>
@@ -1550,7 +1550,7 @@ export default function Settings({ onBack }) {
       </div>
 
       {/* Data import / export */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Data</p>
           <p className="text-xs text-[#9a8f7e]">Import blood pressure or lab results from CSV, or export your full history.</p>
@@ -1592,7 +1592,7 @@ Labs: marker,value,date`}</pre>
         {/* Cloud Backup */}
         <div className="pt-2" style={{ borderTop: '1px solid #ece3d4' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-wider mb-1">Cloud Backup</p>
-          <p className="text-xs text-[#b3a890] mb-3">
+          <p className="text-xs text-[#b3a890] mb-4">
             Save all settings and health history to the cloud so a browser wipe won't lose your data.
             {lastBackup && (
               <span className="block mt-1 text-[#9a8f7e]">
@@ -1630,7 +1630,7 @@ Labs: marker,value,date`}</pre>
       <DataFreshnessSection />
 
       {/* Note on data source */}
-      <div className="rounded-2xl p-4" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#D9A23F14', border: '1px solid #D9A23F40' }}>
         <p className="text-xs text-[#D9A23F] font-semibold uppercase tracking-wider mb-2">Note</p>
         <p className="text-xs text-[#9a8f7e]">
           This app syncs through the Google Health API. If a sync ever fails after reconnecting, check that your Google Cloud OAuth credentials are still valid — your data and settings will not be affected.
@@ -1638,7 +1638,7 @@ Labs: marker,value,date`}</pre>
       </div>
 
       {/* Native app upgrade */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Upgrade to Native App</p>
         <p className="text-xs text-[#9a8f7e]">These features require upgrading from PWA to a native iPhone app (Option B). When you're ready, ask Claude to build it.</p>
         {[
@@ -1657,7 +1657,7 @@ Labs: marker,value,date`}</pre>
       </div>
 
       {/* About */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#C9A84C', fontFamily: 'Georgia, serif' }}>Soma</p>
         <p className="text-xs text-[#b3a890]">σῶμα · Your body, understood. Data stays on your device. No third-party servers. Built for personal use only.</p>
       </div>

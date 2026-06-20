@@ -65,7 +65,7 @@ function RecoveryContent({ data }) {
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Recovery</span>
         <div className="flex items-center gap-1">
           <VelocityBadge value={recoveryVelocity} />
@@ -74,7 +74,7 @@ function RecoveryContent({ data }) {
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={recoveryScore} color={color} size={120} strokeWidth={10} />
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-4">
           <Pill label="HRV" value={todayHRV} unit="ms" />
           <Pill label="Resting HR" value={todayRHR} unit="bpm" />
           <Pill label="Sleep" value={sleepHours} />
@@ -97,7 +97,7 @@ function StrainContent({ data }) {
     : null
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Strain</span>
         <div className="flex items-center gap-1">
           <VelocityBadge value={strainVelocity} />
@@ -106,7 +106,7 @@ function StrainContent({ data }) {
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={strainScore} max={21} color="#D98E3F" size={100} strokeWidth={9} />
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-4">
           <Pill label="Calories" value={calories.toLocaleString()} unit="kcal" />
           <Pill label="Active" value={activeMinutes} unit="min" />
           {distanceDisplay
@@ -130,12 +130,12 @@ function SleepContent({ data }) {
   const sleepHours = todaySleep ? `${Math.floor(todaySleep.minutesAsleep / 60)}h ${todaySleep.minutesAsleep % 60}m` : '--'
   return (
     <>
-      <div className="mb-3">
+      <div className="mb-4">
         <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Sleep</span>
       </div>
       <div className="flex items-center gap-5">
         <ScoreRing score={sleepScore} color={sleepColor} size={100} strokeWidth={9} unit="%" />
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-4">
           <Pill label="Duration" value={sleepHours} />
           <Pill label="Efficiency" value={todaySleep?.efficiency ?? '--'} unit="%" />
           <Pill label="Resp Rate" value={todayBR} unit="br/m" />
@@ -240,7 +240,7 @@ function WeeklyPatternContent({ data }) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Pattern</span>
         <span className="text-xs text-[#9a8f7e]">Avg Recovery</span>
       </div>
@@ -375,7 +375,7 @@ function InsightsContent() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Insights</span>
         <span className="text-xs text-[#9a8f7e]">vs avg recovery</span>
       </div>
@@ -423,7 +423,7 @@ function WeeklySummary({ data }) {
   const azmColor = weeklyAZM >= 300 ? '#3E9C7E' : weeklyAZM >= 150 ? '#D98E3F' : '#ef4444'
 
   return (
-    <div className="mx-4 mb-1 rounded-2xl p-4" style={{ background: color + '08', border: `1px solid ${color}25` }}>
+    <div className="mx-4 mb-1 rounded-2xl p-5" style={{ background: color + '08', border: `1px solid ${color}25` }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-bold tracking-widest uppercase" style={{ color }}>This Week</span>
         <span className="text-xs text-[#9a8f7e]">{thisWeek.length} days</span>
@@ -499,8 +499,8 @@ function SetupCard({ onNav }) {
   }
 
   return (
-    <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center justify-between mb-3">
+    <div className="mx-4 mb-4 rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="flex items-center justify-between mb-4">
         <span className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest">Finish Setup</span>
         <button
           onClick={handleDismiss}
@@ -511,7 +511,7 @@ function SetupCard({ onNav }) {
           ×
         </button>
       </div>
-      <div className="space-y-2 mb-3">
+      <div className="space-y-2 mb-4">
         {SETUP_ROWS.map(row => {
           const present = row.keys.every(k => !!localStorage.getItem(k))
           return (
@@ -916,7 +916,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
         onDragCancel={() => setActiveId(null)}
       >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3 px-4 mt-2">
+          <div className="space-y-4 px-4 mt-2">
             {order.map((id, idx) => (
               <SortableCard
                 key={id}
@@ -934,7 +934,7 @@ export default function Home({ data, onNav, onRefresh, isSyncing, syncFailed, la
 
         <DragOverlay>
           {activeId && ActiveContent ? (
-            <div className="rounded-2xl p-4 opacity-90 shadow-2xl" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E55' }}>
+            <div className="rounded-2xl p-5 opacity-90 shadow-2xl" style={{ background: '#F6F1E9', border: '1px solid #3E9C7E55' }}>
               <ActiveContent data={data} />
             </div>
           ) : null}

@@ -48,7 +48,7 @@ export default function Stress({ data, onNav }) {
       {/* Main score */}
       <div className="rounded-2xl p-5 flex items-center gap-6" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <ScoreRing score={stressScore} color={color} size={130} strokeWidth={11} label={label} />
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-4">
           <div>
             <p className="text-xs text-[#9a8f7e] uppercase tracking-wider">HRV vs baseline</p>
             <p className="text-lg font-bold" style={{ color: hrvRatio >= 100 ? '#3E9C7E' : '#D9A23F' }}>
@@ -65,9 +65,9 @@ export default function Stress({ data, onNav }) {
       </div>
 
       {/* Stress scale */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Stress Scale</p>
-        <div className="relative h-3 rounded-full overflow-hidden mb-3"
+        <div className="relative h-3 rounded-full overflow-hidden mb-4"
           style={{ background: 'linear-gradient(to right, #3E9C7E, #D9A23F, #ef4444)' }}>
           <div
             className="absolute top-0 w-3 h-3 bg-white rounded-full shadow-lg transition-all duration-700"
@@ -96,17 +96,17 @@ export default function Stress({ data, onNav }) {
       </div>
 
       {/* HRV trend */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">HRV Trend</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">HRV Trend</p>
         <LineGraph data={stressChartData} dataKey="hrv" color={color} unit="ms" reference={Math.round(avgHRV14)} height={100} />
         <p className="text-xs text-[#b3a890] mt-1 text-center">Dashed line = 14-day baseline</p>
       </div>
 
       {/* Daytime stress */}
       {daytimeStress && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Daytime Autonomic Load</p>
-          <div className="flex items-center gap-4 mb-3">
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Daytime Autonomic Load</p>
+          <div className="flex items-center gap-4 mb-4">
             <div>
               <p className="text-4xl font-bold" style={{ color: daytimeStress.score < 35 ? '#3E9C7E' : daytimeStress.score < 65 ? '#D9A23F' : '#ef4444' }}>
                 {daytimeStress.score}
@@ -141,7 +141,7 @@ export default function Stress({ data, onNav }) {
       )}
 
       {/* How it works */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-2">How This Works</p>
         <p className="text-sm text-[#5c5648]">
           Overnight stress reflects HRV (60%) and resting HR (40%) vs your 14-day baselines — your nervous system's

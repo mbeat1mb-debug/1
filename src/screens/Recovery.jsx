@@ -115,11 +115,11 @@ export default function Recovery({ data, onNav }) {
         <div className="flex items-center gap-5">
           <ScoreRing score={recoveryScore} color={color} size={130} strokeWidth={11} label={label} />
           <div className="flex-1">
-            <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #ece3d4' }}>
+            <div className="pb-3 mb-4" style={{ borderBottom: '1px solid #ece3d4' }}>
               <p className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest mb-0.5">HRV</p>
               <p className="text-3xl font-bold text-[#1a1a1a] leading-tight">{todayHRV > 0 ? todayHRV : '--'}<span className="text-sm font-normal text-[#9a8f7e] ml-1">ms</span></p>
             </div>
-            <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #ece3d4' }}>
+            <div className="pb-3 mb-4" style={{ borderBottom: '1px solid #ece3d4' }}>
               <p className="text-[10px] font-semibold text-[#9a8f7e] uppercase tracking-widest mb-0.5">Resting HR</p>
               <p className="text-3xl font-bold text-[#1a1a1a] leading-tight">{todayRHR > 0 ? todayRHR : '--'}<span className="text-sm font-normal text-[#9a8f7e] ml-1">bpm</span></p>
             </div>
@@ -136,8 +136,8 @@ export default function Recovery({ data, onNav }) {
 
       {/* Recovery Stability */}
       {avgRecovery30 !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Recovery Stability — 30 Days</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Recovery Stability — 30 Days</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
               <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-1">30-Day Avg</p>
@@ -183,8 +183,8 @@ export default function Recovery({ data, onNav }) {
 
       {/* Skin temperature */}
       {skinTempDev !== undefined && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Skin Temperature</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Skin Temperature</p>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[#5c5648]">{skinTempLabel}</p>
@@ -209,8 +209,8 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {/* HRV trend */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">HRV — 14 Days</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">HRV — 14 Days</p>
         <LineGraph data={hrvChartData} dataKey="hrv" color="#3E9C7E" unit="ms" reference={avgHRV} height={100} />
         {todayHRV > 0 && (() => {
           const age = getUserAge()
@@ -230,8 +230,8 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {/* RHR trend */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Resting HR — 14 Days</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Resting HR — 14 Days</p>
         <LineGraph data={rhrChartData} dataKey="rhr" color="#ef4444" unit=" bpm" height={100} />
         {todayRHR > 0 && (() => {
           const ctx = getRHRMortalityContext(todayRHR)
@@ -248,16 +248,16 @@ export default function Recovery({ data, onNav }) {
       </div>
 
       {spo2History.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Blood Oxygen — 14 Days</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Blood Oxygen — 14 Days</p>
           <LineGraph data={spo2History} dataKey="spo2" color="#9B7FD4" unit="%" reference={97} height={80} />
           <p className="text-xs text-[#9a8f7e] mt-2">Normal range: 95–100%. Below 95% warrants attention.</p>
         </div>
       )}
 
       {brHistory.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Respiratory Rate — 14 Days</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Respiratory Rate — 14 Days</p>
           <LineGraph data={brHistory} dataKey="br" color="#8b5cf6" unit=" br/m" height={80} />
           <p className="text-xs text-[#9a8f7e] mt-2">Normal range: 12–20 br/min. Elevated rate may indicate stress or illness.</p>
         </div>
@@ -265,9 +265,9 @@ export default function Recovery({ data, onNav }) {
 
       {/* Recovery : Strain ratio trend */}
       {data.rsTrend?.length >= 3 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Recovery:Strain Ratio — 14 Days</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-3">Above 4 = well-recovered · Below 2 = accumulated load</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-4">Above 4 = well-recovered · Below 2 = accumulated load</p>
           <LineGraph data={data.rsTrend} dataKey="ratio" color="#3E9C7E" unit="" reference={4} height={80} />
           <p className="text-[10px] text-[#9a8f7e] mt-2">
             {(() => {
@@ -281,8 +281,8 @@ export default function Recovery({ data, onNav }) {
 
       {/* Yesterday's substance log */}
       {yesterdayTiming.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Yesterday's Substances</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Yesterday's Substances</p>
           <div className="space-y-2 mb-2">
             {yesterdayTiming.map(entry => {
               const sub = TIMING_SUBSTANCES.find(s => s.id === entry.substance)
@@ -319,7 +319,7 @@ export default function Recovery({ data, onNav }) {
       )}
 
       {/* Recovery guidance */}
-      <div className="rounded-2xl p-4" style={{ background: color + '10', border: `1px solid ${color}33` }}>
+      <div className="rounded-2xl p-5" style={{ background: color + '10', border: `1px solid ${color}33` }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color }}>Recommendation</p>
         <p className="text-sm text-[#5c5648]">
           {recoveryScore >= 67

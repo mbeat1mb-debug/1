@@ -13,7 +13,7 @@ export default {
         blue: { DEFAULT: '#3b82f6', dark: '#2563eb' },
         purple: { DEFAULT: '#8b5cf6', dark: '#7c3aed' },
       },
-      fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'sans-serif'] },
+      fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'sans-serif'] },
     },
   },
   plugins: [],

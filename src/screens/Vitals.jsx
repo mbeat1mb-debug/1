@@ -66,8 +66,8 @@ function RangeSelector({ value, onChange }) {
 
 function VitalCard({ title, emoji, children, count, emptyMsg = 'No data yet — log in Settings' }) {
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-base leading-none">{emoji}</span>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">{title}</p>
@@ -214,7 +214,7 @@ export default function Vitals({ data, onNav }) {
           )}
         </div>
         {avgSys != null && (
-          <p className="text-[11px] text-[#b3a890] mb-3">10-reading avg: {avgSys}/{avgDia} mmHg</p>
+          <p className="text-[11px] text-[#b3a890] mb-4">10-reading avg: {avgSys}/{avgDia} mmHg</p>
         )}
         {bpChartData.length >= 2 && (
           <DualLineGraph
@@ -234,7 +234,7 @@ export default function Vitals({ data, onNav }) {
 
       {/* Body Weight */}
       <VitalCard title="Body Weight" emoji="⚖️" count={weightFiltered.length}>
-        <div className="flex items-baseline gap-2 mb-3">
+        <div className="flex items-baseline gap-2 mb-4">
           <p className="text-3xl font-bold text-[#1a1a1a]">
             {weightDisplay(weightLatest?.kg) ?? '—'}
           </p>
@@ -249,7 +249,7 @@ export default function Vitals({ data, onNav }) {
       {/* Body Fat & Lean Mass — only if fat % data exists */}
       {bfFiltered.length > 0 && (
         <VitalCard title="Body Composition" emoji="🔬" count={bfFiltered.length}>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
               <p className="text-[10px] text-[#b3a890] uppercase tracking-wider mb-0.5">Body Fat</p>
               <p className="text-xl font-bold text-[#1a1a1a]">{bfLatest?.fatPct ?? '—'}<span className="text-xs text-[#9a8f7e] ml-1">%</span></p>
@@ -278,7 +278,7 @@ export default function Vitals({ data, onNav }) {
 
       {/* Waist Circumference */}
       <VitalCard title="Waist Circumference" emoji="📏" count={waistFiltered.length}>
-        <div className="flex items-baseline gap-2 mb-3">
+        <div className="flex items-baseline gap-2 mb-4">
           <p className="text-3xl font-bold text-[#1a1a1a]">
             {waistDisplay(waistLatest?.cm) ?? '—'}
           </p>
@@ -293,7 +293,7 @@ export default function Vitals({ data, onNav }) {
 
       {/* Grip Strength */}
       <VitalCard title="Grip Strength" emoji="✊" count={gripFiltered.length}>
-        <div className="flex items-baseline gap-2 mb-3">
+        <div className="flex items-baseline gap-2 mb-4">
           <p className="text-3xl font-bold text-[#1a1a1a]">
             {gripDisplay(gripLatest?.kg) ?? '—'}
           </p>
@@ -318,7 +318,7 @@ export default function Vitals({ data, onNav }) {
       {/* Resting Heart Rate */}
       {rhrFiltered.length > 0 && (
         <VitalCard title="Resting Heart Rate" emoji="❤️" count={rhrFiltered.length}>
-          <div className="flex items-baseline gap-2 mb-3">
+          <div className="flex items-baseline gap-2 mb-4">
             <p className="text-3xl font-bold text-[#1a1a1a]">{rhrLatest?.rhr ?? '—'}</p>
             <span className="text-sm text-[#9a8f7e]">bpm</span>
             {rhrDelta != null && <DeltaChip value={rhrDelta} unit=" bpm" lowerIsBetter />}
@@ -333,7 +333,7 @@ export default function Vitals({ data, onNav }) {
       {/* HRV */}
       {hrvFiltered.length > 0 && (
         <VitalCard title="HRV Baseline" emoji="⚡" count={hrvFiltered.length}>
-          <div className="flex items-baseline gap-2 mb-3">
+          <div className="flex items-baseline gap-2 mb-4">
             <p className="text-3xl font-bold text-[#1a1a1a]">{hrvLatest?.hrv ?? '—'}</p>
             <span className="text-sm text-[#9a8f7e]">ms</span>
             {hrvDelta != null && <DeltaChip value={hrvDelta} unit=" ms" lowerIsBetter={false} />}
@@ -348,7 +348,7 @@ export default function Vitals({ data, onNav }) {
       {/* VO2 Max */}
       {vo2Filtered.length > 0 && (
         <VitalCard title="VO₂ Max" emoji="🫁" count={vo2Filtered.length}>
-          <div className="flex items-baseline gap-2 mb-3">
+          <div className="flex items-baseline gap-2 mb-4">
             <p className="text-3xl font-bold text-[#1a1a1a]">{vo2Latest?.vo2Max ?? '—'}</p>
             <span className="text-sm text-[#9a8f7e]">ml/kg/min</span>
             {vo2Delta != null && <DeltaChip value={vo2Delta} unit="" lowerIsBetter={false} />}

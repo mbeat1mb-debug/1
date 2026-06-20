@@ -2,7 +2,7 @@ export default function MetricCard({ label, value, unit = '', sub, color, onClic
   return (
     <button
       onClick={onClick}
-      className="flex flex-col rounded-2xl p-4 text-left w-full card-tap"
+      className="flex flex-col rounded-2xl p-5 text-left w-full card-tap"
       style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}
     >
       <span className="text-[9px] uppercase tracking-widest mb-2" style={{ color: '#9a8f7e' }}>{label}</span>

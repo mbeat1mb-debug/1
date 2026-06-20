@@ -200,7 +200,7 @@ function WeeklyReport({ data, apiKey }) {
   }
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Weekly Report</p>
         {report && <span className="text-xs text-[#b3a890]">{report.generatedAt}</span>}
@@ -382,7 +382,7 @@ export default function Coach({ data, onNav }) {
       {/* Messages */}
       {activeTab === 'chat' && <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32">
         {messages.length === 0 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-[#9a8f7e] text-sm text-center pt-4">Your coach knows today's data. Ask anything.</p>
             <div className="grid grid-cols-2 gap-2">
               {STARTERS.map(s => (

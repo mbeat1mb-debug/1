@@ -18,7 +18,7 @@ function BackButton({ onNav }) {
 }
 
 const CARD = { background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }
-const TITLE = 'text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3'
+const TITLE = 'text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4'
 const EMPTY = 'text-[#b3a890] text-sm italic'
 
 function formatMonthDay(dateStr) {
@@ -227,7 +227,7 @@ export default function Trends({ data, onNav }) {
         </div>
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Recovery × Strain Quadrant</p>
         {scatterPoints.length < 2 ? (
           <p className={EMPTY}>Need more data to plot the quadrant.</p>
@@ -271,7 +271,7 @@ export default function Trends({ data, onNav }) {
         </div>
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Recovery Score — 30 Days</p>
         {recoveryChartData.length < 3 ? (
           <p className={EMPTY}>Need more data to show trend.</p>
@@ -280,8 +280,8 @@ export default function Trends({ data, onNav }) {
         )}
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
-        <div className="flex items-center justify-between mb-3">
+      <div className="rounded-2xl p-5" style={CARD}>
+        <div className="flex items-center justify-between mb-4">
           <p className={TITLE} style={{ marginBottom: 0 }}>HRV Trend</p>
           {todayHRV != null && (
             <div className="text-right">
@@ -326,7 +326,7 @@ export default function Trends({ data, onNav }) {
         )}
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Resting HR Trend</p>
         {rhrChartData.length < 2 ? (
           <p className={EMPTY}>Need more data to show RHR trend.</p>
@@ -352,7 +352,7 @@ export default function Trends({ data, onNav }) {
         <p className="text-[10px] text-[#b3a890] mt-2">Reference at 60 bpm — below is athletic range.</p>
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>VO₂ Max Trend</p>
         {vo2ChartData.length < 2 ? (
           <div>
@@ -384,7 +384,7 @@ export default function Trends({ data, onNav }) {
         )}
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Sleep Score — 30 Days</p>
         {sleepChartData.length < 3 ? (
           <p className={EMPTY}>Need more sleep data to show trend.</p>
@@ -393,7 +393,7 @@ export default function Trends({ data, onNav }) {
         )}
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Skin Temp Deviation</p>
         {skinTempData.length === 0 ? (
           <p className={EMPTY}>No skin temperature data. Requires a device with a skin temp sensor.</p>
@@ -426,7 +426,7 @@ export default function Trends({ data, onNav }) {
         <p className="text-[10px] text-[#b3a890] mt-2">Green (≤0°C) = cooler baseline, favorable for recovery. Amber/red = elevated, may signal stress or illness.</p>
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Weekly Active Zone Minutes</p>
         {azmWeeklyData.length === 0 ? (
           <p className={EMPTY}>No weekly activity data available yet.</p>
@@ -453,7 +453,7 @@ export default function Trends({ data, onNav }) {
         <p className="text-[10px] text-[#b3a890] mt-2">WHO recommends 150 min/week moderate or 75 min vigorous. 300+ min = excellent.</p>
       </div>
 
-      <div className="rounded-2xl p-4" style={CARD}>
+      <div className="rounded-2xl p-5" style={CARD}>
         <p className={TITLE}>Breathing Rate Trend</p>
         {brChartData.length < 2 ? (
           <p className={EMPTY}>Need more data to show breathing rate trend.</p>

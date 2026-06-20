@@ -183,7 +183,7 @@ function InsightCard({ physAge, chronAge, pace }) {
     body = `Biological age is running ${diff} years ahead of your calendar. Focus on your top opportunities below to reverse this trend.`
   }
   return (
-    <div className="rounded-2xl p-4" style={{ background: color + '12', border: `1px solid ${color}30` }}>
+    <div className="rounded-2xl p-5" style={{ background: color + '12', border: `1px solid ${color}30` }}>
       <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color }}>{headline}</p>
       <p className="text-sm text-[#5c5648] leading-relaxed">{body}</p>
     </div>
@@ -208,7 +208,7 @@ function BioAgeTrendChart({ chronAge }) {
   }, [chronAge])
   if (data.length < 2) return null
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center justify-between mb-1">
         <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Age Trend</p>
         <div className="flex items-center gap-3">
@@ -220,7 +220,7 @@ function BioAgeTrendChart({ chronAge }) {
           </span>
         </div>
       </div>
-      <p className="text-[10px] text-[#9a8f7e] mb-3">Biological vs chronological age over time</p>
+      <p className="text-[10px] text-[#9a8f7e] mb-4">Biological vs chronological age over time</p>
       <DualLineGraph data={data} dataKey1="bioAge" dataKey2="chronAge" color1="#3E9C7E" color2="#9a8f7e" unit="y" height={110} />
     </div>
   )
@@ -234,8 +234,8 @@ function MetricFactorCard({ label, value, displayValue, unit, contribution, min,
     : Math.min(96, Math.max(4, 100 - rawPct))
   const color = contribution < 0 ? '#3E9C7E' : contribution === 0 ? '#9B7FD4' : contribution <= 2 ? '#D98E3F' : '#ef4444'
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">{label}</p>
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">{label}</p>
       <div className="relative pt-2 mb-2 mx-1">
         <div className="h-2 rounded-full" style={{
           background: higherBetter
@@ -282,8 +282,8 @@ function TopPriorities({ opportunities }) {
   if (!opportunities || opportunities.length === 0) return null
   const top3 = opportunities.slice(0, 3)
   return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Top Priorities</p>
+    <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+      <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Top Priorities</p>
       <div className="space-y-0">
         {top3.map((c, i) => (
           <div
@@ -637,7 +637,7 @@ export default function Chronos({ data, onNav }) {
 
       {!ageIsSet ? (
         <div className="rounded-2xl p-6 text-center" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-2xl mb-3">⏳</p>
+          <p className="text-2xl mb-4">⏳</p>
           <p className="text-[#5c5648] text-sm font-medium">Set your age to get started</p>
           <p className="text-xs text-[#9a8f7e] mt-1 mb-4">Biological age needs your calendar age as a baseline.</p>
           {onNav && (
@@ -658,7 +658,7 @@ export default function Chronos({ data, onNav }) {
           <InsightCard physAge={physAge} chronAge={userAge} pace={pace} />
           <BioAgeTrendChart chronAge={userAge} />
           {phenoAge !== null ? (
-            <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+            <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge</p>
@@ -670,7 +670,7 @@ export default function Chronos({ data, onNav }) {
               </div>
             </div>
           ) : phenoProgress ? (
-            <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+            <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">PhenoAge — bloodwork panel</p>
                 <span className="text-xs font-bold text-[#9a8f7e]">{phenoProgress.present}/{phenoProgress.total} markers</span>
@@ -706,11 +706,11 @@ export default function Chronos({ data, onNav }) {
 
       {/* Body composition */}
       {(bmi !== null || heightCm > 0 || weightKg > 0 || bodyFatPct !== null) && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Body Composition</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Body Composition</p>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             {weightKg > 0 && (
               <div className="rounded-xl p-2.5 text-center" style={{ background: '#F6F1E9' }}>
                 <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Weight</p>
@@ -742,7 +742,7 @@ export default function Chronos({ data, onNav }) {
 
           {/* Lean / fat mass */}
           {leanMass !== null && (
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="rounded-xl p-3" style={{ background: '#F6F1E9' }}>
                 <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-0.5">Lean Mass</p>
                 <p className="text-base font-bold text-[#1a1a1a]">
@@ -794,9 +794,9 @@ export default function Chronos({ data, onNav }) {
       )}
 
       {/* Zone 2 Training */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Zone 2 Cardio This Week</p>
-        <div className="flex items-end gap-3 mb-3">
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Zone 2 Cardio This Week</p>
+        <div className="flex items-end gap-3 mb-4">
           <span className="text-4xl font-bold" style={{ color: weeklyZone2 >= 300 ? '#3E9C7E' : weeklyZone2 >= 150 ? '#9B7FD4' : '#D98E3F' }}>
             {weeklyZone2}
           </span>
@@ -818,8 +818,8 @@ export default function Chronos({ data, onNav }) {
 
       {/* Sleep Regularity Index */}
       {sri !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Sleep Regularity Index</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Regularity Index</p>
           <div className="flex items-end gap-3 mb-2">
             <span className="text-4xl font-bold" style={{ color: sri >= 0.87 ? '#3E9C7E' : sri >= 0.80 ? '#9B7FD4' : sri >= 0.70 ? '#D98E3F' : '#ef4444' }}>
               {Math.round(sri * 100)}
@@ -840,8 +840,8 @@ export default function Chronos({ data, onNav }) {
 
       {/* Post-exercise Heart Rate Recovery — shows live today or last known (≤90 days) */}
       {lastKnownHRR && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest">Heart Rate Recovery</p>
             {!data.hrr && lastKnownHRR.date && (
               <span className="text-[10px] text-[#9a8f7e]">last recorded {lastKnownHRR.date}</span>
@@ -878,8 +878,8 @@ export default function Chronos({ data, onNav }) {
 
       {/* What's moving the needle — WHOOP-style metric factor cards */}
       <div>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3 px-1">What's Moving the Needle</p>
-        <div className="space-y-3">
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4 px-1">What's Moving the Needle</p>
+        <div className="space-y-4">
           {/* HRV */}
           {avgHRV > 0 && <MetricFactorCard label="Heart Rate Variability" value={Math.round(avgHRV)} unit=" ms" contribution={contributions.find(c => c.label === 'HRV')?.contribution ?? 0} min={20} max={120} higherBetter={true} sublabel={`30-day avg · norm ~${getHRVNorm(userAge)} ms for age`} />}
           {/* RHR */}
@@ -914,9 +914,9 @@ export default function Chronos({ data, onNav }) {
 
       {/* VO2 Max History */}
       {vo2ChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">VO2 Max Trend</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-3">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-4">Fitbit cardio fitness score · updates when you exercise. Midpoint of reported range shown.</p>
           <LineGraph data={vo2ChartData} dataKey="vo2Max" color="#9B7FD4" unit=" mL/kg/min" height={90} />
           {vo2Max > 0 && (() => {
             const ctx = getVO2MortalityContext(vo2Max, userAge)
@@ -957,9 +957,9 @@ export default function Chronos({ data, onNav }) {
 
       {/* Blood Pressure Trend */}
       {bpChartData.length >= 2 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Blood Pressure Trend</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-3">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
+          <p className="text-[10px] text-[#9a8f7e] mb-4">Red = systolic · Blue = diastolic · Dashed lines at 120/80 mmHg optimal</p>
           <DualLineGraph
             data={bpChartData}
             dataKey1="sys"
@@ -975,8 +975,8 @@ export default function Chronos({ data, onNav }) {
       )}
 
       {/* Mortality Driver Dashboard */}
-      <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Longevity Profile</p>
+      <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Longevity Profile</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-[10px] text-[#9a8f7e] uppercase tracking-wider mb-2">Top Assets</p>
@@ -1003,10 +1003,10 @@ export default function Chronos({ data, onNav }) {
 
       {/* Chronos Delta Engine */}
       {chronosDeltas.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
           <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-1">Potential Years to Reclaim</p>
-          <p className="text-[10px] text-[#9a8f7e] mb-3">One-tier improvement on each factor</p>
-          <div className="space-y-3">
+          <p className="text-[10px] text-[#9a8f7e] mb-4">One-tier improvement on each factor</p>
+          <div className="space-y-4">
             {chronosDeltas.slice(0, 5).map(d => (
               <div key={d.label} className="flex items-start gap-3">
                 <span className="text-lg font-bold flex-shrink-0" style={{ color: '#3E9C7E', minWidth: 32 }}>+{d.gain}y</span>
@@ -1023,8 +1023,8 @@ export default function Chronos({ data, onNav }) {
 
       {/* Social Jet Lag */}
       {socialJetLag !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Circadian Alignment</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Circadian Alignment</p>
           <div className="flex items-end gap-3 mb-2">
             <span className="text-4xl font-bold" style={{ color: socialJetLag <= 20 ? '#3E9C7E' : socialJetLag <= 45 ? '#9B7FD4' : socialJetLag <= 75 ? '#D98E3F' : '#ef4444' }}>
               {socialJetLag}
@@ -1042,9 +1042,9 @@ export default function Chronos({ data, onNav }) {
 
       {/* Sleep Apnea Risk */}
       {sleepApneaRisk !== null && (
-        <div className="rounded-2xl p-4" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
-          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-3">Sleep Breathing Risk</p>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 4px 18px rgba(0,0,0,0.05)' }}>
+          <p className="text-xs font-semibold text-[#9a8f7e] uppercase tracking-widest mb-4">Sleep Breathing Risk</p>
+          <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-2xl font-bold" style={{ color: sleepApneaRisk.riskLevel === 0 ? '#3E9C7E' : sleepApneaRisk.riskLevel === 1 ? '#D98E3F' : '#ef4444' }}>
                 {sleepApneaRisk.risk}
