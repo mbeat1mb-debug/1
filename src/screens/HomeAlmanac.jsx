@@ -340,6 +340,8 @@ function Contents({ data, onNav }) {
     ['stress', 'Stress', getStressLabel(data.stressScore ?? 0)],
     ['chronos', 'Chronos', 'body age'],
     ['records', 'Movement', dist],
+    ['journal', 'Journal', 'notes & tags'],
+    ['trends', 'Trends', 'long view'],
   ]
   return (
     <div>
