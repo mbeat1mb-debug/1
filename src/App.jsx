@@ -395,9 +395,11 @@ export default function App() {
       // to IndexedDB. Racing only loadDashboardData() left those calls
       // unprotected, so a hang in any of them would still spin on "gathering"
       // forever — wrapping the entire body guarantees a real error within 45s.
+      let syncStage = 'downloading data'
       await Promise.race([
         (async () => {
       const raw = await loadDashboardData()
+      syncStage = 'processing data'
       const fetchErrors = getFetchErrors()
       if (fetchErrors.length) {
         try { localStorage.setItem('sync_debug_error', fetchErrors.join('\n')) } catch {}
@@ -414,9 +416,12 @@ export default function App() {
       // Read existing dates BEFORE writing so we can skip dates that already
       // have richer data — calendarDays entries only carry {date,recovery,sleep}
       // and a full put() would overwrite previously stored hrv/rhr/strain/etc.
+      syncStage = 'reading saved history'
       const dbHistory = await getHistory(90)
       const existingDates = new Set(dbHistory.map(r => r.date))
+      syncStage = 'saving today'
       await saveDay(result)
+      syncStage = 'merging calendar'
 
       // dbHistory was fetched before saveDay wrote today's row, so anything
       // derived from dbHistory below is missing today unless we splice it in.
@@ -460,7 +465,7 @@ export default function App() {
             br: d.br ?? null,
             skinTempDev: d.skinTempDev ?? null,
           }))
-        if (newRows.length) await saveDaysBatch(newRows)
+        if (newRows.length) { syncStage = 'saving calendar batch'; await saveDaysBatch(newRows) }
       }
       const syncedDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory
@@ -501,7 +506,9 @@ export default function App() {
       const vo2MaxHistory = effectiveHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
 
       const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory, rsTrend }
+      syncStage = 'saving snapshot'
       await saveSnapshot(finalResult)
+      syncStage = 'finishing up'
       setAppData(finalResult)
       setDemo(false)
 
@@ -553,7 +560,7 @@ export default function App() {
         createBackup().catch(() => {})
       }
         })(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timed out after 45s')), 45000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Sync timed out after 45s (stuck at: ${syncStage})`)), 45000)),
       ])
     } catch (e) {
       console.error(e)
