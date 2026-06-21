@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
-import { loadDashboardData, getFetchErrors } from './lib/api'
+import { loadDashboardData, getFetchErrors, getCallTimings } from './lib/api'
 import {
   parseGoogleHealthData, calculateRecovery, calculateStrain, calculateStrainFromAZM, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
@@ -563,7 +563,11 @@ export default function App() {
         createBackup().catch(() => {})
       }
         })(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`Sync timed out after 90s (stuck at: ${syncStage})`)), 90000)),
+        new Promise((_, reject) => setTimeout(() => {
+          const stuckCalls = getCallTimings().filter(c => c.status === 'pending').map(c => `${c.name} (${Math.round((Date.now() - c.startedAt) / 1000)}s)`)
+          const detail = stuckCalls.length ? `, stuck calls: ${stuckCalls.join(', ')}` : ''
+          reject(new Error(`Sync timed out after 90s (stuck at: ${syncStage}${detail})`))
+        }, 90000)),
       ])
     } catch (e) {
       console.error(e)

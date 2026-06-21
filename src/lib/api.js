@@ -10,6 +10,26 @@ export function getFetchErrors() {
   return fetchErrors
 }
 
+// Per-call timing for the most recent loadDashboardData() call. Updated live
+// (not just at the end) so that if the overall sync watchdog fires while this
+// is still running, whatever's in here at that instant shows exactly which of
+// the parallel calls were slow and which never finished — instead of just
+// knowing "downloading data" was slow with no way to tell which part of it.
+let callTimings = []
+
+export function getCallTimings() {
+  return callTimings
+}
+
+function timed(name, promise) {
+  const entry = { name, status: 'pending', startedAt: Date.now() }
+  callTimings.push(entry)
+  return promise.then(
+    (res) => { entry.status = 'done'; entry.ms = Date.now() - entry.startedAt; return res },
+    (err) => { entry.status = 'error'; entry.ms = Date.now() - entry.startedAt; throw err },
+  )
+}
+
 // No request to Google should be allowed to hang forever - without this, one
 // stalled request (rare, but seen on paginated follow-up requests) blocks the
 // whole sync indefinitely with the spinner stuck on screen.
@@ -258,6 +278,7 @@ export async function getActivityLogs(afterDate) {
 
 export async function loadDashboardData() {
   fetchErrors = []
+  callTimings = []
   const date = today()
   const [
     summary,
@@ -277,22 +298,22 @@ export async function loadDashboardData() {
     spo2Intraday,
     activityLogs,
   ] = await Promise.all([
-    getDailySummary(date),
-    getHeartRateIntraday(date),
-    getSleep(date),
-    getHRV(date),
-    getRestingHeartRate(date),
-    getSpO2(date),
-    getRespiratoryRate(date),
-    getHRVRange(daysAgo(30), date),
-    getHeartRateRange(daysAgo(30), date),
-    getSleepRange(daysAgo(30), date),
-    getCardioFitness(),
-    getSkinTemp(date),
-    getBodyWeight(),
-    getBodyFat(),
-    getSpO2Intraday(date),
-    getActivityLogs(daysAgo(30)),
+    timed('summary', getDailySummary(date)),
+    timed('hrIntraday', getHeartRateIntraday(date)),
+    timed('sleep', getSleep(date)),
+    timed('hrv', getHRV(date)),
+    timed('rhr', getRestingHeartRate(date)),
+    timed('spo2', getSpO2(date)),
+    timed('br', getRespiratoryRate(date)),
+    timed('hrvRange', getHRVRange(daysAgo(30), date)),
+    timed('hrRange', getHeartRateRange(daysAgo(30), date)),
+    timed('sleepRange', getSleepRange(daysAgo(30), date)),
+    timed('cardioFitness', getCardioFitness()),
+    timed('skinTemp', getSkinTemp(date)),
+    timed('bodyWeight', getBodyWeight()),
+    timed('bodyFat', getBodyFat()),
+    timed('spo2Intraday', getSpO2Intraday(date)),
+    timed('activityLogs', getActivityLogs(daysAgo(30))),
   ])
 
   return { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, date }
