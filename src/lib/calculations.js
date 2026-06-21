@@ -73,6 +73,20 @@ export function calculateStrain(hrIntradayData) {
   return Math.round(strain * 10) / 10
 }
 
+// Fallback for when the raw per-sample heart-rate stream hasn't synced yet but
+// Fitbit's own Active Zone Minutes rollup (computed server-side, and often
+// available sooner) already shows real zone time today. Maps each AZM zone to
+// the closest point on the same weight scale calculateStrain uses, so a
+// workout that's reflected in AZM isn't reported as zero strain just because
+// the raw stream is lagging.
+export function calculateStrainFromAZM(azmZones) {
+  if (!azmZones) return 0
+  const raw = (azmZones.fatBurn || 0) * ZONE_WEIGHTS[2]
+    + (azmZones.cardio || 0) * ZONE_WEIGHTS[3]
+    + (azmZones.peak || 0) * ZONE_WEIGHTS[5]
+  return Math.round(Math.min(21, (raw / 900) * 21) * 10) / 10
+}
+
 export function calculateZoneMinutes(hrIntradayData) {
   if (!hrIntradayData?.['activities-heart-intraday']?.dataset) return [0, 0, 0, 0, 0]
   const maxHR = getMaxHR()
@@ -1055,11 +1069,15 @@ export function parseGoogleHealthData(raw) {
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
   const calories = Math.round(rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum'))
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
-  const activeMinutes = azmPoints.reduce((sum, p) => {
+  const azmZones = azmPoints.reduce((acc, p) => {
     const z = p.activeZoneMinutes
-    if (!z) return sum
-    return sum + (Number(z.sumInCardioHeartZone) || 0) + (Number(z.sumInPeakHeartZone) || 0) + (Number(z.sumInFatBurnHeartZone) || 0)
-  }, 0)
+    if (!z) return acc
+    acc.fatBurn += Number(z.sumInFatBurnHeartZone) || 0
+    acc.cardio += Number(z.sumInCardioHeartZone) || 0
+    acc.peak += Number(z.sumInPeakHeartZone) || 0
+    return acc
+  }, { fatBurn: 0, cardio: 0, peak: 0 })
+  const activeMinutes = azmZones.fatBurn + azmZones.cardio + azmZones.peak
 
   // VO2 Max from Google Health's daily-vo2-max data type, spanning the last 7 days —
   // sort by date explicitly rather than assuming the API's return order, since it's
@@ -1101,7 +1119,7 @@ export function parseGoogleHealthData(raw) {
 
   return {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
-    steps, calories, activeMinutes,
+    steps, calories, activeMinutes, azmZones,
     hrvHistory, rhrHistory, historyDates, sleepHistory,
     hrvByDate, rhrByDate,
     hrIntradayData: toLegacyHRDataset(hrIntraday),

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { isConnected, handleOAuthCallback } from './lib/auth'
 import { loadDashboardData, getFetchErrors } from './lib/api'
 import {
-  parseGoogleHealthData, calculateRecovery, calculateStrain, calculateZoneMinutes,
+  parseGoogleHealthData, calculateRecovery, calculateStrain, calculateStrainFromAZM, calculateZoneMinutes,
   calculateStressScore, calculateSleepScore, calculateSleepDebt, calculateOptimalSleepWindow,
   calculateTrainingLoad, calculateWeeklyPattern, getTrendVelocity, computeOptimalSleepHours,
   calculateTrainingEffect, calculateDaytimeStress, calculateHRR, saveLastKnownHRR,
@@ -263,7 +263,22 @@ export default function App() {
       hrvHistory: priorHRVHistory, rhrHistory: priorRHRHistory,
       preOptimalSleepHours: optimalSleepHours,
     })
-    const strainScore = calculateStrain(parsed.hrIntradayData)
+    // The raw per-sample heart-rate stream (calculateStrain's source) can lag
+    // well behind two other sources Fitbit computes server-side: per-workout
+    // zone-duration summaries (activityLogs) and the day's Active Zone Minutes
+    // rollup (azmZones) — both can show real zone time hours before the
+    // minute-by-minute HR samples for today finish syncing. Take whichever
+    // source shows the most strain so a day with real recorded activity isn't
+    // reported as zero just because the raw stream hasn't caught up yet.
+    const todayStr = localToday()
+    const todayWorkoutStrain = parsed.activityLogs
+      .filter(w => w.date === todayStr && w.strainContribution != null)
+      .reduce((sum, w) => sum + w.strainContribution, 0)
+    const strainScore = Math.max(
+      calculateStrain(parsed.hrIntradayData),
+      calculateStrainFromAZM(parsed.azmZones),
+      Math.min(21, Math.round(todayWorkoutStrain * 10) / 10),
+    )
     const zoneMinutes = calculateZoneMinutes(parsed.hrIntradayData)
     const trainingEffect = calculateTrainingEffect(zoneMinutes)
     const daytimeStress = calculateDaytimeStress(parsed.hrIntradayData, parsed.sleepEndHour, parsed.todayRHR)
