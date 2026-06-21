@@ -35,7 +35,7 @@ function timed(name, promise) {
 // whole sync indefinitely with the spinner stuck on screen.
 const FETCH_TIMEOUT_MS = 20000
 
-async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
+async function ghFetch(path, { method = 'GET', body } = {}, retried = false, rateLimitRetries = 0) {
   try {
     if (isTokenExpired()) {
       const ok = await refreshAccessToken()
@@ -61,8 +61,27 @@ async function ghFetch(path, { method = 'GET', body } = {}, retried = false) {
     if (res.status === 401) {
       // Token rejected despite looking valid locally (clock skew / early revoke).
       // Refresh once and retry before tearing down the session.
-      if (!retried && await refreshAccessToken()) return ghFetch(path, { method, body }, true)
+      if (!retried && await refreshAccessToken()) return ghFetch(path, { method, body }, true, rateLimitRetries)
       disconnect(); window.location.reload(); return null
+    }
+    if (res.status === 429) {
+      // Google's per-user quota (seen in practice: 300 requests/min) was
+      // exceeded. Retrying instantly — the old behavior — just adds to the
+      // pile-up that caused this and makes the next request fail too; back
+      // off and wait (honoring Retry-After if Google sent one) before trying
+      // again, capped so a truly stuck quota still gives up instead of
+      // silently eating the whole sync budget.
+      const MAX_RATE_LIMIT_RETRIES = 3
+      if (rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
+        const retryAfterSec = Number(res.headers.get('Retry-After'))
+        const baseMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0 ? retryAfterSec * 1000 : 1500 * 2 ** rateLimitRetries
+        const waitMs = baseMs * (0.75 + Math.random() * 0.5) // jitter so 16 parallel calls don't retry in lockstep
+        await new Promise(r => setTimeout(r, waitMs))
+        return ghFetch(path, { method, body }, retried, rateLimitRetries + 1)
+      }
+      const text = await res.text().catch(() => '')
+      fetchErrors.push(`${path} -> 429 (rate limited, gave up after ${MAX_RATE_LIMIT_RETRIES} retries): ${text}`)
+      return null
     }
     if (!res.ok) {
       const text = await res.text().catch(() => '')
@@ -180,6 +199,11 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
       pageToken = ''
     } else {
       pageToken = nextToken
+      // A small gap between pages of the SAME call. 16 data types page
+      // through Google simultaneously with no spacing at all, which is what
+      // burns through Google's 300-requests/minute-per-user quota so fast —
+      // this trims the burst without adding meaningful wall-clock time.
+      await new Promise(r => setTimeout(r, 120))
     }
   } while (pageToken)
   delete combined.nextPageToken
