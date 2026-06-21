@@ -394,7 +394,10 @@ export default function App() {
       // every getHistory/saveDay/saveDaysBatch/saveSnapshot call below talks
       // to IndexedDB. Racing only loadDashboardData() left those calls
       // unprotected, so a hang in any of them would still spin on "gathering"
-      // forever — wrapping the entire body guarantees a real error within 45s.
+      // forever — wrapping the entire body guarantees a real error eventually.
+      // 90s (not 45s): the download step makes 16 parallel requests, several
+      // paginated with a one-retry-per-page policy, so on a weak connection
+      // a single request can legitimately take 40s+ before anything is wrong.
       let syncStage = 'downloading data'
       await Promise.race([
         (async () => {
@@ -560,7 +563,7 @@ export default function App() {
         createBackup().catch(() => {})
       }
         })(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`Sync timed out after 45s (stuck at: ${syncStage})`)), 45000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Sync timed out after 90s (stuck at: ${syncStage})`)), 90000)),
       ])
     } catch (e) {
       console.error(e)
