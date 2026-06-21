@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { haptic } from '../lib/haptics'
 import {
   getRecoveryColor, getStressLabel, getUserHeightCm, getUserUnits,
-  calculateDistance, localToday,
+  calculateDistance, localToday, calculatePhysiologicalAge, getUserAge,
 } from '../lib/calculations'
 import { C, SERIF, STAGE, Label, mean, fmtDur, norm } from '../lib/almanacTheme'
 
@@ -333,12 +333,25 @@ function Contents({ data, onNav }) {
   const distKm = calculateDistance(data.steps || 0, getUserHeightCm())
   const dist = distKm ? (units === 'imperial' ? `${Math.round(distKm * 0.6214 * 10) / 10} mi` : `${distKm} km`) : `${(data.steps || 0).toLocaleString()} steps`
 
+  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0, weeklyZone2 = 0 } = data
+  const userAge = getUserAge()
+  const physAge = userAge > 0 ? calculatePhysiologicalAge({
+    avgHRV: mean(hrvHistory.filter(Boolean)) || 0,
+    avgRHR: mean(rhrHistory.filter(Boolean)) || 0,
+    avgSleep: sleepHistory.length ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60 : 7,
+    sleepConsistency: 0.8,
+    avgSteps: steps,
+    weeklyAZM: weeklyZone2,
+    vo2Max,
+    hrvHistory,
+  }) : null
+
   const entries = [
     ['recovery', 'Recovery', `${data.recoveryScore ?? '--'}`],
     ['sleep', 'Sleep', `${data.sleepScore ?? '--'}`],
     ['strain', 'Strain', `${data.strainScore ?? '--'} of 21`],
     ['stress', 'Stress', getStressLabel(data.stressScore ?? 0)],
-    ['chronos', 'Chronos', 'body age'],
+    ['chronos', 'Chronos', physAge != null ? `${physAge}y body age` : 'body age'],
     ['records', 'Movement', dist],
     ['journal', 'Journal', 'notes & tags'],
     ['trends', 'Trends', 'long view'],
