@@ -448,6 +448,13 @@ export default function HomeAlmanac({ data, onNav, onRefresh, isSyncing, syncFai
             {isSyncing ? 'gathering' : syncFailed ? 'sync failed' : lastSyncedAt ? `synced ${lastSyncedAt}` : `day ${daysOfData}`}
           </Label>
         </div>
+        {/* The generic "sync failed" label above hides the actual reason — show
+            it so a stuck/failed sync is debuggable instead of a dead end. */}
+        {syncFailed && localStorage.getItem('sync_debug_error') && (
+          <p className="text-[11px] mt-1 break-words" style={{ color: '#D98E3F', fontFamily: SERIF }}>
+            {localStorage.getItem('sync_debug_error')}
+          </p>
+        )}
       </div>
 
       {/* The Reading */}

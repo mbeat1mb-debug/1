@@ -102,11 +102,18 @@ export async function refreshAccessToken() {
   refreshPromise = (async () => {
     const { refresh_token } = getTokens()
     if (!refresh_token) return false
+    // Without a timeout, a slow/hung /api/refresh call (cold serverless start,
+    // stalled connection) blocks every ghFetch behind it forever — the sync
+    // never finishes and the UI is stuck on "gathering" with nothing to show
+    // for it, since nothing ever rejects or resolves to let the caller move on.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 15000)
     try {
       const res = await fetch('/api/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token }),
+        signal: controller.signal,
       })
       if (!res.ok) return false
       const tokens = await res.json()
@@ -114,6 +121,8 @@ export async function refreshAccessToken() {
       return true
     } catch {
       return false
+    } finally {
+      clearTimeout(timer)
     }
   })()
   try {
