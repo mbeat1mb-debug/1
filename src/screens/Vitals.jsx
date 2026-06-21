@@ -248,7 +248,7 @@ export default function Vitals({ data, onNav }) {
           <div className="flex gap-6 mb-4">
             <div className="flex-1">
               <Label>Body Fat</Label>
-              <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 2 }}>{bfLatest?.fatPct ?? '—'}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginLeft: 4 }}>%</span></p>
+              <p style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: C.ink, marginTop: 2 }}>{bfLatest?.fatPct != null ? Math.round(bfLatest.fatPct * 10) / 10 : '—'}<span style={{ fontFamily: SERIF, fontSize: 12, color: C.faint, marginLeft: 4 }}>%</span></p>
               {bfDelta != null && <DeltaChip value={bfDelta} unit="%" lowerIsBetter />}
             </div>
             <div className="flex-1">

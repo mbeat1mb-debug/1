@@ -988,7 +988,7 @@ export default function Settings({ onBack }) {
       const p = JSON.parse(match[0])
       const lbsToKg = lbs => (lbs != null && lbs > 0) ? Math.round(lbs / 2.2046 * 10) / 10 : null
       const weightKg = lbsToKg(p.weightLbs)
-      const fatPct = (p.bodyFatPct != null && p.bodyFatPct > 0) ? p.bodyFatPct : null
+      const fatPct = (p.bodyFatPct != null && p.bodyFatPct > 0) ? Math.round(p.bodyFatPct * 10) / 10 : null
       const humeExtras = {}
       if (lbsToKg(p.leanMassLbs)) humeExtras.leanMassKg = lbsToKg(p.leanMassLbs)
       if (lbsToKg(p.skelMuscleMassLbs)) humeExtras.skelMuscleKg = lbsToKg(p.skelMuscleMassLbs)
@@ -1014,7 +1014,7 @@ export default function Settings({ onBack }) {
       const parts = [
         weightKg ? `${Math.round(weightKg * 2.2046)} lbs` : null,
         fatPct ? `${fatPct}% fat` : null,
-        humeExtras.visceralFatIndex != null ? `VFI ${humeExtras.visceralFatIndex}` : null,
+        humeExtras.visceralFatIndex != null ? `VFI ${Math.round(humeExtras.visceralFatIndex * 10) / 10}` : null,
         humeExtras.skelMuscleKg ? `${Math.round(humeExtras.skelMuscleKg * 2.2046)} lbs muscle` : null,
       ].filter(Boolean)
       setHumeMsg(`Saved to ${date}: ${parts.join(' · ')}`)
