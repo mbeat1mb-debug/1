@@ -3,6 +3,7 @@ import { haptic } from '../lib/haptics'
 import {
   getRecoveryColor, getStressLabel, getUserHeightCm, getUserUnits,
   calculateDistance, localToday, calculatePhysiologicalAge, getUserAge,
+  calculateSRI, getLastKnownHRR,
 } from '../lib/calculations'
 import { C, SERIF, STAGE, Label, mean, fmtDur, norm } from '../lib/almanacTheme'
 
@@ -333,17 +334,35 @@ function Contents({ data, onNav }) {
   const distKm = calculateDistance(data.steps || 0, getUserHeightCm())
   const dist = distKm ? (units === 'imperial' ? `${Math.round(distKm * 0.6214 * 10) / 10} mi` : `${distKm} km`) : `${(data.steps || 0).toLocaleString()} steps`
 
-  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0, weeklyZone2 = 0 } = data
+  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0 } = data
   const userAge = getUserAge()
+  // Mirrors Chronos.jsx's calculatePhysiologicalAge call exactly (same inputs,
+  // same fallbacks) so this tile's number always matches the Chronos screen.
+  const sri = calculateSRI(sleepHistory)
+  const durationConsistency = sleepHistory.length >= 7
+    ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) => {
+        if (i === 0) return acc
+        return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
+      }, 0) / 6) / 2
+    : 0.7
+  const sleepConsistency = sri !== null ? sri : durationConsistency
+  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
+  const avgDeepPct = stageEntries.length
+    ? stageEntries.reduce((a, s) => a + (s.deepMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
+    : 0
+  const avgRemPct = stageEntries.length
+    ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
+    : 0
+  const weeklyAZM = data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0)
+  const lastKnownHRR = data.hrr ?? getLastKnownHRR()
   const physAge = userAge > 0 ? calculatePhysiologicalAge({
     avgHRV: mean(hrvHistory.filter(Boolean)) || 0,
     avgRHR: mean(rhrHistory.filter(Boolean)) || 0,
     avgSleep: sleepHistory.length ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60 : 7,
-    sleepConsistency: 0.8,
+    sleepConsistency,
     avgSteps: steps,
-    weeklyAZM: weeklyZone2,
-    vo2Max,
-    hrvHistory,
+    weeklyAZM,
+    vo2Max, avgDeepPct, avgRemPct, hrvHistory, lastKnownHRR,
   }) : null
 
   const entries = [
