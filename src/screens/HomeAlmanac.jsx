@@ -165,7 +165,7 @@ function DayRibbon({ data }) {
   const accent = getRecoveryColor(data.recoveryScore || 0)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }} preserveAspectRatio="none">
       {/* hour grid */}
       {ticks.map(tk => (
         <line key={tk.ms} x1={x(tk.ms)} x2={x(tk.ms)} y1={sleepTop} y2={hrBottom} stroke={C.ruleSoft} strokeWidth={1} />
