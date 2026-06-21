@@ -170,13 +170,15 @@ function Instrument({ label, value, unit, sub, pos01, base01, accent }) {
 }
 
 function Instruments({ data, onNav }) {
-  const hrvVals = (data.hrvHistory || []).filter(Boolean)
+  const allHrvVals = (data.hrvHistory || []).filter(Boolean)
+  const hrvVals = allHrvVals.length > 1 ? allHrvVals.slice(0, -1) : allHrvVals
   const hrvMin = hrvVals.length ? Math.min(...hrvVals) : 30
   const hrvMax = hrvVals.length ? Math.max(...hrvVals) : 90
   const hrvBase = mean(hrvVals)
   const hrv = data.todayHRV || 0
 
-  const rhrVals = (data.rhrHistory || []).filter(Boolean)
+  const allRhrVals = (data.rhrHistory || []).filter(Boolean)
+  const rhrVals = allRhrVals.length > 1 ? allRhrVals.slice(0, -1) : allRhrVals
   const rhrMin = rhrVals.length ? Math.min(...rhrVals) : 45
   const rhrMax = rhrVals.length ? Math.max(...rhrVals) : 70
   const rhrBase = mean(rhrVals)
