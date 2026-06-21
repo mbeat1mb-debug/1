@@ -16,6 +16,11 @@ function openDB() {
     }
     req.onsuccess = ({ target: { result } }) => resolve(result)
     req.onerror = ({ target: { error } }) => reject(error)
+    // Fires when another open tab/connection holds an older DB version open,
+    // blocking this upgrade — onsuccess/onerror never fire in that case, so
+    // without this the whole sync hangs forever waiting on a promise that
+    // will never settle.
+    req.onblocked = () => reject(new Error('IndexedDB blocked by another open tab'))
   })
 }
 

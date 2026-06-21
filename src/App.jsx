@@ -388,7 +388,15 @@ export default function App() {
     setSyncFailed(false)
 
     try {
-      const raw = await loadDashboardData()
+      // Belt-and-suspenders watchdog: every individual network call inside
+      // loadDashboardData has its own timeout, but if something we haven't
+      // anticipated hangs anyway (a stuck IndexedDB transaction, a promise
+      // that never settles), this guarantees the UI gives up and reports a
+      // real error within 45s instead of spinning on "gathering" forever.
+      const raw = await Promise.race([
+        loadDashboardData(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timed out after 45s')), 45000)),
+      ])
       const fetchErrors = getFetchErrors()
       if (fetchErrors.length) {
         try { localStorage.setItem('sync_debug_error', fetchErrors.join('\n')) } catch {}
