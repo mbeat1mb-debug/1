@@ -368,8 +368,11 @@ export async function loadDashboardData() {
     timed('bodyFat', getBodyFat()),
     timed('spo2Intraday', getSpO2Intraday(date)),
     timed('activityLogs', getActivityLogs(daysAgo(30))),
-    timed('stepsRange', getStepsRange(daysAgo(30), date)),
-    timed('caloriesRange', getCaloriesRange(daysAgo(30), date)),
+    // The dailyRollUp method caps window_size_days * page_size at 14 days for
+    // these data types (confirmed via a live INVALID_ROLLUP_QUERY_DURATION
+    // error when 30 was requested) — 14 is the most history one request can ask for.
+    timed('stepsRange', getStepsRange(daysAgo(14), date)),
+    timed('caloriesRange', getCaloriesRange(daysAgo(14), date)),
   ])
 
   return { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, stepsRange, caloriesRange, date }
