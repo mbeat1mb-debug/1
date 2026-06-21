@@ -388,15 +388,16 @@ export default function App() {
     setSyncFailed(false)
 
     try {
-      // Belt-and-suspenders watchdog: every individual network call inside
-      // loadDashboardData has its own timeout, but if something we haven't
-      // anticipated hangs anyway (a stuck IndexedDB transaction, a promise
-      // that never settles), this guarantees the UI gives up and reports a
-      // real error within 45s instead of spinning on "gathering" forever.
-      const raw = await Promise.race([
-        loadDashboardData(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timed out after 45s')), 45000)),
-      ])
+      // Belt-and-suspenders watchdog covering the WHOLE sync, not just the
+      // network fetch: iOS Safari has a known bug where an IndexedDB request
+      // can hang forever without ever firing onsuccess/onerror/onblocked, and
+      // every getHistory/saveDay/saveDaysBatch/saveSnapshot call below talks
+      // to IndexedDB. Racing only loadDashboardData() left those calls
+      // unprotected, so a hang in any of them would still spin on "gathering"
+      // forever — wrapping the entire body guarantees a real error within 45s.
+      await Promise.race([
+        (async () => {
+      const raw = await loadDashboardData()
       const fetchErrors = getFetchErrors()
       if (fetchErrors.length) {
         try { localStorage.setItem('sync_debug_error', fetchErrors.join('\n')) } catch {}
@@ -551,6 +552,9 @@ export default function App() {
       if (!lastBackup || !lastBackup.startsWith(today)) {
         createBackup().catch(() => {})
       }
+        })(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timed out after 45s')), 45000)),
+      ])
     } catch (e) {
       console.error(e)
       localStorage.setItem('sync_debug_error', `Sync crashed: ${e.message}`)
