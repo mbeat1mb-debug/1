@@ -69,8 +69,11 @@ export async function saveDay(result) {
       br: result.todayBR ?? null,
       skinTempDev: result.skinTempDev ?? null,
     })
-  } catch {
-    // IndexedDB write failures are non-fatal; history reconstructs from the Google Health API on next sync
+  } catch (err) {
+    // Non-fatal for days still inside the ~30-day Google Health resync window
+    // (they'll be reconstructed next sync), but silent otherwise — log so a
+    // recurring failure (e.g. storage quota) is at least visible in the console.
+    console.error('saveDay failed', err)
   }
 }
 
@@ -86,7 +89,9 @@ export async function saveDaysBatch(rows) {
       tx.onabort = ({ target: { error } }) => reject(error)
       for (const row of rows) store.put(row)
     })
-  } catch {}
+  } catch (err) {
+    console.error('saveDaysBatch failed', err)
+  }
 }
 
 export async function getHistory(days = 90) {

@@ -4,7 +4,7 @@ import {
   ReferenceLine, ResponsiveContainer, LineChart, Line, BarChart, Bar,
 } from 'recharts'
 import { LineGraph } from '../components/TrendChart'
-import { getHRVNorm, getUserAge, getRecoveryColor, localToday } from '../lib/calculations'
+import { getHRVNorm, getUserAge, getRecoveryColor, localToday, calculateSleepScore } from '../lib/calculations'
 import { getHistory } from '../lib/db'
 import { C, SERIF, Label, BackLink, SectionLabel, Note } from '../lib/almanacTheme'
 
@@ -174,7 +174,7 @@ export default function Trends({ data, onNav }) {
       .slice(-30)
       .map(d => ({
         label: dayLabel(d.date, todayStr),
-        sleepScore: Math.round(Math.min(100, (d.sleep / 480) * 70 + (d.sleepEfficiency / 100) * 30)),
+        sleepScore: calculateSleepScore({ minutesAsleep: d.sleep, efficiency: d.sleepEfficiency }),
       })),
     [calendarDays, todayStr]
   )

@@ -1080,13 +1080,13 @@ export function parseGoogleHealthData(raw) {
   for (const p of (stepsRange?.rollupDataPoints ?? [])) {
     const date = pointDate(p)
     const val = rollupValue({ rollupDataPoints: [p] }, 'steps', 'countSum')
-    if (date && val) stepsByDate[date] = Math.round(val)
+    if (date) stepsByDate[date] = Math.round(val)
   }
   const caloriesByDate = {}
   for (const p of (caloriesRange?.rollupDataPoints ?? [])) {
     const date = pointDate(p)
     const val = rollupValue({ rollupDataPoints: [p] }, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
-    if (date && val) caloriesByDate[date] = Math.round(val)
+    if (date) caloriesByDate[date] = Math.round(val)
   }
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
   const azmZones = azmPoints.reduce((acc, p) => {

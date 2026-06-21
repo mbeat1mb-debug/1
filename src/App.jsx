@@ -473,9 +473,7 @@ export default function App() {
         if (newRows.length) { syncStage = 'saving calendar batch'; await saveDaysBatch(newRows) }
       }
       const syncedDates = new Set(result.calendarDays.map(d => d.date))
-      const olderDays = dbHistory
-        .filter(d => !syncedDates.has(d.date))
-        .map(d => ({ date: d.date, recovery: d.recovery, strain: d.strain, sleep: d.sleep, hrv: d.hrv, rhr: d.rhr, stressScore: d.stressScore }))
+      const olderDays = dbHistory.filter(d => !syncedDates.has(d.date))
       const mergedCalendar = [...olderDays, ...result.calendarDays]
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-90)
