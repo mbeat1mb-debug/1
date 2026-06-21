@@ -1011,7 +1011,7 @@ function toLegacySpo2Minutes(spo2Intraday) {
 }
 
 export function parseGoogleHealthData(raw) {
-  const { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday } = raw
+  const { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, stepsRange, caloriesRange } = raw
 
   // Date-aligned histories prevent index desync when API returns different date ranges
   const hrvByDate = {}
@@ -1073,6 +1073,21 @@ export function parseGoogleHealthData(raw) {
   const todayBR = todayBRRaw != null ? Math.round(Number(todayBRRaw) * 10) / 10 : 14
   const steps = rollupValue(summary?.steps, 'steps', 'countSum')
   const calories = Math.round(rollupValue(summary?.calories, 'totalCalories', 'kilocaloriesSum', 'kcalSum'))
+
+  // Per-day steps/calories so "usual" comparisons have real history to compare
+  // against, instead of only ever knowing today's totals.
+  const stepsByDate = {}
+  for (const p of (stepsRange?.rollupDataPoints ?? [])) {
+    const date = pointDate(p)
+    const val = rollupValue({ rollupDataPoints: [p] }, 'steps', 'countSum')
+    if (date && val) stepsByDate[date] = Math.round(val)
+  }
+  const caloriesByDate = {}
+  for (const p of (caloriesRange?.rollupDataPoints ?? [])) {
+    const date = pointDate(p)
+    const val = rollupValue({ rollupDataPoints: [p] }, 'totalCalories', 'kilocaloriesSum', 'kcalSum')
+    if (date && val) caloriesByDate[date] = Math.round(val)
+  }
   const azmPoints = summary?.activeZoneMinutes?.rollupDataPoints ?? []
   const azmZones = azmPoints.reduce((acc, p) => {
     const z = p.activeZoneMinutes
@@ -1126,7 +1141,7 @@ export function parseGoogleHealthData(raw) {
     todayHRV, todayRHR, todaySleep, todaySpO2, todayBR,
     steps, calories, activeMinutes, azmZones,
     hrvHistory, rhrHistory, historyDates, sleepHistory,
-    hrvByDate, rhrByDate,
+    hrvByDate, rhrByDate, stepsByDate, caloriesByDate,
     hrIntradayData: toLegacyHRDataset(hrIntraday),
     spo2IntradayLegacy: toLegacySpo2Minutes(spo2Intraday),
     vo2Max, vo2MaxRange, skinTempDev, sleepEndHour,

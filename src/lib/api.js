@@ -246,6 +246,28 @@ export async function getDailySummary(date = today()) {
   return { steps, calories, activeZoneMinutes }
 }
 
+// Same rollup, but windowSizeDays: 1 over a date range so each day gets its
+// own bucket in the response, instead of one summed bucket for the whole range.
+export async function getStepsRange(startDate, endDate) {
+  return ghFetch(`/dataTypes/steps/dataPoints:dailyRollUp`, {
+    method: 'POST',
+    body: {
+      range: { start: civilDateTime(startDate, 0, 0, 0), end: civilDateTime(endDate, 23, 59, 59) },
+      windowSizeDays: 1,
+    },
+  })
+}
+
+export async function getCaloriesRange(startDate, endDate) {
+  return ghFetch(`/dataTypes/total-calories/dataPoints:dailyRollUp`, {
+    method: 'POST',
+    body: {
+      range: { start: civilDateTime(startDate, 0, 0, 0), end: civilDateTime(endDate, 23, 59, 59) },
+      windowSizeDays: 1,
+    },
+  })
+}
+
 export async function getHeartRateIntraday(date = today()) {
   return listDataPoints('heart-rate', date, date, 'sample_time.physical_time')
 }
@@ -327,6 +349,8 @@ export async function loadDashboardData() {
     bodyFat,
     spo2Intraday,
     activityLogs,
+    stepsRange,
+    caloriesRange,
   ] = await Promise.all([
     timed('summary', getDailySummary(date)),
     timed('hrIntraday', getHeartRateIntraday(date)),
@@ -344,7 +368,9 @@ export async function loadDashboardData() {
     timed('bodyFat', getBodyFat()),
     timed('spo2Intraday', getSpO2Intraday(date)),
     timed('activityLogs', getActivityLogs(daysAgo(30))),
+    timed('stepsRange', getStepsRange(daysAgo(30), date)),
+    timed('caloriesRange', getCaloriesRange(daysAgo(30), date)),
   ])
 
-  return { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, date }
+  return { summary, hrIntraday, sleep, hrv, rhr, spo2, br, hrvRange, hrRange, sleepRange, cardioFitness, skinTemp, bodyWeight, bodyFat, spo2Intraday, activityLogs, stepsRange, caloriesRange, date }
 }

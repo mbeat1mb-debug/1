@@ -344,6 +344,8 @@ export default function App() {
       sleepEfficiency: s.efficiency ?? 0,
       hrv: parsed.hrvByDate[s.date] ?? null,
       rhr: parsed.rhrByDate[s.date] ?? null,
+      steps: parsed.stepsByDate[s.date] ?? null,
+      calories: parsed.caloriesByDate[s.date] ?? null,
     }))
 
     const hrr = calculateHRR(parsed.hrIntradayData)

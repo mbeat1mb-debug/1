@@ -172,17 +172,21 @@ function Instrument({ label, value, unit, sub, pos01, base01, accent }) {
 function Instruments({ data, onNav }) {
   const allHrvVals = (data.hrvHistory || []).filter(Boolean)
   const hrvVals = allHrvVals.length > 1 ? allHrvVals.slice(0, -1) : allHrvVals
-  const hrvMin = hrvVals.length ? Math.min(...hrvVals) : 30
-  const hrvMax = hrvVals.length ? Math.max(...hrvVals) : 90
-  const hrvBase = mean(hrvVals)
   const hrv = data.todayHRV || 0
+  // The scale's ends must stretch to fit today's reading too, or a new
+  // high/low gets clamped to the edge and overlaps the baseline tick.
+  const hrvScaleVals = hrv ? [...hrvVals, hrv] : hrvVals
+  const hrvMin = hrvScaleVals.length ? Math.min(...hrvScaleVals) : 30
+  const hrvMax = hrvScaleVals.length ? Math.max(...hrvScaleVals) : 90
+  const hrvBase = mean(hrvVals)
 
   const allRhrVals = (data.rhrHistory || []).filter(Boolean)
   const rhrVals = allRhrVals.length > 1 ? allRhrVals.slice(0, -1) : allRhrVals
-  const rhrMin = rhrVals.length ? Math.min(...rhrVals) : 45
-  const rhrMax = rhrVals.length ? Math.max(...rhrVals) : 70
-  const rhrBase = mean(rhrVals)
   const rhr = data.todayRHR || 0
+  const rhrScaleVals = rhr ? [...rhrVals, rhr] : rhrVals
+  const rhrMin = rhrScaleVals.length ? Math.min(...rhrScaleVals) : 45
+  const rhrMax = rhrScaleVals.length ? Math.max(...rhrScaleVals) : 70
+  const rhrBase = mean(rhrVals)
 
   const sMins = data.todaySleep?.minutesAsleep || 0
   const tsb = data.trainingLoad?.tsb ?? 0
