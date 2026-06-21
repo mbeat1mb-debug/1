@@ -180,7 +180,13 @@ async function listDataPoints(dataType, startDate, endDate, timeField) {
   // silently truncated.
   const MAX_PAGES = 500
   do {
-    const params = { filter, ...(pageToken ? { pageToken } : {}) }
+    // Ask for the largest page Google will give us. The API defaults to a
+    // small page size if pageSize is omitted, which is fine for low-frequency
+    // types but turns a high-frequency one like heart-rate-intraday (a sample
+    // every few seconds, thousands a day) into dozens of round trips — each
+    // one a chance to hit the per-minute rate limit and a chance to be slow,
+    // which is what burned through the entire 90s sync budget on one call.
+    const params = { filter, pageSize: '1000', ...(pageToken ? { pageToken } : {}) }
     const path = `/dataTypes/${dataType}/dataPoints?${new URLSearchParams(params).toString()}`
     let page = await ghFetch(path)
     // Pages are returned in chronological order, so a single flaky page fetch
