@@ -391,10 +391,10 @@ export default function App() {
       const raw = await loadDashboardData()
       const fetchErrors = getFetchErrors()
       if (fetchErrors.length) {
-        localStorage.setItem('sync_debug_error', fetchErrors.join('\n'))
+        try { localStorage.setItem('sync_debug_error', fetchErrors.join('\n')) } catch {}
         setSyncFailed(true)
       } else {
-        localStorage.removeItem('sync_debug_error')
+        try { localStorage.removeItem('sync_debug_error') } catch {}
         try { localStorage.setItem('raw_health_dump', JSON.stringify(summarizeForDebug(raw))) } catch {}
       }
       if (!raw) return
@@ -408,7 +408,32 @@ export default function App() {
       const dbHistory = await getHistory(90)
       const existingDates = new Set(dbHistory.map(r => r.date))
       await saveDay(result)
+
+      // dbHistory was fetched before saveDay wrote today's row, so anything
+      // derived from dbHistory below is missing today unless we splice it in.
+      const todayRow = {
+        date: result.date,
+        recovery: result.recoveryScore,
+        strain: result.strainScore,
+        sleep: result.todaySleep?.minutesAsleep ?? 0,
+        stressScore: result.stressScore,
+        hrv: result.todayHRV,
+        rhr: result.todayRHR,
+        activeMinutes: result.activeMinutes ?? 0,
+        vo2Max: result.vo2Max ?? 0,
+        zone2Minutes: result.zoneMinutes?.[1] ?? 0,
+      }
+      const effectiveHistory = [...dbHistory.filter(d => d.date !== todayRow.date), todayRow]
+
+      // result.calendarDays is rebuilt from sleep/HRV/RHR history each sync and
+      // never carries strain (no historical raw-HR stream to compute it from) —
+      // pull it back in from previously-saved IndexedDB rows so dates we've
+      // already synced don't lose their known strain when merged below.
+      const strainByDate = {}
+      for (const d of dbHistory) if (d.strain != null) strainByDate[d.date] = d.strain
+      strainByDate[todayRow.date] = todayRow.strain
       if (result.calendarDays?.length) {
+        result.calendarDays = result.calendarDays.map(d => ({ ...d, strain: strainByDate[d.date] ?? d.strain ?? null }))
         const newRows = result.calendarDays
           .filter(d => d.date && !existingDates.has(d.date))
           .map(d => ({
@@ -431,7 +456,7 @@ export default function App() {
       const syncedDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory
         .filter(d => !syncedDates.has(d.date))
-        .map(d => ({ date: d.date, recovery: d.recovery, strain: d.strain, sleep: d.sleep }))
+        .map(d => ({ date: d.date, recovery: d.recovery, strain: d.strain, sleep: d.sleep, hrv: d.hrv, rhr: d.rhr, stressScore: d.stressScore }))
       const mergedCalendar = [...olderDays, ...result.calendarDays]
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-90)
@@ -439,7 +464,7 @@ export default function App() {
       // Training load from full strain history in DB — keep real 0-strain rest
       // days (only drop entries with no recorded strain at all), since the EWMA
       // below assumes each array slot is one calendar day apart.
-      const strainHistory = dbHistory.map(d => d.strain).filter(v => v != null)
+      const strainHistory = effectiveHistory.map(d => d.strain).filter(v => v != null)
       const trainingLoad = calculateTrainingLoad(strainHistory)
       const strainVelocity = getTrendVelocity(strainHistory)
 
@@ -459,16 +484,12 @@ export default function App() {
       const rsTrendCutoff = new Date(result.date)
       rsTrendCutoff.setDate(rsTrendCutoff.getDate() - 13)
       const rsTrendCutoffStr = rsTrendCutoff.toISOString().split('T')[0]
-      const rsTrend = dbHistory
+      const rsTrend = effectiveHistory
         .filter(d => d.recovery > 0 && d.strain > 0 && d.date >= rsTrendCutoffStr)
         .map(d => ({ label: d.date.slice(5), ratio: Math.round(d.recovery / d.strain * 10) / 10 }))
 
       // VO2 Max longitudinal history from IndexedDB (updates infrequently)
-      // dbHistory is fetched before saveDay, so today's entry may not be present yet — append it
-      const vo2MaxHistory = dbHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
-      if (result.vo2Max > 0 && (vo2MaxHistory.length === 0 || vo2MaxHistory[vo2MaxHistory.length - 1].date !== result.date)) {
-        vo2MaxHistory.push({ date: result.date, vo2Max: result.vo2Max })
-      }
+      const vo2MaxHistory = effectiveHistory.filter(d => d.vo2Max > 0).map(d => ({ date: d.date, vo2Max: d.vo2Max }))
 
       const finalResult = { ...result, calendarDays: mergedCalendar, trainingLoad, weeklyPattern, strainVelocity, weeklyAZM, weeklyZone2, vo2MaxHistory, rsTrend }
       await saveSnapshot(finalResult)
@@ -477,7 +498,7 @@ export default function App() {
 
       const now = Date.now()
       setLastSyncedAt(now)
-      localStorage.setItem('last_synced_at', String(now))
+      try { localStorage.setItem('last_synced_at', String(now)) } catch {}
 
       // Store latest scores in KV for rich push notifications (fire-and-forget)
       fetch('/api/push-data', {
@@ -587,7 +608,12 @@ export default function App() {
   if (!connected && !demo && tab !== 'settings') return <ConnectScreen onNav={handleNav} />
 
   const data = demo ? DEMO : (appData || DEMO)
-  const showNav = tab !== 'settings' && tab !== 'coach' && tab !== 'vitals'
+  // BottomNav only has buttons for home/recovery/sleep/strain/chronos — showing
+  // it on screens it has no tab for (stress/journal/records/trends/coach/
+  // settings/vitals) leaves none of its buttons highlighted and is confusing.
+  // Those screens have their own BackLink, so they don't need the bottom bar.
+  const NAV_SCREENS = new Set(['home', 'recovery', 'sleep', 'strain', 'chronos'])
+  const showNav = NAV_SCREENS.has(tab)
   const showAlerts = tab === 'home' && data.alerts?.length > 0
 
   const screenCls = transDir >= 0 ? 'screen-fwd' : 'screen-back'

@@ -81,9 +81,14 @@ export function calculateStrain(hrIntradayData) {
 // the raw stream is lagging.
 export function calculateStrainFromAZM(azmZones) {
   if (!azmZones) return 0
+  // Fitbit's "peak" AZM zone is >=85% max HR, which straddles this file's
+  // zone 4 (80-89%, weight 8) and zone 5 (90%+, weight 16) — AZM doesn't
+  // tell us the split, so use the midpoint weight instead of the zone-5
+  // weight, which would overstate strain for time spent at 85-89%.
+  const PEAK_WEIGHT = (ZONE_WEIGHTS[4] + ZONE_WEIGHTS[5]) / 2
   const raw = (azmZones.fatBurn || 0) * ZONE_WEIGHTS[2]
     + (azmZones.cardio || 0) * ZONE_WEIGHTS[3]
-    + (azmZones.peak || 0) * ZONE_WEIGHTS[5]
+    + (azmZones.peak || 0) * PEAK_WEIGHT
   return Math.round(Math.min(21, (raw / 900) * 21) * 10) / 10
 }
 
@@ -1329,6 +1334,7 @@ export function calculateBMI(heightCm, weightKg) {
 }
 
 export function getBMILabel(bmi) {
+  if (bmi == null || isNaN(bmi)) return '—'
   if (bmi < 18.5) return 'Underweight'
   if (bmi < 25) return 'Healthy'
   if (bmi < 30) return 'Overweight'
@@ -1336,6 +1342,7 @@ export function getBMILabel(bmi) {
 }
 
 export function getBMIColor(bmi) {
+  if (bmi == null || isNaN(bmi)) return '#9C9587'
   if (bmi < 18.5) return '#D9A23F'
   if (bmi < 25) return '#3E9C7E'
   if (bmi < 30) return '#D9A23F'
@@ -1463,6 +1470,7 @@ export function calculateTrainingEffect(zoneMinutes) {
 // Male-oriented ACE ranges. Colors follow the app's 3-tier semantic palette
 // (teal = optimal, amber = caution, red = high) — no one-off colors.
 export function getBodyFatLabel(pct) {
+  if (pct == null || isNaN(pct)) return '—'
   if (pct < 6) return 'Essential'
   if (pct < 14) return 'Athletic'
   if (pct < 18) return 'Fitness'
@@ -1471,6 +1479,7 @@ export function getBodyFatLabel(pct) {
 }
 
 export function getBodyFatColor(pct) {
+  if (pct == null || isNaN(pct)) return '#9C9587'
   if (pct < 6) return '#D9A23F'   // very lean — below healthy floor
   if (pct < 18) return '#3E9C7E'  // athletic / fitness — optimal
   if (pct < 25) return '#D9A23F'  // acceptable
@@ -1808,7 +1817,7 @@ export function calculateReadiness({ recoveryScore = 0, recoveryVelocity = 0, sl
   let headline, color
   if (recoveryScore >= 67 && sleepDebt < 1 && tsb > -15 && stressScore < 60 && recoveryVelocity >= -2) {
     headline = 'Primed'; color = '#3E9C7E'
-  } else if (recoveryScore >= 34 || (recoveryScore >= 50 && sleepDebt < 2)) {
+  } else if (recoveryScore >= 50 || (recoveryScore >= 34 && sleepDebt < 2)) {
     headline = 'Balanced'; color = '#9B7FD4'
   } else if (recoveryScore >= 15) {
     headline = 'Strained'; color = '#D9A23F'

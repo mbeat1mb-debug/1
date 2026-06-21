@@ -785,6 +785,7 @@ export default function Settings({ onBack }) {
   const [bodyFatPct, setBodyFatPct] = useState(() => localStorage.getItem('user_body_fat_pct') || '')
   const [vo2MaxVal, setVo2MaxVal] = useState(() => localStorage.getItem('user_vo2_max') || '')
   const [vo2MaxError, setVo2MaxError] = useState('')
+  const [bodyFatError, setBodyFatError] = useState('')
 
   // Waist circumference — stored in cm, displayed per units preference
   const storedWaistCm = parseFloat(localStorage.getItem('user_waist_cm') || '0') || 0
@@ -847,8 +848,15 @@ export default function Settings({ onBack }) {
       }
 
       const fatPct = parseFloat(bodyFatPct)
-      if (bodyFatPct.trim() === '') localStorage.removeItem('user_body_fat_pct')
-      else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
+      if (bodyFatPct.trim() === '') {
+        localStorage.removeItem('user_body_fat_pct')
+        setBodyFatError('')
+      } else if (!isNaN(fatPct) && fatPct > 0 && fatPct <= 60) {
+        localStorage.setItem('user_body_fat_pct', String(Math.round(fatPct * 10) / 10))
+        setBodyFatError('')
+      } else {
+        setBodyFatError('Enter a value between 0 and 60')
+      }
 
       // Write a manual-source history entry so a sync can't overwrite this weight
       const enteredKg = units === 'imperial'
@@ -1049,11 +1057,16 @@ export default function Settings({ onBack }) {
             if (fatPct) fatCount++
           }
         }
-        // Set latest body fat % as the live setting
+        // Set latest body fat % and weight as the live settings
         const latestDate = dates[dates.length - 1]
         if (byDate[latestDate]?.fatPct) {
           localStorage.setItem('user_body_fat_pct', String(byDate[latestDate].fatPct))
           setBodyFatPct(String(byDate[latestDate].fatPct))
+        }
+        if (byDate[latestDate]?.kg) {
+          const latestKg = byDate[latestDate].kg
+          if (units === 'imperial') setWeightLbs(String(Math.round(latestKg * 2.2046 * 10) / 10))
+          else setWeightKg(String(latestKg))
         }
         setAhMsg(`Imported ${weightCount} weight + ${fatCount} body fat readings (${dates[0]} → ${latestDate})`)
       } catch (err) {
@@ -1265,6 +1278,7 @@ export default function Settings({ onBack }) {
               placeholder="18"
               value={bodyFatPct}
               onChange={e => setBodyFatPct(e.target.value)}
+              style={{ borderColor: bodyFatError ? '#ef4444' : '#DBD1BF' }}
             />
             <span className="text-xs text-[#b3a890]">%</span>
             {bodyFatPct && !isNaN(parseFloat(bodyFatPct)) && (
@@ -1273,6 +1287,7 @@ export default function Settings({ onBack }) {
               </span>
             )}
           </div>
+          {bodyFatError && <p className="text-[11px] mt-1" style={{ color: '#ef4444' }}>{bodyFatError}</p>}
         </div>
 
         {previewBMI && (
