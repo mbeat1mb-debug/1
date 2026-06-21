@@ -3,7 +3,7 @@ import { localToday, localDateOf } from './calculations'
 export function detectAlerts(data) {
   const {
     hrvHistory = [], rhrHistory = [], recoveryHistory = [],
-    stressScore = 0, sleepDebt = 0,
+    stressScore = 0,
     todayHRV = 0, todayRHR = 0, todayBR = 0,
   } = data
   const alerts = []
@@ -76,18 +76,6 @@ export function detectAlerts(data) {
         icon: '🤒',
       })
     }
-  }
-
-  // Sleep debt over 3 hours this week
-  if (sleepDebt >= 3) {
-    alerts.push({
-      id: 'sleep_debt',
-      severity: sleepDebt >= 5 ? 'danger' : 'warning',
-      title: `${sleepDebt}h Sleep Debt This Week`,
-      message: 'Your body is running a sleep deficit. Cognitive function and recovery are impaired.',
-      action: 'Add 30–60 min tonight. Even partial payback helps.',
-      icon: '💤',
-    })
   }
 
   // High stress
