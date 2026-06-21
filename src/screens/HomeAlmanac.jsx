@@ -5,7 +5,7 @@ import {
   calculateDistance, localToday, calculatePhysiologicalAge, getUserAge,
   calculateSRI, getLastKnownHRR,
 } from '../lib/calculations'
-import { C, SERIF, STAGE, Label, mean, fmtDur, norm } from '../lib/almanacTheme'
+import { C, SERIF, Label, mean, fmtDur, norm } from '../lib/almanacTheme'
 
 // ── The Reading ───────────────────────────────────────────────────────────────
 // Composes the day into a short written verdict + paragraph, deterministically
@@ -82,163 +82,58 @@ function composeReading(data) {
   return { lede, tokens: tok }
 }
 
-// ── The Day Ribbon ────────────────────────────────────────────────────────────
-// One continuous strip from last night's bedtime to now: sleep stages up top,
-// daytime heart rate below, the same clock underneath both. This is the data
-// the old card layout flattened away — intraday HR and per-stage sleep intervals
-// shown on a single timeline instead of split into separate score cards.
-function DayRibbon({ data }) {
-  const sleep = data.todaySleep
-  const now = Date.now()
-  const sleepStart = sleep?.startTime ? new Date(sleep.startTime).getTime() : null
-  const sleepEnd = sleep?.endTime ? new Date(sleep.endTime).getTime() : null
-  // Window: a fixed 24h frame anchored to the local midnight that begins last
-  // night's sleep (or today's, if none yet). A fixed span keeps the sleep
-  // block's width constant through the day — anchoring to "now" instead would
-  // shrink it hour by hour as the denominator grows, which is what made the
-  // night look more and more compressed the later you checked the ribbon.
-  const dayStart = new Date(sleepStart ?? now)
-  dayStart.setHours(0, 0, 0, 0)
-  const tMin = dayStart.getTime()
-  const tMax = Math.max(tMin + 24 * 3600000, now + 3600000)
-  const span = Math.max(tMax - tMin, 3600000)
-
-  const W = 1000, H = 236
-  const padL = 4, padR = 4
-  const innerW = W - padL - padR
-  const x = ms => padL + ((ms - tMin) / span) * innerW
-
-  // Sleep lane — drawn as a hypnogram: depth is vertical position (awake on top,
-  // deep at the bottom), not just colour, so the shape of the night reads at a
-  // glance the way it does on a polysomnograph.
-  const sleepTop = 12, rowH = 15, rowGap = 6, rowUnit = rowH + rowGap
-  const LEVELS = ['wake', 'rem', 'light', 'deep']
-  const levelIdx = t => {
-    const k = t === 'awake' ? 'wake' : t
-    const i = LEVELS.indexOf(k)
-    return i < 0 ? 2 : i
-  }
-  const rowTop = lvl => sleepTop + levelIdx(lvl) * rowUnit
-  const rowCenter = lvl => rowTop(lvl) + rowH / 2
-  const segs = (sleep?.stageSegments || [])
-    .map(s => ({ a: new Date(s.startTime).getTime(), b: new Date(s.endTime).getTime(), type: (s.type || '').toLowerCase() }))
-    .filter(s => s.b > s.a)
-    .sort((a, b) => a.a - b.a)
-  const stageColor = t => STAGE[t === 'deep' ? 'deep' : t === 'rem' ? 'rem' : t === 'awake' || t === 'wake' ? 'wake' : 'light'] || STAGE.light
-  // Stepped connector through the row centres — the recognisable hypnogram zig-zag.
-  const stepPath = segs.length
-    ? segs.map((s, i) => `${i ? 'L' : 'M'}${x(s.a).toFixed(1)} ${rowCenter(s.type).toFixed(1)} L${x(s.b).toFixed(1)} ${rowCenter(s.type).toFixed(1)}`).join(' ')
-    : ''
-
-  // HR lane
-  const hrLaneTop = 124, hrLaneH = 86, hrBottom = hrLaneTop + hrLaneH
-  const ds = data.hrIntradayData?.['activities-heart-intraday']?.dataset || []
-  const today = new Date()
-  const hrPts = ds.map(p => {
-    const [hh, mm, ss] = (p.time || '0:0:0').split(':').map(Number)
-    const d = new Date(today); d.setHours(hh || 0, mm || 0, ss || 0, 0)
-    return { ms: d.getTime(), v: Number(p.value) }
-  }).filter(p => p.v > 0 && p.ms >= tMin && p.ms <= tMax).sort((a, b) => a.ms - b.ms)
-  // Downsample for a clean line
-  const step = Math.max(1, Math.ceil(hrPts.length / 240))
-  const hrThin = hrPts.filter((_, i) => i % step === 0)
-  const hrVals = hrThin.map(p => p.v)
-  const hrLo = hrVals.length ? Math.min(...hrVals) - 4 : 50
-  const hrHi = hrVals.length ? Math.max(...hrVals) + 4 : 120
-  const yHR = v => hrBottom - ((v - hrLo) / Math.max(hrHi - hrLo, 1)) * hrLaneH
-  const linePath = hrThin.map((p, i) => `${i ? 'L' : 'M'}${x(p.ms).toFixed(1)} ${yHR(p.v).toFixed(1)}`).join(' ')
-  const areaPath = hrThin.length
-    ? `${linePath} L${x(hrThin.at(-1).ms).toFixed(1)} ${hrBottom} L${x(hrThin[0].ms).toFixed(1)} ${hrBottom} Z`
-    : ''
-
-  // Hour ticks every 3h
-  const ticks = []
-  const t0 = new Date(tMin); t0.setMinutes(0, 0, 0)
-  for (let t = t0.getTime(); t <= tMax; t += 3 * 3600000) {
-    if (t < tMin) continue
-    const d = new Date(t)
-    let h = d.getHours()
-    const ap = h >= 12 ? 'p' : 'a'
-    h = h % 12 || 12
-    ticks.push({ ms: t, label: `${h}${ap}` })
-  }
+// ── Today's Pace ──────────────────────────────────────────────────────────────
+// Steps/active minutes/calories against your usual, as progress bars — useful
+// from the moment you wake up, unlike a midnight-to-midnight timeline that's
+// mostly blank until heart rate and movement have had hours to accumulate.
+function TodayProgress({ data }) {
+  const priorDays = (data.calendarDays || []).filter(d => d.date !== data.date)
+  const usualSteps = mean(priorDays.map(d => d.steps).filter(Boolean))
+  const usualCalories = mean(priorDays.map(d => d.calories).filter(Boolean))
+  const usualActiveMin = data.weeklyAZM ? Math.round(data.weeklyAZM / 7) : 0
 
   const accent = getRecoveryColor(data.recoveryScore || 0)
+  const rows = [
+    { label: 'Steps', raw: data.steps || 0, usual: usualSteps, color: accent },
+    { label: 'Active Minutes', raw: data.activeMinutes || 0, usual: usualActiveMin, color: '#D98E3F' },
+    { label: 'Calories', raw: data.calories || 0, usual: usualCalories, color: '#5E5198' },
+  ]
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }} preserveAspectRatio="none">
-      {/* hour grid */}
-      {ticks.map(tk => (
-        <line key={tk.ms} x1={x(tk.ms)} x2={x(tk.ms)} y1={sleepTop} y2={hrBottom} stroke={C.ruleSoft} strokeWidth={1} />
-      ))}
-
-      {/* sleep lane — hypnogram */}
-      {segs.length ? (
-        <>
-          {stepPath && <path d={stepPath} fill="none" stroke={C.inkSoft} strokeWidth={1} opacity={0.3} />}
-          {segs.map((s, i) => (
-            <rect key={i} x={x(s.a)} y={rowTop(s.type)} width={Math.max(x(s.b) - x(s.a), 0.8)} height={rowH} rx={2}
-              fill={stageColor(s.type)} opacity={s.type === 'wake' || s.type === 'awake' ? 0.55 : 0.92} />
-          ))}
-        </>
-      ) : (sleepStart && sleepEnd) ? (
-        <rect x={x(sleepStart)} y={rowTop('light')} width={Math.max(x(sleepEnd) - x(sleepStart), 1)} height={rowH} rx={2}
-          fill={STAGE.asleep} opacity={0.7} />
-      ) : null}
-
-      {/* divider */}
-      <line x1={padL} x2={W - padR} y1={hrLaneTop - 12} y2={hrLaneTop - 12} stroke={C.rule} strokeWidth={1} />
-
-      {/* HR area + line, or a note when intraday HR hasn't synced */}
-      {hrThin.length > 1 ? (
-        <>
-          <path d={areaPath} fill={accent} opacity={0.10} />
-          <path d={linePath} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <line x1={padL} x2={W - padR} y1={hrBottom - hrLaneH / 2} y2={hrBottom - hrLaneH / 2} stroke={C.rule} strokeWidth={1} strokeDasharray="3 5" />
-          <text x={W / 2} y={hrBottom - hrLaneH / 2 - 8} textAnchor="middle" fill={C.faint} fontFamily={SERIF} fontStyle="italic" fontSize={15}>
-            heart rate fills in as the day is recorded
-          </text>
-        </>
-      )}
-
-      {/* now marker */}
-      <line x1={x(now)} x2={x(now)} y1={sleepTop - 4} y2={hrBottom} stroke={C.gold} strokeWidth={1.5} />
-      <circle cx={x(now)} cy={sleepTop - 4} r={4} fill={C.gold} />
-
-      {/* hour labels */}
-      {ticks.map(tk => (
-        <text key={tk.ms} x={x(tk.ms)} y={H - 4} textAnchor="middle" fill={C.faint} fontFamily={SERIF} fontSize={15}>
-          {tk.label}
-        </text>
-      ))}
-    </svg>
-  )
-}
-
-function RibbonLegend({ data }) {
-  const hasStages = (data.todaySleep?.stageSegments || []).length > 0
-  const items = hasStages
-    ? [['Deep', STAGE.deep], ['REM', STAGE.rem], ['Light', STAGE.light], ['Awake', STAGE.wake]]
-    : [['Asleep', STAGE.asleep]]
-  return (
-    <div className="flex items-center gap-3 flex-wrap mt-1">
-      {items.map(([l, c]) => (
-        <span key={l} className="flex items-center gap-1.5">
-          <span style={{ width: 9, height: 9, background: c, borderRadius: 2, display: 'inline-block' }} />
-          <Label style={{ fontSize: 11 }}>{l}</Label>
-        </span>
-      ))}
-      <span className="flex items-center gap-1.5">
-        <span style={{ width: 9, height: 2, background: getRecoveryColor(data.recoveryScore || 0), display: 'inline-block' }} />
-        <Label style={{ fontSize: 11 }}>Heart rate</Label>
-      </span>
+    <div>
+      {rows.map(r => {
+        // Cap the visual fill at 130% of usual so an unusually big day doesn't
+        // run the bar off the edge — the number itself still shows the real value.
+        const capRatio = r.usual > 0 ? r.raw / r.usual : r.raw > 0 ? 1 : 0
+        const fillPct = Math.min(capRatio, 1.3) / 1.3
+        const usualMarkPct = r.usual > 0 ? 1 / 1.3 : null
+        return (
+          <div key={r.label} style={{ padding: '12px 2px' }}>
+            <div className="flex items-baseline justify-between">
+              <Label>{r.label}</Label>
+              {r.usual > 0 && (
+                <span style={{ fontFamily: SERIF, color: C.faint, fontSize: 11, fontStyle: 'italic' }}>
+                  usual {Math.round(r.usual).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 mb-2">
+              <span style={{ fontFamily: SERIF, fontSize: 28, color: C.ink, fontWeight: 600, lineHeight: 1 }} className="tabular">
+                {r.raw.toLocaleString()}
+              </span>
+            </div>
+            <div style={{ position: 'relative', height: 8, background: C.ruleSoft, borderRadius: 2 }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, height: 8, width: `${fillPct * 100}%`, background: r.color, borderRadius: 2, opacity: 0.85 }} />
+              {usualMarkPct != null && (
+                <div style={{ position: 'absolute', top: -3, left: `${usualMarkPct * 100}%`, width: 1.5, height: 14, background: C.faint, opacity: 0.6 }} />
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
-
 // ── Instruments ───────────────────────────────────────────────────────────────
 // A reading on a printed scale with a needle, not a ring. The needle is today;
 // the faint mark is your baseline. Lower-is-better scales (resting pulse) read
@@ -499,14 +394,13 @@ export default function HomeAlmanac({ data, onNav, onRefresh, isSyncing, syncFai
         </p>
       </div>
 
-      {/* The Day Ribbon */}
+      {/* Today's Pace */}
       <div className="px-5 pt-7">
         <div className="flex items-baseline justify-between">
-          <Label style={{ color: C.inkSoft }}>The Day So Far</Label>
-          <Label style={{ fontSize: 11 }}>midnight → midnight</Label>
+          <Label style={{ color: C.inkSoft }}>Today's Pace</Label>
+          <Label style={{ fontSize: 11 }}>vs. your usual</Label>
         </div>
-        <div className="mt-2"><DayRibbon data={data} /></div>
-        <RibbonLegend data={data} />
+        <div className="mt-2"><TodayProgress data={data} /></div>
       </div>
 
       {/* Instruments */}
