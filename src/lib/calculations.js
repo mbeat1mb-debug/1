@@ -1315,20 +1315,21 @@ export function getBodyWeightHistory() {
 
 export function saveBodyWeightEntry(date, kg, fatPct, source = 'manual', humeExtras = null) {
   const validKg = kg != null && kg >= 20 && kg <= 300
-  if (!validKg && !fatPct) return
+  const validFatPct = fatPct != null && fatPct > 0
+  if (!validKg && !validFatPct) return
   try {
     const history = getBodyWeightHistory()
     const idx = history.findIndex(e => e.date === date)
     // Manual entries win over a synced source — don't let a sync overwrite what the user typed
     if (source === 'google_health' && idx >= 0 && history[idx].source === 'manual') return
-    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: fatPct ? Math.round(fatPct * 10) / 10 : null, source, ...(humeExtras || {}) }
+    const entry = { date, kg: validKg ? Math.round(kg * 10) / 10 : (idx >= 0 ? history[idx].kg : null), fatPct: validFatPct ? Math.round(fatPct * 10) / 10 : null, source, ...(humeExtras || {}) }
     if (idx >= 0) history[idx] = entry
     else history.push(entry)
     history.sort((a, b) => a.date.localeCompare(b.date))
     localStorage.setItem('weight_history', JSON.stringify(history.slice(-365)))
     // Keep latest as quick-access value
     if (entry.kg != null) localStorage.setItem('user_weight_kg', String(entry.kg))
-    if (fatPct) localStorage.setItem('user_body_fat_pct', String(fatPct))
+    if (validFatPct) localStorage.setItem('user_body_fat_pct', String(fatPct))
   } catch {}
 }
 
@@ -1341,13 +1342,18 @@ export function getLatestHumeData() {
 }
 
 export function calculateLeanMass(weightKg, fatPct) {
-  if (!weightKg || !fatPct) return null
+  if (!weightKg || fatPct == null) return null
   return Math.round((weightKg * (1 - fatPct / 100)) * 10) / 10
 }
 
 export function calculateFatMass(weightKg, fatPct) {
-  if (!weightKg || !fatPct) return null
+  if (!weightKg || fatPct == null) return null
   return Math.round((weightKg * (fatPct / 100)) * 10) / 10
+}
+
+export function calculateFFMI(leanMassKg, heightCm) {
+  if (!leanMassKg || !heightCm) return null
+  return Math.round((leanMassKg / Math.pow(heightCm / 100, 2)) * 10) / 10
 }
 
 export function getUserUnits() {

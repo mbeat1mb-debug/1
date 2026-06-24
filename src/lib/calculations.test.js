@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { calculateDistance, calculateBMI, parseActivityLogs, localToday, parseGoogleHealthData, getBodyWeightHistory } from './calculations'
+import { calculateDistance, calculateBMI, parseActivityLogs, localToday, parseGoogleHealthData, getBodyWeightHistory, calculateLeanMass, calculateFatMass, calculateFFMI } from './calculations'
 
 function dayPoint(y, m, d, value, key, field) {
   return { date: { year: y, month: m, day: d }, [key]: { [field]: value } }
@@ -28,6 +28,30 @@ describe('calculateBMI', () => {
   it('returns null when inputs are missing', () => {
     expect(calculateBMI(0, 80)).toBeNull()
     expect(calculateBMI(180, 0)).toBeNull()
+  })
+})
+
+describe('calculateLeanMass/calculateFatMass (regression: a literal 0% body fat was treated as missing)', () => {
+  it('still computes lean/fat mass when fatPct is exactly 0', () => {
+    expect(calculateLeanMass(80, 0)).toBe(80)
+    expect(calculateFatMass(80, 0)).toBe(0)
+  })
+
+  it('returns null when fatPct is genuinely missing', () => {
+    expect(calculateLeanMass(80, null)).toBeNull()
+    expect(calculateFatMass(80, null)).toBeNull()
+  })
+})
+
+describe('calculateFFMI', () => {
+  it('matches the standard lean-mass / height-in-meters^2 formula', () => {
+    // 65kg lean mass at 180cm -> 65 / 1.8^2 = 20.1
+    expect(calculateFFMI(65, 180)).toBeCloseTo(20.1, 1)
+  })
+
+  it('returns null when inputs are missing', () => {
+    expect(calculateFFMI(0, 180)).toBeNull()
+    expect(calculateFFMI(65, 0)).toBeNull()
   })
 })
 

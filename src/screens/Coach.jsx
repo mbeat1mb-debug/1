@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import DailyReport from '../components/DailyReport'
 import {
   getUserAge, getUserBodyFatPct, getUserHeightCm, getUserWeightKg,
-  calculateLeanMass, getUserWaistCm, getUserGripStrengthKg,
+  calculateLeanMass, calculateFFMI, getUserWaistCm, getUserGripStrengthKg,
   getHOMAIR, getAverageBP, calculatePhysiologicalAge, localDateOf,
   calculateSRI, getLastKnownHRR,
 } from '../lib/calculations'
@@ -92,7 +92,7 @@ function buildLongevityContext(data) {
   const heightCm = getUserHeightCm()
   const weightKg = getUserWeightKg()
   const leanMass = calculateLeanMass(weightKg, bodyFatPct)
-  const ffmi = leanMass && heightCm ? Math.round(leanMass / Math.pow(heightCm / 100, 2) * 10) / 10 : null
+  const ffmi = calculateFFMI(leanMass, heightCm)
   const waistCm = getUserWaistCm()
   const gripKg = getUserGripStrengthKg()
   const homaIR = getHOMAIR()

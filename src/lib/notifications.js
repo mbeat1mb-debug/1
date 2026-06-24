@@ -1,3 +1,5 @@
+import { localToday, localDateOf } from './calculations'
+
 const ACHIEVEMENT_LABELS = {
   first_green: 'First Green Recovery Day',
   green_week: 'Green Week — 7 days straight',
@@ -28,7 +30,7 @@ export function canNotify() {
 }
 
 function todayFlag(id) {
-  return `notif_${id}_${new Date().toISOString().split('T')[0]}`
+  return `notif_${id}_${localToday()}`
 }
 
 function sentToday(id) {
@@ -43,7 +45,7 @@ function markSent(id) {
 function pruneNotifFlags() {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 7)
-  const cutoffStr = cutoff.toISOString().split('T')[0]
+  const cutoffStr = localDateOf(cutoff)
   // Collect keys first — deleting while iterating by index shifts indices and skips entries
   const toDelete = []
   for (let i = 0; i < localStorage.length; i++) {
@@ -65,15 +67,24 @@ export function showNotification(title, body) {
   } catch {}
 }
 
+// Whole calendar days between two 'YYYY-MM-DD' local-date strings — anchoring
+// both at local noon avoids the UTC-midnight-parsing drift that made these
+// reminders fire a day early/late depending on the user's timezone offset.
+function daysSinceDate(dateStr, todayStr) {
+  if (!dateStr) return 999
+  return Math.floor((new Date(todayStr + 'T12:00:00') - new Date(dateStr + 'T12:00:00')) / 86400000)
+}
+
 export function getDataNudges() {
-  const today = new Date()
+  const todayStr = localToday()
+  const today = new Date(todayStr + 'T12:00:00')
   const nudges = []
 
   // BP: log on Mon/Wed/Fri if last reading was more than 2 days ago
   const dayOfWeek = today.getDay() // 0=Sun,1=Mon,3=Wed,5=Fri
   const bpReadings = JSON.parse(localStorage.getItem('bp_readings') || '[]')
   const lastBP = bpReadings.length ? bpReadings[bpReadings.length - 1].date : null
-  const daysSinceBP = lastBP ? Math.floor((today - new Date(lastBP)) / 86400000) : 999
+  const daysSinceBP = daysSinceDate(lastBP, todayStr)
   if ([1, 3, 5].includes(dayOfWeek) && daysSinceBP > 2) {
     nudges.push({ id: 'data_bp', title: 'Log Blood Pressure', body: 'Open the Journal tab to log a quick reading — it only takes 60 seconds.' })
   }
@@ -81,8 +92,8 @@ export function getDataNudges() {
   // Body metrics: monthly — on the 1st or if >55 days overdue
   const waistDate = localStorage.getItem('user_waist_date')
   const gripDate = localStorage.getItem('user_grip_date')
-  const daysSinceWaist = waistDate ? Math.floor((today - new Date(waistDate)) / 86400000) : 999
-  const daysSinceGrip = gripDate ? Math.floor((today - new Date(gripDate)) / 86400000) : 999
+  const daysSinceWaist = daysSinceDate(waistDate, todayStr)
+  const daysSinceGrip = daysSinceDate(gripDate, todayStr)
   if (today.getDate() === 1 || daysSinceWaist > 55 || daysSinceGrip > 55) {
     if (daysSinceWaist > 25 || daysSinceGrip > 25) {
       nudges.push({ id: 'data_body', title: 'Monthly Body Check', body: 'Update waist and grip strength in Settings to keep your biological age accurate.' })
@@ -94,7 +105,7 @@ export function getDataNudges() {
     const labs = JSON.parse(localStorage.getItem('lab_results') || '{}')
     const labDates = Object.values(labs).map(l => l.date).filter(Boolean).sort()
     const lastLab = labDates.length ? labDates[labDates.length - 1] : null
-    const daysSinceLabs = lastLab ? Math.floor((today - new Date(lastLab)) / 86400000) : 999
+    const daysSinceLabs = daysSinceDate(lastLab, todayStr)
     if (daysSinceLabs > 80) {
       const monthsAgo = daysSinceLabs < 999 ? `${Math.round(daysSinceLabs / 30)} months ago` : 'never'
       nudges.push({ id: 'data_labs', title: 'Time for Blood Work?', body: `Labs last updated ${monthsAgo}. A quarterly panel keeps your PhenoAge current.` })
