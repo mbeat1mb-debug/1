@@ -14,7 +14,7 @@ export default function Stress({ data, onNav }) {
   const avgHRV14 = hrv14.filter(Boolean).reduce((a, b) => a + b, 0) / (hrv14.filter(Boolean).length || 1)
   const avgRHR14 = rhrHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.slice(-14).filter(Boolean).length || 1)
 
-  const hrvRatio = avgHRV14 > 0 ? Math.round((todayHRV / avgHRV14) * 100) : 100
+  const hrvRatio = todayHRV > 0 && avgHRV14 > 0 ? Math.round((todayHRV / avgHRV14) * 100) : null
   const rhrDiff = Math.round(todayRHR - avgRHR14)
 
   const todayStr = localToday()
@@ -42,7 +42,7 @@ export default function Stress({ data, onNav }) {
         <div className="flex-1 space-y-4">
           <div>
             <Label>HRV vs baseline</Label>
-            <p style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: hrvRatio >= 100 ? '#3E9C7E' : '#D9A23F' }}>{hrvRatio}%</p>
+            <p style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: hrvRatio == null ? C.faint : hrvRatio >= 100 ? '#3E9C7E' : '#D9A23F' }}>{hrvRatio == null ? '—' : `${hrvRatio}%`}</p>
           </div>
           <div>
             <Label>Resting HR vs baseline</Label>

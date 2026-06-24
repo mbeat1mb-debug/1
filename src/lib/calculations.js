@@ -1026,9 +1026,12 @@ export function parseGoogleHealthData(raw) {
     const date = pointDate(d)
     if (date && val != null) rhrByDate[date] = Math.round(Number(val))
   }
-  const historyDates = Object.keys(hrvByDate).sort()
-  const hrvHistory = historyDates.map(date => hrvByDate[date])
-  const rhrHistory = historyDates.map(date => rhrByDate[date] || 0)
+  // Union of dates (not just hrvByDate's) so a day with RHR but no HRV reading
+  // (or vice versa) still occupies its own slot — otherwise "N consecutive days"
+  // alert logic silently compresses across the gap and compares non-adjacent days.
+  const historyDates = [...new Set([...Object.keys(hrvByDate), ...Object.keys(rhrByDate)])].sort()
+  const hrvHistory = historyDates.map(date => hrvByDate[date] ?? null)
+  const rhrHistory = historyDates.map(date => rhrByDate[date] ?? null)
 
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
   const todayHRV = todayHRVRaw != null ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
@@ -1128,11 +1131,20 @@ export function parseGoogleHealthData(raw) {
     const date = pointDate(f)
     if (date) fatByDate[date] = pick(f, 'bodyFat.percentage', 'bodyFat.value')
   }
+  const weightByDate = {}
   for (const w of weightPoints) {
     const date = pointDate(w)
     const grams = pick(w, 'weight.weightGrams', 'weight.kilograms', 'weight.value')
     const kg = w.weight?.weightGrams != null ? grams / 1000 : grams
-    if (date && kg != null) saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
+    if (date && kg != null) {
+      weightByDate[date] = kg
+      saveBodyWeightEntry(date, kg, fatByDate[date] ?? null, 'google_health')
+    }
+  }
+  // A bodyFat reading with no same-day weight reading was previously dropped
+  // entirely, since the loop above only visits dates that have a weight point.
+  for (const date of Object.keys(fatByDate)) {
+    if (!(date in weightByDate)) saveBodyWeightEntry(date, null, fatByDate[date], 'google_health')
   }
 
   const activityLogs = parseActivityLogs(raw.activityLogs, hrIntraday)
@@ -1539,7 +1551,7 @@ export function calculateSRI(sleepHistory) {
 
 export function saveLastKnownHRR(hrr) {
   if (!hrr) return
-  try { localStorage.setItem('last_known_hrr', JSON.stringify({ ...hrr, date: new Date().toISOString().split('T')[0] })) } catch {}
+  try { localStorage.setItem('last_known_hrr', JSON.stringify({ ...hrr, date: localToday() })) } catch {}
 }
 
 export function getLastKnownHRR() {

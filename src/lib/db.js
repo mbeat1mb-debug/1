@@ -113,14 +113,17 @@ export async function saveSnapshot(data) {
   try {
     const db = await openDB()
     await dbPut(db, 'snapshot', { id: 1, data, savedAt: Date.now() })
-  } catch {}
+  } catch (err) {
+    console.error('saveSnapshot failed', err)
+  }
 }
 
 export async function getLatestSnapshot() {
   try {
     const db = await openDB()
     return dbGet(db, 'snapshot', 1)
-  } catch {
+  } catch (err) {
+    console.error('getLatestSnapshot failed', err)
     return null
   }
 }

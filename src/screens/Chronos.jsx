@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR } from '../lib/calculations'
+import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR, localToday } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -326,7 +326,7 @@ export default function Chronos({ data, onNav }) {
   const [pace, setPace] = useState(null)
   useEffect(() => {
     if (!ageIsSet || physAge <= 0) return
-    const today = new Date().toISOString().split('T')[0]
+    const today = localToday()
     try {
       const history = JSON.parse(localStorage.getItem('physio_age_history') || '[]')
       const idx = history.findIndex(e => e.date === today)

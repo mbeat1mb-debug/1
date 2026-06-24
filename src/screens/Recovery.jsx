@@ -73,8 +73,8 @@ export default function Recovery({ data, onNav }) {
     if (!d) return i === len - 1 ? 'Today' : `-${len - 1 - i}d`
     return d === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(d)) / 86400000)}d`
   }
-  const hrvChartData = hrv14.map((v, i) => ({ label: chartLabel(i, hrv14.length), hrv: Math.round(v) }))
-  const rhrChartData = rhr14.map((v, i) => ({ label: chartLabel(i, rhr14.length), rhr: Math.round(v) }))
+  const hrvChartData = hrv14.map((v, i) => ({ label: chartLabel(i, hrv14.length), hrv: v != null ? Math.round(v) : null }))
+  const rhrChartData = rhr14.map((v, i) => ({ label: chartLabel(i, rhr14.length), rhr: v != null ? Math.round(v) : null }))
 
   const validHRV = hrvHistory.filter(Boolean)
   const avgHRV = validHRV.length ? Math.round(validHRV.reduce((a, b) => a + b, 0) / validHRV.length) : 0

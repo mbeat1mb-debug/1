@@ -337,16 +337,28 @@ export default function App() {
     const recoveryVelocity = getTrendVelocity(recoveryHistory)
     const stressVelocity = getTrendVelocity(stressHistory)
 
-    const calendarDays = parsed.sleepHistory.map(s => ({
-      date: s.date,
-      recovery: recoveryByDate[s.date] ?? null,
-      sleep: s.minutes,
-      sleepEfficiency: s.efficiency ?? 0,
-      hrv: parsed.hrvByDate[s.date] ?? null,
-      rhr: parsed.rhrByDate[s.date] ?? null,
-      steps: parsed.stepsByDate[s.date] ?? null,
-      calories: parsed.caloriesByDate[s.date] ?? null,
-    }))
+    // Union of every date with ANY data (not just sleep) — a day the watch was
+    // off overnight but still logged HRV/RHR/steps/calories must still get a
+    // calendarDays row, or that data never reaches saveDaysBatch and is lost
+    // for good once it falls outside Google Health's resync window.
+    const calendarDates = [...new Set([
+      ...parsed.sleepHistory.map(s => s.date),
+      ...Object.keys(parsed.hrvByDate), ...Object.keys(parsed.rhrByDate),
+      ...Object.keys(parsed.stepsByDate), ...Object.keys(parsed.caloriesByDate),
+    ])].sort()
+    const calendarDays = calendarDates.map(date => {
+      const s = sleepByDate[date]
+      return {
+        date,
+        recovery: recoveryByDate[date] ?? null,
+        sleep: s?.minutes ?? 0,
+        sleepEfficiency: s?.efficiency ?? 0,
+        hrv: parsed.hrvByDate[date] ?? null,
+        rhr: parsed.rhrByDate[date] ?? null,
+        steps: parsed.stepsByDate[date] ?? null,
+        calories: parsed.caloriesByDate[date] ?? null,
+      }
+    })
 
     const hrr = calculateHRR(parsed.hrIntradayData)
     if (hrr) saveLastKnownHRR(hrr)

@@ -39,7 +39,7 @@ export default function CalendarHeatmap({ days = [] }) {
 
   const monthLabels = []
   for (let i = 0; i < weeks.length; i++) {
-    const firstDay = new Date(weeks[i][0].date)
+    const firstDay = new Date(weeks[i][0].date + 'T12:00:00')
     if (i === 0 || firstDay.getDate() <= 7) {
       monthLabels[i] = firstDay.toLocaleDateString('en-US', { month: 'short' })
     } else {

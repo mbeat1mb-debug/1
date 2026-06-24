@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { calculateDistance, calculateBMI, parseActivityLogs, localToday } from './calculations'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { calculateDistance, calculateBMI, parseActivityLogs, localToday, parseGoogleHealthData, getBodyWeightHistory } from './calculations'
+
+function dayPoint(y, m, d, value, key, field) {
+  return { date: { year: y, month: m, day: d }, [key]: { [field]: value } }
+}
 
 describe('calculateDistance (steps -> km via stride length)', () => {
   it('returns a sane distance for a normal day of steps', () => {
@@ -24,6 +28,44 @@ describe('calculateBMI', () => {
   it('returns null when inputs are missing', () => {
     expect(calculateBMI(0, 80)).toBeNull()
     expect(calculateBMI(180, 0)).toBeNull()
+  })
+})
+
+describe('parseGoogleHealthData body fat sync (regression: a fat reading with no same-day weight was silently dropped)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('still saves a body fat reading on a day with no weight reading', () => {
+    const raw = {
+      bodyWeight: { dataPoints: [
+        dayPoint(2026, 6, 20, 80000, 'weight', 'weightGrams'),
+      ] },
+      bodyFat: { dataPoints: [
+        dayPoint(2026, 6, 21, 18.5, 'bodyFat', 'percentage'),
+      ] },
+    }
+    parseGoogleHealthData(raw)
+    const history = getBodyWeightHistory()
+    const fatOnlyDay = history.find(e => e.date === '2026-06-21')
+    expect(fatOnlyDay).toBeTruthy()
+    expect(fatOnlyDay.fatPct).toBeCloseTo(18.5, 1)
+  })
+})
+
+describe('parseGoogleHealthData historyDates (regression: RHR-only days were dropped entirely)', () => {
+  it('keeps a day that has RHR but no HRV reading as its own null-HRV slot', () => {
+    const raw = {
+      hrvRange: { dataPoints: [
+        dayPoint(2026, 6, 20, 45, 'dailyHeartRateVariability', 'rmssd'),
+      ] },
+      hrRange: { dataPoints: [
+        dayPoint(2026, 6, 20, 60, 'dailyRestingHeartRate', 'beatsPerMinute'),
+        dayPoint(2026, 6, 21, 62, 'dailyRestingHeartRate', 'beatsPerMinute'),
+      ] },
+    }
+    const parsed = parseGoogleHealthData(raw)
+    expect(parsed.historyDates).toEqual(['2026-06-20', '2026-06-21'])
+    expect(parsed.hrvHistory).toEqual([45, null])
+    expect(parsed.rhrHistory).toEqual([60, 62])
   })
 })
 
