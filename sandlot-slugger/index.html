@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Sandlot Slugger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0a0a;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: none;
+    font-family: -apple-system, sans-serif;
+  }
+
+  #game-root {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  .screen h1 {
+    font-size: 6vh;
+    margin: 0 0 2vh 0;
+  }
+
+  .screen p {
+    font-size: 3vh;
+    opacity: 0.8;
+    margin: 0 0 2vh 0;
+  }
+
+  .tap-hint {
+    font-size: 2.2vh;
+    opacity: 0.5;
+    margin-top: 4vh;
+  }
+
+  #screen-title { background: linear-gradient(#3a2a1a, #6b4a2a); }
+  #screen-level-intro { background: linear-gradient(#1a3a1a, #2a6b2a); }
+  #screen-play { background: linear-gradient(#1a2a3a, #2a4a6b); }
+  #screen-level-clear { background: linear-gradient(#3a3a1a, #6b6b2a); }
+  #screen-game-complete { background: linear-gradient(#3a1a3a, #6b2a6b); }
+
+  #pause-overlay, #portrait-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 50;
+  }
+
+  #pause-overlay.active, #portrait-overlay.active {
+    display: flex;
+  }
+
+  #portrait-overlay {
+    z-index: 100;
+    background: #000;
+  }
+
+  #pause-hit-area {
+    position: absolute;
+    top: 1.5vh;
+    right: 1.5vh;
+    width: 8vh;
+    height: 8vh;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5vh;
+    z-index: 40;
+  }
+
+  .rotate-icon {
+    font-size: 10vh;
+    margin-bottom: 2vh;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-root">
+
+  <div id="screen-title" class="screen active" data-screen="title">
+    <h1>SANDLOT SLUGGER</h1>
+    <p>Tap to Start</p>
+    <div class="tap-hint">[ TITLE ]</div>
+  </div>
+
+  <div id="screen-level-intro" class="screen" data-screen="level-intro">
+    <h1>THE SANDLOT</h1>
+    <p>Level 1 — hit 3 homers</p>
+    <div class="tap-hint">[ LEVEL INTRO ] tap to play</div>
+  </div>
+
+  <div id="screen-play" class="screen" data-screen="play">
+    <h1>PLAY</h1>
+    <p>(ball + swing comes later)</p>
+    <div class="tap-hint">[ PLAY ] tap to clear level</div>
+    <div id="pause-hit-area">⏸</div>
+  </div>
+
+  <div id="screen-level-clear" class="screen" data-screen="level-clear">
+    <h1>LEVEL CLEAR!</h1>
+    <p>On to the next field</p>
+    <div class="tap-hint">[ LEVEL CLEAR ] tap to continue</div>
+  </div>
+
+  <div id="screen-game-complete" class="screen" data-screen="game-complete">
+    <h1>CHAMPIONS!</h1>
+    <p>You made it to the Big League</p>
+    <div class="tap-hint">[ GAME COMPLETE ] tap to return to title</div>
+  </div>
+
+</div>
+
+<div id="pause-overlay">
+  <h1>PAUSED</h1>
+  <p>tap to resume</p>
+</div>
+
+<div id="portrait-overlay">
+  <div class="rotate-icon">🔄</div>
+  <h1>Turn me sideways!</h1>
+  <p>Sandlot Slugger is landscape only</p>
+</div>
+
+<script>
+  const ORDER = ['title', 'level-intro', 'play', 'level-clear', 'game-complete'];
+  let currentIndex = 0;
+  let paused = false;
+
+  const screens = {};
+  document.querySelectorAll('.screen').forEach((el) => {
+    screens[el.dataset.screen] = el;
+  });
+
+  function showScreen(name) {
+    Object.values(screens).forEach((el) => el.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  function advance() {
+    currentIndex = (currentIndex + 1) % ORDER.length;
+    showScreen(ORDER[currentIndex]);
+  }
+
+  const pauseOverlay = document.getElementById('pause-overlay');
+  const pauseHitArea = document.getElementById('pause-hit-area');
+
+  function setPaused(value) {
+    paused = value;
+    pauseOverlay.classList.toggle('active', paused);
+  }
+
+  pauseHitArea.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPaused(true);
+  });
+
+  pauseOverlay.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    setPaused(false);
+  });
+
+  document.getElementById('game-root').addEventListener('pointerdown', (e) => {
+    if (paused) return;
+    e.preventDefault();
+    advance();
+  });
+
+  // Landscape / portrait gate
+  const portraitOverlay = document.getElementById('portrait-overlay');
+
+  function checkOrientation() {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    portraitOverlay.classList.toggle('active', isPortrait);
+  }
+
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', checkOrientation);
+  checkOrientation();
+</script>
+
+</body>
+</html>
