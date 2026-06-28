@@ -394,9 +394,39 @@
 
   var current = 0;
   var paused = false;
+  var TITLE_INDEX = ORDER.indexOf('title');
+  var LEVEL_INTRO_INDEX = ORDER.indexOf('level-intro');
   var PLAY_INDEX = ORDER.indexOf('play');
+  var LEVEL_CLEAR_INDEX = ORDER.indexOf('level-clear');
+  var GAME_COMPLETE_INDEX = ORDER.indexOf('game-complete');
 
-  // --- Pitch animation + swing/timing (Level 1 values, Section 3 of the brief) ---
+  // --- The 5 fields (Section 3 of the brief) ---
+  var LEVELS = [
+    { name: 'The Sandlot', target: 3, travelMs: 1600, homerMs: 70, singleMs: 140, foulMs: 220,
+      playBg: 'linear-gradient(180deg, #c9a36a 0%, #c08552 35%, #2e7d32 100%)',
+      introBg: 'linear-gradient(180deg, #5b3a1f 0%, #2e7d32 100%)' },
+    { name: 'The Park', target: 3, travelMs: 1400, homerMs: 60, singleMs: 125, foulMs: 200,
+      playBg: 'linear-gradient(180deg, #bfe6ff 0%, #6fcf73 30%, #2e7d32 100%)',
+      introBg: 'linear-gradient(180deg, #1d5d8a 0%, #3f9142 100%)' },
+    { name: 'Minor League', target: 4, travelMs: 1150, homerMs: 50, singleMs: 110, foulMs: 180,
+      playBg: 'linear-gradient(180deg, #9fb8c9 0%, #4f8f55 30%, #235c28 100%)',
+      introBg: 'linear-gradient(180deg, #3c4f5c 0%, #3f7a4a 100%)' },
+    { name: 'The Stadium', target: 4, travelMs: 950, homerMs: 42, singleMs: 95, foulMs: 160,
+      playBg: 'linear-gradient(180deg, #2b3a55 0%, #356b3f 30%, #1c4a22 100%)',
+      introBg: 'linear-gradient(180deg, #1c2840 0%, #234d2a 100%)' },
+    { name: 'Big League', target: 5, travelMs: 800, homerMs: 35, singleMs: 80, foulMs: 140,
+      playBg: 'linear-gradient(180deg, #060912 0%, #123a23 40%, #d4af37 70%, #123a23 100%)',
+      introBg: 'linear-gradient(180deg, #05070d 0%, #b8860b 55%, #123a23 100%)' }
+  ];
+
+  var screenPlay = document.getElementById('screen-play');
+  var screenLevelIntro = document.getElementById('screen-level-intro');
+  var playFieldNameEl = document.getElementById('play-field-name');
+  var levelIntroFieldNameEl = document.getElementById('level-intro-field-name');
+
+  var currentLevelIndex = 0;
+
+  // --- Pitch animation + swing/timing (values loaded per level from LEVELS) ---
   var PITCH_TRAVEL_MS = 1600;
   var PITCH_GAP_MS = 450;
   var RESULT_MS = 900;
@@ -419,6 +449,27 @@
     hudScore.textContent = 'SCORE ' + score;
   }
 
+  function loadLevel(index) {
+    var level = LEVELS[index];
+    PITCH_TRAVEL_MS = level.travelMs;
+    HOMER_MS = level.homerMs;
+    SINGLE_MS = level.singleMs;
+    FOUL_MS = level.foulMs;
+    LEVEL_HOMER_TARGET = level.target;
+    homersThisLevel = 0;
+    playFieldNameEl.textContent = level.name;
+    levelIntroFieldNameEl.textContent = level.name;
+    screenPlay.style.background = level.playBg;
+    screenLevelIntro.style.background = level.introBg;
+    updateHud();
+  }
+
+  function startNewGame() {
+    currentLevelIndex = 0;
+    score = 0;
+    loadLevel(0);
+  }
+
   function applyScoring(outcome) {
     if (outcome === 'HOMER') {
       score += 100;
@@ -438,7 +489,8 @@
     phaseStartTs: null,
     elapsedAtStop: 0,
     swung: false,
-    outcome: null
+    outcome: null,
+    levelCleared: false
   };
 
   function setRingProgress(t) {
@@ -546,6 +598,7 @@
     pitch.phaseStartTs = now;
     showResult(outcome);
     applyScoring(outcome);
+    pitch.levelCleared = (outcome === 'HOMER' && homersThisLevel >= LEVEL_HOMER_TARGET);
   }
 
   function attemptSwing() {
@@ -589,6 +642,10 @@
       hideRing();
       animateResultBall(pitch.outcome, Math.min(elapsed / RESULT_MS, 1));
       if (elapsed >= RESULT_MS) {
+        if (pitch.levelCleared) {
+          handleLevelCleared();
+          return;
+        }
         pitch.phase = 'gap';
         pitch.phaseStartTs = now;
         hideResult();
@@ -620,6 +677,11 @@
     pitch.rafId = requestAnimationFrame(pitchFrame);
   }
 
+  function handleLevelCleared() {
+    stopPitchLoop();
+    showScreen(LEVEL_CLEAR_INDEX);
+  }
+
   function showScreen(index) {
     var wasPlay = ORDER[current] === 'play';
     current = index;
@@ -634,12 +696,6 @@
     }
   }
 
-  function advance() {
-    if (paused) return;
-    var next = (current + 1) % ORDER.length;
-    showScreen(next);
-  }
-
   var app = document.getElementById('app');
   app.addEventListener('pointerdown', function (e) {
     if (paused) return;
@@ -647,8 +703,24 @@
     e.preventDefault();
     if (current === PLAY_INDEX) {
       attemptSwing();
-    } else {
-      advance();
+      return;
+    }
+    if (current === TITLE_INDEX) {
+      startNewGame();
+      showScreen(LEVEL_INTRO_INDEX);
+    } else if (current === LEVEL_INTRO_INDEX) {
+      showScreen(PLAY_INDEX);
+    } else if (current === LEVEL_CLEAR_INDEX) {
+      currentLevelIndex += 1;
+      if (currentLevelIndex >= LEVELS.length) {
+        showScreen(GAME_COMPLETE_INDEX);
+      } else {
+        loadLevel(currentLevelIndex);
+        showScreen(LEVEL_INTRO_INDEX);
+      }
+    } else if (current === GAME_COMPLETE_INDEX) {
+      startNewGame();
+      showScreen(TITLE_INDEX);
     }
   });
 
@@ -674,8 +746,8 @@
     }
   });
 
-  updateHud();
-  showScreen(0);
+  startNewGame();
+  showScreen(TITLE_INDEX);
 })();
 </script>
 
