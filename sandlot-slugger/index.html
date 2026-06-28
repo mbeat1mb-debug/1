@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Sandlot Slugger</title>
+<style>
+  :root {
+    --green: #2e7d32;
+    --dirt: #c08552;
+    --ink: #1a1a1a;
+    --gold: #ffd54a;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: white;
+  }
+
+  #app {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4vh 4vw;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  #screen-title {
+    background: linear-gradient(180deg, #5b3a1f 0%, var(--dirt) 60%, var(--green) 100%);
+  }
+
+  #screen-level-intro {
+    background: linear-gradient(180deg, #1b4d22 0%, var(--green) 100%);
+  }
+
+  #screen-play {
+    background: linear-gradient(180deg, #c9a36a 0%, var(--dirt) 35%, var(--green) 100%);
+  }
+
+  #screen-level-clear {
+    background: radial-gradient(circle at 50% 40%, #fff7d6 0%, var(--gold) 50%, #b8860b 100%);
+    color: var(--ink);
+  }
+
+  #screen-game-complete {
+    background: radial-gradient(circle at 50% 35%, #fff 0%, var(--gold) 45%, #8a5a00 100%);
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 7vw, 4.5rem);
+    margin: 0 0 1.5vh 0;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    margin: 0 0 2vh 0;
+  }
+
+  p.tap-hint {
+    font-size: clamp(1rem, 2.8vw, 1.6rem);
+    opacity: 0.85;
+    margin-top: 3vh;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .field-name {
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    background: rgba(0,0,0,0.25);
+    padding: 0.6em 1.2em;
+    border-radius: 999px;
+  }
+
+  /* PLAY screen HUD stub */
+  #play-stub-label {
+    position: absolute;
+    top: 3vh;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    opacity: 0.8;
+  }
+
+  #pause-btn {
+    position: absolute;
+    top: 2.5vh;
+    right: 2.5vw;
+    width: 11vw;
+    max-width: 64px;
+    min-width: 44px;
+    height: 11vw;
+    max-height: 64px;
+    min-height: 44px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    border: 2px solid rgba(255,255,255,0.6);
+    color: white;
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  /* Pause overlay */
+  #pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+
+  #pause-overlay.active {
+    display: flex;
+  }
+
+  #pause-overlay h2 {
+    margin-bottom: 4vh;
+  }
+
+  #resume-btn {
+    padding: 1.2em 2.4em;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    font-weight: bold;
+  }
+
+  /* Portrait lock overlay */
+  #rotate-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 100;
+    color: white;
+    padding: 6vh 6vw;
+  }
+
+  #rotate-overlay .icon {
+    font-size: 4rem;
+    margin-bottom: 2vh;
+  }
+
+  #rotate-overlay p {
+    font-size: clamp(1.1rem, 4vw, 1.8rem);
+  }
+
+  @media (orientation: portrait) {
+    #rotate-overlay {
+      display: flex;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="screen active" id="screen-title">
+    <h1>⚾ SANDLOT SLUGGER</h1>
+    <p class="tap-hint">Tap to start</p>
+  </div>
+
+  <div class="screen" id="screen-level-intro">
+    <span class="field-name" id="level-intro-field-name">The Sandlot</span>
+    <h2 style="margin-top: 3vh;">Get ready, Jaxson!</h2>
+    <p class="tap-hint">Tap to play</p>
+  </div>
+
+  <div class="screen" id="screen-play">
+    <div id="play-stub-label">PLAY (stub)</div>
+    <button id="pause-btn">II</button>
+    <h2>The Sandlot</h2>
+    <p class="tap-hint">Tap anywhere to clear the level</p>
+  </div>
+
+  <div class="screen" id="screen-level-clear">
+    <h1>LEVEL CLEAR!</h1>
+    <p class="tap-hint">Tap to continue</p>
+  </div>
+
+  <div class="screen" id="screen-game-complete">
+    <h1>🏆 CHAMPION! 🏆</h1>
+    <p class="tap-hint">Tap to play again</p>
+  </div>
+
+  <div id="pause-overlay">
+    <h2>PAUSED</h2>
+    <button id="resume-btn">RESUME</button>
+  </div>
+
+</div>
+
+<div id="rotate-overlay">
+  <div class="icon">🔄</div>
+  <p>Turn me sideways!</p>
+</div>
+
+<script>
+(function () {
+  var ORDER = ['title', 'level-intro', 'play', 'level-clear', 'game-complete'];
+  var screens = {};
+  ORDER.forEach(function (name) {
+    screens[name] = document.getElementById('screen-' + name);
+  });
+
+  var current = 0;
+  var paused = false;
+
+  function showScreen(index) {
+    current = index;
+    ORDER.forEach(function (name, i) {
+      screens[name].classList.toggle('active', i === index);
+    });
+  }
+
+  function advance() {
+    if (paused) return;
+    var next = (current + 1) % ORDER.length;
+    showScreen(next);
+  }
+
+  var app = document.getElementById('app');
+  app.addEventListener('pointerdown', function (e) {
+    if (paused) return;
+    if (e.target.closest('#pause-btn')) return; // isolated hit area, never advances screens
+    e.preventDefault();
+    advance();
+  });
+
+  var pauseBtn = document.getElementById('pause-btn');
+  var pauseOverlay = document.getElementById('pause-overlay');
+  var resumeBtn = document.getElementById('resume-btn');
+
+  pauseBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    paused = true;
+    pauseOverlay.classList.add('active');
+  });
+
+  resumeBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    paused = false;
+    pauseOverlay.classList.remove('active');
+  });
+
+  showScreen(0);
+})();
+</script>
+
+</body>
+</html>
