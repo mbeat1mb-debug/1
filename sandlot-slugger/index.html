@@ -121,15 +121,64 @@
     border-radius: 999px;
   }
 
-  /* PLAY screen HUD stub */
-  #play-stub-label {
+  #play-field-name {
     position: absolute;
     top: 3vh;
     left: 0;
     width: 100%;
     text-align: center;
     font-size: clamp(1rem, 2.5vw, 1.4rem);
-    opacity: 0.8;
+    opacity: 0.9;
+    z-index: 5;
+  }
+
+  #pitch-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  #mound {
+    position: absolute;
+    left: 50%;
+    top: 18%;
+    width: 6vw;
+    height: 6vw;
+    max-width: 40px;
+    max-height: 40px;
+    transform: translate(-50%, -50%);
+    background: #a87b4f;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.25);
+  }
+
+  #plate {
+    position: absolute;
+    left: 50%;
+    top: 78%;
+    width: 5vw;
+    height: 5vw;
+    max-width: 32px;
+    max-height: 32px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: #f5f5f0;
+    border: 2px solid rgba(0,0,0,0.25);
+  }
+
+  #ball {
+    position: absolute;
+    left: 50%;
+    top: 18%;
+    width: 4vw;
+    height: 4vw;
+    max-width: 26px;
+    max-height: 26px;
+    border-radius: 50%;
+    background: #fdfdfa;
+    border: 1.5px solid #c0392b;
+    transform: translate(-50%, -50%);
   }
 
   #pause-btn {
@@ -236,10 +285,13 @@
   </div>
 
   <div class="screen" id="screen-play">
-    <div id="play-stub-label">PLAY (stub)</div>
+    <div id="play-field-name">The Sandlot</div>
     <button id="pause-btn">II</button>
-    <h2>The Sandlot</h2>
-    <p class="tap-hint">Tap anywhere to clear the level</p>
+    <div id="pitch-track">
+      <div id="mound"></div>
+      <div id="plate"></div>
+      <div id="ball"></div>
+    </div>
   </div>
 
   <div class="screen" id="screen-level-clear">
@@ -274,12 +326,87 @@
 
   var current = 0;
   var paused = false;
+  var PLAY_INDEX = ORDER.indexOf('play');
+
+  // --- Pitch animation (Level 1 values, Section 3 of the brief) ---
+  var PITCH_TRAVEL_MS = 1600;
+  var PITCH_GAP_MS = 450;
+  var MOUND_TOP_PCT = 18;
+  var PLATE_TOP_PCT = 78;
+  var ball = document.getElementById('ball');
+
+  var pitch = {
+    rafId: null,
+    phase: 'wait', // 'wait' (between pitches) or 'pitch' (ball in flight)
+    startTs: null,
+    elapsedAtStop: 0
+  };
+
+  function setBallProgress(t) {
+    var topPct = MOUND_TOP_PCT + t * (PLATE_TOP_PCT - MOUND_TOP_PCT);
+    var scale = 0.6 + t * 0.7; // grows as it nears the plate, for depth
+    ball.style.top = topPct + '%';
+    ball.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+  }
+
+  function pitchFrame(now) {
+    if (pitch.startTs === null) pitch.startTs = now;
+    var elapsed = now - pitch.startTs;
+
+    if (pitch.phase === 'wait') {
+      ball.style.opacity = '0';
+      setBallProgress(0);
+      if (elapsed >= PITCH_GAP_MS) {
+        pitch.phase = 'pitch';
+        pitch.startTs = now;
+        elapsed = 0;
+      }
+    }
+
+    if (pitch.phase === 'pitch') {
+      ball.style.opacity = '1';
+      var t = Math.min(elapsed / PITCH_TRAVEL_MS, 1);
+      setBallProgress(t);
+      if (elapsed >= PITCH_TRAVEL_MS) {
+        pitch.phase = 'wait';
+        pitch.startTs = now;
+      }
+    }
+
+    pitch.rafId = requestAnimationFrame(pitchFrame);
+  }
+
+  function stopPitchLoop() {
+    if (pitch.rafId !== null) {
+      cancelAnimationFrame(pitch.rafId);
+      pitch.rafId = null;
+      if (pitch.startTs !== null) {
+        pitch.elapsedAtStop = performance.now() - pitch.startTs;
+      }
+    }
+  }
+
+  function startPitchLoop(reset) {
+    if (reset) {
+      pitch.phase = 'wait';
+      pitch.elapsedAtStop = 0;
+    }
+    pitch.startTs = performance.now() - pitch.elapsedAtStop;
+    pitch.rafId = requestAnimationFrame(pitchFrame);
+  }
 
   function showScreen(index) {
+    var wasPlay = ORDER[current] === 'play';
     current = index;
     ORDER.forEach(function (name, i) {
       screens[name].classList.toggle('active', i === index);
     });
+    if (wasPlay && index !== PLAY_INDEX) {
+      stopPitchLoop();
+    }
+    if (index === PLAY_INDEX) {
+      startPitchLoop(true);
+    }
   }
 
   function advance() {
@@ -305,6 +432,7 @@
     e.stopPropagation();
     paused = true;
     pauseOverlay.classList.add('active');
+    stopPitchLoop();
   });
 
   resumeBtn.addEventListener('pointerdown', function (e) {
@@ -312,6 +440,9 @@
     e.stopPropagation();
     paused = false;
     pauseOverlay.classList.remove('active');
+    if (current === PLAY_INDEX) {
+      startPitchLoop(false);
+    }
   });
 
   showScreen(0);
