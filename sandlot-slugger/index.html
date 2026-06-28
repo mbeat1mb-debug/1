@@ -132,6 +132,25 @@
     z-index: 5;
   }
 
+  #hud {
+    position: absolute;
+    top: 2.5vh;
+    left: 3vw;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8vh;
+  }
+
+  #hud-homers, #hud-score {
+    font-size: clamp(0.9rem, 2.2vw, 1.3rem);
+    font-weight: bold;
+    background: rgba(0,0,0,0.25);
+    padding: 0.35em 0.9em;
+    border-radius: 999px;
+  }
+
   #pitch-track {
     position: absolute;
     top: 0;
@@ -329,6 +348,10 @@
 
   <div class="screen" id="screen-play">
     <div id="play-field-name">The Sandlot</div>
+    <div id="hud">
+      <div id="hud-homers">⚾ 0/3</div>
+      <div id="hud-score">SCORE 0</div>
+    </div>
     <button id="pause-btn">II</button>
     <div id="pitch-track">
       <div id="mound"></div>
@@ -382,8 +405,29 @@
   var HOMER_MS = 70;
   var SINGLE_MS = 140;
   var FOUL_MS = 220;
+  var LEVEL_HOMER_TARGET = 3;
   var ball = document.getElementById('ball');
   var resultText = document.getElementById('result-text');
+  var hudHomers = document.getElementById('hud-homers');
+  var hudScore = document.getElementById('hud-score');
+
+  var score = 0;
+  var homersThisLevel = 0;
+
+  function updateHud() {
+    hudHomers.textContent = '⚾ ' + homersThisLevel + '/' + LEVEL_HOMER_TARGET;
+    hudScore.textContent = 'SCORE ' + score;
+  }
+
+  function applyScoring(outcome) {
+    if (outcome === 'HOMER') {
+      score += 100;
+      homersThisLevel += 1;
+    } else if (outcome === 'SINGLE') {
+      score += 10;
+    }
+    updateHud();
+  }
   var contactRing = document.getElementById('contact-ring');
   var RING_START_SCALE = 3;
   var RING_END_SCALE = 1;
@@ -501,6 +545,7 @@
     pitch.phase = 'result';
     pitch.phaseStartTs = now;
     showResult(outcome);
+    applyScoring(outcome);
   }
 
   function attemptSwing() {
@@ -629,6 +674,7 @@
     }
   });
 
+  updateHud();
   showScreen(0);
 })();
 </script>
