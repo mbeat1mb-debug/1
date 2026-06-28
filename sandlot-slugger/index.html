@@ -140,6 +140,30 @@
     height: 100%;
   }
 
+  #result-text {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.6);
+    font-size: clamp(2.2rem, 9vw, 5.5rem);
+    font-weight: bold;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    opacity: 0;
+    z-index: 10;
+    white-space: nowrap;
+    transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  }
+
+  #result-text.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  #result-text.outcome-HOMER { color: var(--gold); }
+  #result-text.outcome-SINGLE { color: #fff; }
+  #result-text.outcome-FOUL { color: #ff8a3d; }
+  #result-text.outcome-MISS { color: #ff4d4d; }
+
   #mound {
     position: absolute;
     left: 50%;
@@ -291,6 +315,7 @@
       <div id="mound"></div>
       <div id="plate"></div>
       <div id="ball"></div>
+      <div id="result-text"></div>
     </div>
   </div>
 
@@ -328,18 +353,25 @@
   var paused = false;
   var PLAY_INDEX = ORDER.indexOf('play');
 
-  // --- Pitch animation (Level 1 values, Section 3 of the brief) ---
+  // --- Pitch animation + swing/timing (Level 1 values, Section 3 of the brief) ---
   var PITCH_TRAVEL_MS = 1600;
   var PITCH_GAP_MS = 450;
+  var RESULT_MS = 900;
   var MOUND_TOP_PCT = 18;
   var PLATE_TOP_PCT = 78;
+  var HOMER_MS = 70;
+  var SINGLE_MS = 140;
+  var FOUL_MS = 220;
   var ball = document.getElementById('ball');
+  var resultText = document.getElementById('result-text');
 
   var pitch = {
     rafId: null,
-    phase: 'wait', // 'wait' (between pitches) or 'pitch' (ball in flight)
-    startTs: null,
-    elapsedAtStop: 0
+    phase: 'gap', // 'gap' (between pitches), 'pitch' (ball in flight, swing window open), 'result' (outcome shown)
+    phaseStartTs: null,
+    elapsedAtStop: 0,
+    swung: false,
+    outcome: null
   };
 
   function setBallProgress(t) {
@@ -349,16 +381,63 @@
     ball.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
   }
 
-  function pitchFrame(now) {
-    if (pitch.startTs === null) pitch.startTs = now;
-    var elapsed = now - pitch.startTs;
+  function classify(errorMs) {
+    if (errorMs <= HOMER_MS) return 'HOMER';
+    if (errorMs <= SINGLE_MS) return 'SINGLE';
+    if (errorMs <= FOUL_MS) return 'FOUL';
+    return 'MISS';
+  }
 
-    if (pitch.phase === 'wait') {
+  function resultLabel(outcome) {
+    if (outcome === 'HOMER') return 'HOMER!';
+    if (outcome === 'SINGLE') return 'SINGLE!';
+    if (outcome === 'FOUL') return 'FOUL';
+    return 'MISS';
+  }
+
+  function showResult(outcome) {
+    resultText.textContent = resultLabel(outcome);
+    resultText.className = 'outcome-' + outcome;
+    // restart the CSS transition reliably
+    resultText.classList.remove('show');
+    void resultText.offsetWidth;
+    resultText.classList.add('show');
+  }
+
+  function hideResult() {
+    resultText.classList.remove('show');
+  }
+
+  function resolveOutcome(outcome, now) {
+    pitch.swung = true;
+    pitch.outcome = outcome;
+    pitch.phase = 'result';
+    pitch.phaseStartTs = now;
+    showResult(outcome);
+  }
+
+  function attemptSwing() {
+    if (pitch.phase !== 'pitch' || pitch.swung) return;
+    var tapTime = performance.now();
+    var perfectContactTs = pitch.phaseStartTs + PITCH_TRAVEL_MS;
+    var errorMs = Math.abs(tapTime - perfectContactTs);
+    var outcome = classify(errorMs);
+    resolveOutcome(outcome, tapTime);
+  }
+
+  function pitchFrame(now) {
+    if (pitch.phaseStartTs === null) pitch.phaseStartTs = now;
+    var elapsed = now - pitch.phaseStartTs;
+
+    if (pitch.phase === 'gap') {
       ball.style.opacity = '0';
       setBallProgress(0);
       if (elapsed >= PITCH_GAP_MS) {
         pitch.phase = 'pitch';
-        pitch.startTs = now;
+        pitch.phaseStartTs = now;
+        pitch.swung = false;
+        pitch.outcome = null;
+        hideResult();
         elapsed = 0;
       }
     }
@@ -367,9 +446,16 @@
       ball.style.opacity = '1';
       var t = Math.min(elapsed / PITCH_TRAVEL_MS, 1);
       setBallProgress(t);
-      if (elapsed >= PITCH_TRAVEL_MS) {
-        pitch.phase = 'wait';
-        pitch.startTs = now;
+      if (elapsed >= PITCH_TRAVEL_MS + FOUL_MS && !pitch.swung) {
+        resolveOutcome('MISS', now);
+      }
+    }
+
+    if (pitch.phase === 'result') {
+      if (elapsed >= RESULT_MS) {
+        pitch.phase = 'gap';
+        pitch.phaseStartTs = now;
+        hideResult();
       }
     }
 
@@ -380,18 +466,21 @@
     if (pitch.rafId !== null) {
       cancelAnimationFrame(pitch.rafId);
       pitch.rafId = null;
-      if (pitch.startTs !== null) {
-        pitch.elapsedAtStop = performance.now() - pitch.startTs;
+      if (pitch.phaseStartTs !== null) {
+        pitch.elapsedAtStop = performance.now() - pitch.phaseStartTs;
       }
     }
   }
 
   function startPitchLoop(reset) {
     if (reset) {
-      pitch.phase = 'wait';
+      pitch.phase = 'gap';
       pitch.elapsedAtStop = 0;
+      pitch.swung = false;
+      pitch.outcome = null;
+      hideResult();
     }
-    pitch.startTs = performance.now() - pitch.elapsedAtStop;
+    pitch.phaseStartTs = performance.now() - pitch.elapsedAtStop;
     pitch.rafId = requestAnimationFrame(pitchFrame);
   }
 
@@ -420,7 +509,11 @@
     if (paused) return;
     if (e.target.closest('#pause-btn')) return; // isolated hit area, never advances screens
     e.preventDefault();
-    advance();
+    if (current === PLAY_INDEX) {
+      attemptSwing();
+    } else {
+      advance();
+    }
   });
 
   var pauseBtn = document.getElementById('pause-btn');
