@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Sandlot Slugger</title>
+<style>
+  :root {
+    --green: #2e7d32;
+    --dirt: #c08552;
+    --ink: #1a1a1a;
+    --gold: #ffd54a;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: inherit;
+  }
+
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: white;
+  }
+
+  #app {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4vh 4vw;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  #screen-title {
+    background: linear-gradient(180deg, #5b3a1f 0%, var(--dirt) 60%, var(--green) 100%);
+  }
+
+  #screen-level-intro {
+    background: linear-gradient(180deg, #1b4d22 0%, var(--green) 100%);
+  }
+
+  #screen-play {
+    background: linear-gradient(180deg, #c9a36a 0%, var(--dirt) 35%, var(--green) 100%);
+  }
+
+  #screen-level-clear {
+    background: radial-gradient(circle at 50% 40%, #fff7d6 0%, var(--gold) 50%, #b8860b 100%);
+    color: var(--ink);
+  }
+
+  #screen-game-complete {
+    background: radial-gradient(circle at 50% 35%, #fff 0%, var(--gold) 45%, #8a5a00 100%);
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 7vw, 4.5rem);
+    margin: 0 0 1.5vh 0;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    margin: 0 0 2vh 0;
+  }
+
+  p.tap-hint {
+    font-size: clamp(1rem, 2.8vw, 1.6rem);
+    opacity: 0.85;
+    margin-top: 3vh;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .field-name {
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    background: rgba(0,0,0,0.25);
+    padding: 0.6em 1.2em;
+    border-radius: 999px;
+  }
+
+  #play-field-name {
+    position: absolute;
+    top: 3vh;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    opacity: 0.9;
+    z-index: 5;
+  }
+
+  #pitch-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  #mound {
+    position: absolute;
+    left: 50%;
+    top: 18%;
+    width: 6vw;
+    height: 6vw;
+    max-width: 40px;
+    max-height: 40px;
+    transform: translate(-50%, -50%);
+    background: #a87b4f;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.25);
+  }
+
+  #plate {
+    position: absolute;
+    left: 50%;
+    top: 78%;
+    width: 5vw;
+    height: 5vw;
+    max-width: 32px;
+    max-height: 32px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: #f5f5f0;
+    border: 2px solid rgba(0,0,0,0.25);
+  }
+
+  #ball {
+    position: absolute;
+    left: 50%;
+    top: 18%;
+    width: 4vw;
+    height: 4vw;
+    max-width: 26px;
+    max-height: 26px;
+    border-radius: 50%;
+    background: #fdfdfa;
+    border: 1.5px solid #c0392b;
+    transform: translate(-50%, -50%);
+  }
+
+  #pause-btn {
+    position: absolute;
+    top: 2.5vh;
+    right: 2.5vw;
+    width: 11vw;
+    max-width: 64px;
+    min-width: 44px;
+    height: 11vw;
+    max-height: 64px;
+    min-height: 44px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    border: 2px solid rgba(255,255,255,0.6);
+    color: white;
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  /* Pause overlay */
+  #pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+
+  #pause-overlay.active {
+    display: flex;
+  }
+
+  #pause-overlay h2 {
+    margin-bottom: 4vh;
+  }
+
+  #resume-btn {
+    padding: 1.2em 2.4em;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    font-weight: bold;
+  }
+
+  /* Portrait lock overlay */
+  #rotate-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 100;
+    color: white;
+    padding: 6vh 6vw;
+  }
+
+  #rotate-overlay .icon {
+    font-size: 4rem;
+    margin-bottom: 2vh;
+  }
+
+  #rotate-overlay p {
+    font-size: clamp(1.1rem, 4vw, 1.8rem);
+  }
+
+  @media (orientation: portrait) {
+    #rotate-overlay {
+      display: flex;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="screen active" id="screen-title">
+    <h1>⚾ SANDLOT SLUGGER</h1>
+    <p class="tap-hint">Tap to start</p>
+  </div>
+
+  <div class="screen" id="screen-level-intro">
+    <span class="field-name" id="level-intro-field-name">The Sandlot</span>
+    <h2 style="margin-top: 3vh;">Get ready, Jaxson!</h2>
+    <p class="tap-hint">Tap to play</p>
+  </div>
+
+  <div class="screen" id="screen-play">
+    <div id="play-field-name">The Sandlot</div>
+    <button id="pause-btn">II</button>
+    <div id="pitch-track">
+      <div id="mound"></div>
+      <div id="plate"></div>
+      <div id="ball"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-level-clear">
+    <h1>LEVEL CLEAR!</h1>
+    <p class="tap-hint">Tap to continue</p>
+  </div>
+
+  <div class="screen" id="screen-game-complete">
+    <h1>🏆 CHAMPION! 🏆</h1>
+    <p class="tap-hint">Tap to play again</p>
+  </div>
+
+  <div id="pause-overlay">
+    <h2>PAUSED</h2>
+    <button id="resume-btn">RESUME</button>
+  </div>
+
+</div>
+
+<div id="rotate-overlay">
+  <div class="icon">🔄</div>
+  <p>Turn me sideways!</p>
+</div>
+
+<script>
+(function () {
+  var ORDER = ['title', 'level-intro', 'play', 'level-clear', 'game-complete'];
+  var screens = {};
+  ORDER.forEach(function (name) {
+    screens[name] = document.getElementById('screen-' + name);
+  });
+
+  var current = 0;
+  var paused = false;
+  var PLAY_INDEX = ORDER.indexOf('play');
+
+  // --- Pitch animation (Level 1 values, Section 3 of the brief) ---
+  var PITCH_TRAVEL_MS = 1600;
+  var PITCH_GAP_MS = 450;
+  var MOUND_TOP_PCT = 18;
+  var PLATE_TOP_PCT = 78;
+  var ball = document.getElementById('ball');
+
+  var pitch = {
+    rafId: null,
+    phase: 'wait', // 'wait' (between pitches) or 'pitch' (ball in flight)
+    startTs: null,
+    elapsedAtStop: 0
+  };
+
+  function setBallProgress(t) {
+    var topPct = MOUND_TOP_PCT + t * (PLATE_TOP_PCT - MOUND_TOP_PCT);
+    var scale = 0.6 + t * 0.7; // grows as it nears the plate, for depth
+    ball.style.top = topPct + '%';
+    ball.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+  }
+
+  function pitchFrame(now) {
+    if (pitch.startTs === null) pitch.startTs = now;
+    var elapsed = now - pitch.startTs;
+
+    if (pitch.phase === 'wait') {
+      ball.style.opacity = '0';
+      setBallProgress(0);
+      if (elapsed >= PITCH_GAP_MS) {
+        pitch.phase = 'pitch';
+        pitch.startTs = now;
+        elapsed = 0;
+      }
+    }
+
+    if (pitch.phase === 'pitch') {
+      ball.style.opacity = '1';
+      var t = Math.min(elapsed / PITCH_TRAVEL_MS, 1);
+      setBallProgress(t);
+      if (elapsed >= PITCH_TRAVEL_MS) {
+        pitch.phase = 'wait';
+        pitch.startTs = now;
+      }
+    }
+
+    pitch.rafId = requestAnimationFrame(pitchFrame);
+  }
+
+  function stopPitchLoop() {
+    if (pitch.rafId !== null) {
+      cancelAnimationFrame(pitch.rafId);
+      pitch.rafId = null;
+      if (pitch.startTs !== null) {
+        pitch.elapsedAtStop = performance.now() - pitch.startTs;
+      }
+    }
+  }
+
+  function startPitchLoop(reset) {
+    if (reset) {
+      pitch.phase = 'wait';
+      pitch.elapsedAtStop = 0;
+    }
+    pitch.startTs = performance.now() - pitch.elapsedAtStop;
+    pitch.rafId = requestAnimationFrame(pitchFrame);
+  }
+
+  function showScreen(index) {
+    var wasPlay = ORDER[current] === 'play';
+    current = index;
+    ORDER.forEach(function (name, i) {
+      screens[name].classList.toggle('active', i === index);
+    });
+    if (wasPlay && index !== PLAY_INDEX) {
+      stopPitchLoop();
+    }
+    if (index === PLAY_INDEX) {
+      startPitchLoop(true);
+    }
+  }
+
+  function advance() {
+    if (paused) return;
+    var next = (current + 1) % ORDER.length;
+    showScreen(next);
+  }
+
+  var app = document.getElementById('app');
+  app.addEventListener('pointerdown', function (e) {
+    if (paused) return;
+    if (e.target.closest('#pause-btn')) return; // isolated hit area, never advances screens
+    e.preventDefault();
+    advance();
+  });
+
+  var pauseBtn = document.getElementById('pause-btn');
+  var pauseOverlay = document.getElementById('pause-overlay');
+  var resumeBtn = document.getElementById('resume-btn');
+
+  pauseBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    paused = true;
+    pauseOverlay.classList.add('active');
+    stopPitchLoop();
+  });
+
+  resumeBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    paused = false;
+    pauseOverlay.classList.remove('active');
+    if (current === PLAY_INDEX) {
+      startPitchLoop(false);
+    }
+  });
+
+  showScreen(0);
+})();
+</script>
+
+</body>
+</html>
