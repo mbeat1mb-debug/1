@@ -203,6 +203,25 @@
     background: #fdfdfa;
     border: 1.5px solid #c0392b;
     transform: translate(-50%, -50%);
+    z-index: 6;
+  }
+
+  #contact-ring {
+    position: absolute;
+    left: 50%;
+    top: 78%;
+    width: 9vw;
+    height: 9vw;
+    max-width: 58px;
+    max-height: 58px;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 14px 4px rgba(255, 213, 74, 0.85), inset 0 0 10px 2px rgba(255, 213, 74, 0.55);
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 4;
+    transition: opacity 0.1s ease-out;
   }
 
   #pause-btn {
@@ -314,6 +333,7 @@
     <div id="pitch-track">
       <div id="mound"></div>
       <div id="plate"></div>
+      <div id="contact-ring"></div>
       <div id="ball"></div>
       <div id="result-text"></div>
     </div>
@@ -364,6 +384,9 @@
   var FOUL_MS = 220;
   var ball = document.getElementById('ball');
   var resultText = document.getElementById('result-text');
+  var contactRing = document.getElementById('contact-ring');
+  var RING_START_SCALE = 3;
+  var RING_END_SCALE = 1;
 
   var pitch = {
     rafId: null,
@@ -373,6 +396,16 @@
     swung: false,
     outcome: null
   };
+
+  function setRingProgress(t) {
+    var scale = RING_START_SCALE + t * (RING_END_SCALE - RING_START_SCALE); // tightens to smallest at perfect contact
+    contactRing.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    contactRing.style.opacity = '1';
+  }
+
+  function hideRing() {
+    contactRing.style.opacity = '0';
+  }
 
   function setBallProgress(t) {
     var topPct = MOUND_TOP_PCT + t * (PLATE_TOP_PCT - MOUND_TOP_PCT);
@@ -486,6 +519,7 @@
     if (pitch.phase === 'gap') {
       ball.style.opacity = '0';
       setBallProgress(0);
+      hideRing();
       if (elapsed >= PITCH_GAP_MS) {
         pitch.phase = 'pitch';
         pitch.phaseStartTs = now;
@@ -500,12 +534,14 @@
       ball.style.opacity = '1';
       var t = Math.min(elapsed / PITCH_TRAVEL_MS, 1);
       setBallProgress(t);
+      setRingProgress(t);
       if (elapsed >= PITCH_TRAVEL_MS + FOUL_MS && !pitch.swung) {
         resolveOutcome('MISS', now);
       }
     }
 
     if (pitch.phase === 'result') {
+      hideRing();
       animateResultBall(pitch.outcome, Math.min(elapsed / RESULT_MS, 1));
       if (elapsed >= RESULT_MS) {
         pitch.phase = 'gap';
