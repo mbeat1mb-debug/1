@@ -1,9 +1,19 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).href;
+// pdfjs-dist is ~400KB and only needed during an actual PDF import, so load it
+// on first use — otherwise it gets bundled into the Settings screen and every
+// visit to Settings pays for it.
+let pdfjsPromise = null;
+function loadPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import('pdfjs-dist').then((pdfjs) => {
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+        'pdfjs-dist/build/pdf.worker.min.mjs',
+        import.meta.url
+      ).href;
+      return pdfjs;
+    });
+  }
+  return pdfjsPromise;
+}
 
 // Maps our internal marker keys to the names labs commonly print on reports.
 // Listed most-specific → least-specific so the first match wins.
@@ -44,6 +54,7 @@ const ALIASES = {
 };
 
 async function extractTextFromPdf(arrayBuffer) {
+  const { getDocument } = await loadPdfjs();
   const pdf = await getDocument({ data: arrayBuffer }).promise;
   let fullText = '';
   for (let i = 1; i <= pdf.numPages; i++) {
