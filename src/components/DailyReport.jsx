@@ -63,7 +63,7 @@ export default function DailyReport({ data, type }) {
   })
   useEffect(() => {
     if (topCorr !== null) return
-    const today = new Date().toISOString().split('T')[0]
+    const today = localToday()
     getTopCorrelations(1).then(r => {
       const result = r[0] ?? null
       setTopCorr(result)

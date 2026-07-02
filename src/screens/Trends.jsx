@@ -209,7 +209,9 @@ export default function Trends({ data, onNav }) {
     [dbHistory, todayStr]
   )
 
-  const todayHRV = hrvHistory.length > 0 ? Math.round(hrvHistory[hrvHistory.length - 1]) : null
+  // Last date can be RHR-only (null HRV slot) — use the most recent real reading
+  const lastRealHRV = hrvHistory.findLast(v => v != null)
+  const todayHRV = lastRealHRV != null ? Math.round(lastRealHRV) : null
   const hasMA7 = hrvChartData.some(p => p.ma7 != null)
 
   return (

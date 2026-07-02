@@ -4,7 +4,7 @@ import {
   getUserAge, getUserBodyFatPct, getUserHeightCm, getUserWeightKg,
   calculateLeanMass, calculateFFMI, getUserWaistCm, getUserGripStrengthKg,
   getHOMAIR, getAverageBP, calculatePhysiologicalAge, localDateOf,
-  calculateSRI, getLastKnownHRR,
+  buildPhysioAgeInputs,
 } from '../lib/calculations'
 import { getPhenoAgeResult, getLabResults } from '../lib/labs'
 import { getJournalEntries, getAllTags } from '../lib/storage'
@@ -99,38 +99,8 @@ function buildLongevityContext(data) {
   const bp = getAverageBP()
   const phenoAge = getPhenoAgeResult()
 
-  // Mirrors Chronos.jsx's calculatePhysiologicalAge call exactly (same inputs,
-  // same fallbacks) so the age cited here always matches the Chronos screen.
-  const hrvHistory = (data.hrvHistory || []).filter(Boolean)
-  const avgHRVVal = hrvHistory.length ? hrvHistory.reduce((a, b) => a + b, 0) / hrvHistory.length : 0
-  const rhrHistory = (data.rhrHistory || []).filter(Boolean)
-  const avgRHRVal = rhrHistory.length ? rhrHistory.reduce((a, b) => a + b, 0) / rhrHistory.length : 0
-  const sleepHistory = data.sleepHistory || []
-  const avgSleep = sleepHistory.length
-    ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60 : 0
-  const sri = calculateSRI(sleepHistory)
-  const durationConsistency = sleepHistory.length >= 7
-    ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) => {
-        if (i === 0) return acc
-        return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
-      }, 0) / 6) / 2
-    : 0.7
-  const sleepConsistency = sri !== null ? sri : durationConsistency
-  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
-  const avgDeepPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.deepMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-  const avgRemPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-  const weeklyAZM = data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0)
-  const lastKnownHRR = data.hrr ?? getLastKnownHRR()
-
-  const physAge = calculatePhysiologicalAge({
-    avgHRV: avgHRVVal, avgRHR: avgRHRVal, avgSleep, sleepConsistency,
-    avgSteps: data.steps || 0, weeklyAZM, vo2Max: data.vo2Max || 0,
-    avgDeepPct, avgRemPct, hrvHistory, lastKnownHRR,
-  })
+  // Shared input builder keeps the age cited here identical to the Chronos screen.
+  const physAge = calculatePhysiologicalAge(buildPhysioAgeInputs(data))
 
   const labs = getLabResults()
   const labLines = []

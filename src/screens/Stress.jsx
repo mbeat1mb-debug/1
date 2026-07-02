@@ -15,7 +15,7 @@ export default function Stress({ data, onNav }) {
   const avgRHR14 = rhrHistory.slice(-14).filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.slice(-14).filter(Boolean).length || 1)
 
   const hrvRatio = todayHRV > 0 && avgHRV14 > 0 ? Math.round((todayHRV / avgHRV14) * 100) : null
-  const rhrDiff = Math.round(todayRHR - avgRHR14)
+  const rhrDiff = todayRHR > 0 && avgRHR14 > 0 ? Math.round(todayRHR - avgRHR14) : null
 
   const todayStr = localToday()
   const dates14 = historyDates.slice(-14)
@@ -23,7 +23,7 @@ export default function Stress({ data, onNav }) {
     const d = dates14[i]
     const lbl = !d ? (i === hrv14.length - 1 ? 'Today' : `-${hrv14.length - 1 - i}d`)
       : d === todayStr ? 'Today' : `-${Math.round((new Date(todayStr) - new Date(d)) / 86400000)}d`
-    return { label: lbl, hrv: Math.round(v) }
+    return { label: lbl, hrv: v != null ? Math.round(v) : null }
   })
 
   return (
@@ -46,7 +46,7 @@ export default function Stress({ data, onNav }) {
           </div>
           <div>
             <Label>Resting HR vs baseline</Label>
-            <p style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: rhrDiff <= 0 ? '#3E9C7E' : '#ef4444' }}>{rhrDiff > 0 ? '+' : ''}{rhrDiff} bpm</p>
+            <p style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: rhrDiff == null ? C.faint : rhrDiff <= 0 ? '#3E9C7E' : '#ef4444' }}>{rhrDiff == null ? '—' : `${rhrDiff > 0 ? '+' : ''}${rhrDiff} bpm`}</p>
           </div>
         </div>
       </div>

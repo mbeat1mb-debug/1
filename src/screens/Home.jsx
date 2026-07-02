@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { haptic } from '../lib/haptics'
 import {
   DndContext, closestCenter, TouchSensor, MouseSensor,
@@ -16,7 +16,7 @@ import {
   getRecoveryColor, getRecoveryLabel, getStressColor, getStressLabel,
   getTrainingLoadColor, getUserHeightCm, getUserUnits, calculateDistance,
   calculatePhysiologicalAge, getUserAge, calculateReadiness, localToday,
-  calculateSRI, getLastKnownHRR,
+  buildPhysioAgeInputs,
 } from '../lib/calculations'
 import { getHomeLayout, saveHomeLayout, SECTION_META } from '../lib/layout'
 import { getTopCorrelations } from '../lib/correlations'
@@ -183,36 +183,14 @@ function RecordsContent() {
 }
 
 function ChronosContent({ data }) {
-  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0 } = data
   const userAge = getUserAge()
-  // Mirrors Chronos.jsx's calculatePhysiologicalAge call exactly (same inputs,
-  // same fallbacks) so this tile's number always matches the Chronos screen.
-  const sri = calculateSRI(sleepHistory)
-  const durationConsistency = sleepHistory.length >= 7
-    ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) => {
-        if (i === 0) return acc
-        return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
-      }, 0) / 6) / 2
-    : 0.7
-  const sleepConsistency = sri !== null ? sri : durationConsistency
-  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
-  const avgDeepPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.deepMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-  const avgRemPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-  const weeklyAZM = data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0)
-  const lastKnownHRR = data.hrr ?? getLastKnownHRR()
-  const physAge = userAge > 0 ? calculatePhysiologicalAge({
-    avgHRV: hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1),
-    avgRHR: rhrHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (rhrHistory.filter(Boolean).length || 1),
-    avgSleep: sleepHistory.length ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60 : 7,
-    sleepConsistency,
-    avgSteps: steps,
-    weeklyAZM,
-    vo2Max, avgDeepPct, avgRemPct, hrvHistory, lastKnownHRR,
-  }) : null
+  // Shared input builder guarantees this tile matches the Chronos screen; the
+  // memo keeps the heavy averaging out of gesture-driven re-renders (Home
+  // re-renders per frame during pull-to-refresh and card drags).
+  const physAge = useMemo(
+    () => (userAge > 0 ? calculatePhysiologicalAge(buildPhysioAgeInputs(data)) : null),
+    [data, userAge]
+  )
   const diff = physAge !== null ? physAge - userAge : null
   const color = diff === null ? '#9a8f7e' : diff <= -3 ? '#3E9C7E' : diff <= 0 ? '#9B7FD4' : diff <= 3 ? '#D98E3F' : '#ef4444'
 

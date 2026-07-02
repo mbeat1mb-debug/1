@@ -10,6 +10,10 @@ function loadPdfjs() {
         import.meta.url
       ).href;
       return pdfjs;
+    }).catch((err) => {
+      // Don't cache a failed load (e.g. offline) — let the next attempt retry
+      pdfjsPromise = null;
+      throw err;
     });
   }
   return pdfjsPromise;

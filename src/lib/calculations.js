@@ -556,6 +556,35 @@ export function calculatePhysiologicalAge({ avgHRV, avgRHR, avgSleep, sleepConsi
 
 // How many of the 5 scoring domains are using real user-entered data vs. silently
 // defaulting to a 0 contribution — mirrors the existing PhenoAge "X/9 markers" indicator.
+// The one place that turns dashboard data into calculatePhysiologicalAge's
+// inputs. Chronos, Coach, HomeAlmanac, and the Home tile all call this — they
+// used to carry hand-copied versions of this block, which drifted apart three
+// separate times and made the same person's "body age" differ across screens.
+export function buildPhysioAgeInputs(data) {
+  const { hrvHistory = [], rhrHistory = [], sleepHistory = [], steps = 0, vo2Max = 0 } = data
+  const avg = arr => arr.reduce((a, b) => a + b, 0) / (arr.length || 1)
+  const sri = calculateSRI(sleepHistory)
+  const durationConsistency = sleepHistory.length >= 7
+    ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) =>
+        i === 0 ? acc : acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60, 0) / 6) / 2
+    : 0.7
+  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
+  return {
+    avgHRV: avg(hrvHistory.filter(Boolean)),
+    avgRHR: avg(rhrHistory.filter(Boolean)),
+    avgSleep: sleepHistory.length ? avg(sleepHistory.map(s => s.minutes)) / 60 : 7,
+    // SRI (timing-based) is more accurate than duration variance; use it when available
+    sleepConsistency: sri !== null ? sri : durationConsistency,
+    avgSteps: steps,
+    weeklyAZM: data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0),
+    vo2Max,
+    avgDeepPct: stageEntries.length ? avg(stageEntries.map(s => (s.deepMinutes || 0) / (s.minutes || 1))) : 0,
+    avgRemPct: stageEntries.length ? avg(stageEntries.map(s => (s.remMinutes || 0) / (s.minutes || 1))) : 0,
+    hrvHistory,
+    lastKnownHRR: data.hrr ?? getLastKnownHRR(),
+  }
+}
+
 export function getPhysiologicalAgeConfidence({ avgHRV, avgRHR, avgSleep, avgSteps, weeklyAZM, vo2Max = 0, lastKnownHRR = null } = {}) {
   const bodyFatPct = getUserBodyFatPct()
   const waistCm = getUserWaistCm()
@@ -1033,10 +1062,13 @@ export function parseGoogleHealthData(raw) {
   const hrvHistory = historyDates.map(date => hrvByDate[date] ?? null)
   const rhrHistory = historyDates.map(date => rhrByDate[date] ?? null)
 
+  // Fallbacks use the last date that actually HAS a reading — historyDates is
+  // now a union of HRV and RHR dates, so its last entry can be a day with only
+  // one of the two, and indexing it directly would yield 0 for the other.
   const todayHRVRaw = pick(hrv?.dataPoints?.[0], 'dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds', 'dailyHeartRateVariability.rmssd', 'dailyHeartRateVariability.value')
-  const todayHRV = todayHRVRaw != null ? Math.round(Number(todayHRVRaw)) : (hrvByDate[historyDates.at(-1)] ?? 0)
+  const todayHRV = todayHRVRaw != null ? Math.round(Number(todayHRVRaw)) : (hrvHistory.findLast(v => v != null) ?? 0)
   const todayRHRRaw = pick(rhr?.dataPoints?.[0], 'dailyRestingHeartRate.beatsPerMinute', 'dailyRestingHeartRate.bpm', 'dailyRestingHeartRate.avg')
-  const todayRHR = todayRHRRaw != null ? Math.round(Number(todayRHRRaw)) : (rhrByDate[historyDates.at(-1)] ?? 0)
+  const todayRHR = todayRHRRaw != null ? Math.round(Number(todayRHRRaw)) : (rhrHistory.findLast(v => v != null) ?? 0)
   const sleepPoints = sleep?.dataPoints ?? []
   // Google Health can return more than one sleep session for the same calendar
   // date — either genuinely separate sleep (a daytime nap alongside the main
@@ -1536,7 +1568,7 @@ export function calculateSRI(sleepHistory) {
   let matchMins = 0, totalMins = 0
   for (let i = 0; i < valid.length - 1; i++) {
     const n1 = valid[i], n2 = valid[i + 1]
-    const expectedNext = (() => { const d = new Date(n1.date + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] })()
+    const expectedNext = (() => { const d = new Date(n1.date + 'T12:00:00'); d.setDate(d.getDate() + 1); return localDateOf(d) })()
     if (n2.date !== expectedNext) continue
     const m1 = new Date(n1.date + 'T00:00:00')
     const m2 = new Date(n2.date + 'T00:00:00')

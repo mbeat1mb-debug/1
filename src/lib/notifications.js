@@ -72,7 +72,12 @@ export function showNotification(title, body) {
 // reminders fire a day early/late depending on the user's timezone offset.
 function daysSinceDate(dateStr, todayStr) {
   if (!dateStr) return 999
-  return Math.floor((new Date(todayStr + 'T12:00:00') - new Date(dateStr + 'T12:00:00')) / 86400000)
+  // CSV-imported dates are stored verbatim and may not be YYYY-MM-DD — only
+  // noon-anchor the plain-date form; parse anything else as-is. Unparseable
+  // dates count as "very stale" (fires the nudge) rather than silencing it.
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T12:00:00') : new Date(dateStr)
+  if (isNaN(d)) return 999
+  return Math.floor((new Date(todayStr + 'T12:00:00') - d) / 86400000)
 }
 
 export function getDataNudges() {

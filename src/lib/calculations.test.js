@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { calculateDistance, calculateBMI, parseActivityLogs, localToday, parseGoogleHealthData, getBodyWeightHistory, calculateLeanMass, calculateFatMass, calculateFFMI } from './calculations'
+import { calculateDistance, calculateBMI, parseActivityLogs, localToday, parseGoogleHealthData, getBodyWeightHistory, calculateLeanMass, calculateFatMass, calculateFFMI, buildPhysioAgeInputs } from './calculations'
 
 function dayPoint(y, m, d, value, key, field) {
   return { date: { year: y, month: m, day: d }, [key]: { [field]: value } }
@@ -90,6 +90,40 @@ describe('parseGoogleHealthData historyDates (regression: RHR-only days were dro
     expect(parsed.historyDates).toEqual(['2026-06-20', '2026-06-21'])
     expect(parsed.hrvHistory).toEqual([45, null])
     expect(parsed.rhrHistory).toEqual([60, 62])
+  })
+
+  it('falls back to the last REAL HRV reading, not 0, when the newest day is RHR-only', () => {
+    // Regression: the fallback used to index the newest union date directly,
+    // yielding 0 on mornings where RHR had synced but HRV had not — which
+    // spiked the stress score to near-max.
+    const raw = {
+      hrvRange: { dataPoints: [dayPoint(2026, 6, 20, 45, 'dailyHeartRateVariability', 'rmssd')] },
+      hrRange: { dataPoints: [
+        dayPoint(2026, 6, 20, 60, 'dailyRestingHeartRate', 'beatsPerMinute'),
+        dayPoint(2026, 6, 21, 62, 'dailyRestingHeartRate', 'beatsPerMinute'),
+      ] },
+    }
+    const parsed = parseGoogleHealthData(raw)
+    expect(parsed.todayHRV).toBe(45)
+    expect(parsed.todayRHR).toBe(62)
+  })
+})
+
+describe('buildPhysioAgeInputs (shared across Home/Chronos/Coach/HomeAlmanac)', () => {
+  it('builds sane averages and skips null history slots', () => {
+    const inputs = buildPhysioAgeInputs({
+      hrvHistory: [40, null, 50],
+      rhrHistory: [60, 64, null],
+      sleepHistory: [{ date: '2026-06-20', minutes: 420 }, { date: '2026-06-21', minutes: 480 }],
+      steps: 9000,
+      vo2Max: 44,
+      weeklyAZM: 320,
+    })
+    expect(inputs.avgHRV).toBe(45)
+    expect(inputs.avgRHR).toBe(62)
+    expect(inputs.avgSleep).toBeCloseTo(7.5, 1)
+    expect(inputs.weeklyAZM).toBe(320)
+    expect(inputs.avgSteps).toBe(9000)
   })
 })
 

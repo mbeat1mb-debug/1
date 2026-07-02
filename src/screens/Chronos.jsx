@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react'
-import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, calculateFFMI, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR, localToday } from '../lib/calculations'
+import { calculatePhysiologicalAge, getPhysiologicalAgeConfidence, calculatePaceOfAging, getUserAge, getUserHeightCm, getUserWeightKg, getUserUnits, calculateBMI, getBMILabel, getBMIColor, getBodyFatLabel, getBodyFatColor, getUserSmoking, getUserAlcohol, getAverageBP, getUserBodyFatPct, getBodyWeightHistory, calculateLeanMass, calculateFatMass, calculateFFMI, getUserWaistCm, getUserGripStrengthKg, getHOMAIR, getHRVNorm, getGripHistory, getWaistHistory, getBPReadings, calculateSRI, getChronosDeltas, getLatestHumeData, getVO2MortalityContext, getLastKnownHRR, localToday, buildPhysioAgeInputs } from '../lib/calculations'
 import { getLabContributions, getLabAgeAdjustment, getPhenoAgeResult, getPhenoAgeProgress, getTyGIndex } from '../lib/labs'
 import { LineGraph, DualLineGraph } from '../components/TrendChart'
 import { StatRow } from '../components/MetricCard'
@@ -227,7 +227,8 @@ export default function Chronos({ data, onNav }) {
   const weightHistory = getBodyWeightHistory()
   const leanMass = calculateLeanMass(weightKg, bodyFatPct)
   const fatMass = calculateFatMass(weightKg, bodyFatPct)
-  const weightChartData = weightHistory.slice(-30).map((entry, i, arr) => ({
+  // Fat-only sync days store kg: null — keep them off the chart or they plot as 0
+  const weightChartData = weightHistory.filter(e => e.kg != null).slice(-30).map((entry, i, arr) => ({
     label: i === arr.length - 1 ? 'Today' : entry.date.slice(5),
     weight: units === 'imperial' ? Math.round(entry.kg * 2.2046) : Math.round(entry.kg * 10) / 10,
   }))
@@ -262,33 +263,13 @@ export default function Chronos({ data, onNav }) {
 
   const phenoProgress = getPhenoAgeProgress()
 
-  const avgHRV = hrvHistory.filter(Boolean).reduce((a, b) => a + b, 0) / (hrvHistory.filter(Boolean).length || 1)
-  const avgRHR = data.rhrHistory?.filter(Boolean).reduce((a, b) => a + b, 0) / (data.rhrHistory?.filter(Boolean).length || 1) || 0
-  const avgSleepHours = sleepHistory.length
-    ? sleepHistory.reduce((a, s) => a + s.minutes, 0) / sleepHistory.length / 60
-    : 7
-
-  const sleepDates = sleepHistory.map(s => s.date).sort()
-  const durationConsistency = sleepDates.length >= 7
-    ? 1 - (sleepHistory.slice(-7).reduce((acc, s, i, arr) => {
-        if (i === 0) return acc
-        return acc + Math.abs(s.minutes - arr[i - 1].minutes) / 60
-      }, 0) / 6) / 2
-    : 0.7
-  const sri = calculateSRI(sleepHistory)
-  // SRI (timing-based) is more accurate than duration variance; use it when available
-  const sleepConsistency = sri !== null ? sri : durationConsistency
-
-  // Sleep stage averages — only entries that have stage data
-  const stageEntries = sleepHistory.filter(s => s.deepMinutes > 0 || s.remMinutes > 0)
-  const avgDeepPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.deepMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-  const avgRemPct = stageEntries.length
-    ? stageEntries.reduce((a, s) => a + (s.remMinutes || 0) / (s.minutes || 1), 0) / stageEntries.length
-    : 0
-
-  const weeklyAZM = data.weeklyAZM ?? (data.activeMinutes ? data.activeMinutes * 7 : 0)
+  // Single source of truth for the age-calculation inputs, shared with the
+  // Home tile, Coach, and HomeAlmanac so every screen shows the same number.
+  // The destructured names feed this screen's domain-breakdown display too.
+  const physioInputs = useMemo(() => buildPhysioAgeInputs(data), [data])
+  const { avgHRV, avgRHR, avgSleep: avgSleepHours, avgDeepPct, avgRemPct, weeklyAZM } = physioInputs
+  // Kept for the sleep-regularity display section further down
+  const sri = useMemo(() => calculateSRI(sleepHistory), [sleepHistory])
   const smoking = getUserSmoking()
   const alcoholWeek = getUserAlcohol()
   const bp = getAverageBP()
@@ -301,26 +282,19 @@ export default function Chronos({ data, onNav }) {
   const tygIndex = getTyGIndex()
   const sleepApneaRisk = data.sleepApneaRisk ?? null
   const socialJetLag = data.socialJetLag ?? null
-  const lastKnownHRR = data.hrr ?? getLastKnownHRR()
+  const lastKnownHRR = physioInputs.lastKnownHRR
   const ffmi = calculateFFMI(leanMass, heightCm)
   const labContributions = getLabContributions()
   const labAdj = getLabAgeAdjustment()
   const phenoAge = getPhenoAgeResult()
 
-  const physAge = useMemo(() => calculatePhysiologicalAge({
-    avgHRV, avgRHR, avgSleep: avgSleepHours, sleepConsistency,
-    avgSteps: steps, weeklyAZM,
-    vo2Max, avgDeepPct, avgRemPct, hrvHistory, lastKnownHRR,
+  const physAge = useMemo(() => calculatePhysiologicalAge(physioInputs),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [avgHRV, avgRHR, avgSleepHours, sleepConsistency, steps, weeklyAZM, vo2Max, avgDeepPct, avgRemPct,
-    smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, sri,
-    data.hrvHistory?.length, lastKnownHRR?.hrr60])
+    [physioInputs, smoking, alcoholWeek, bp.sys, bp.dia, labAdj, waistCm, gripKg, homaIR, tygIndex, bodyFatPct])
 
-  const confidence = useMemo(() => getPhysiologicalAgeConfidence({
-    avgHRV, avgRHR, avgSleep: avgSleepHours, avgSteps: steps, weeklyAZM, vo2Max, lastKnownHRR,
+  const confidence = useMemo(() => getPhysiologicalAgeConfidence(physioInputs),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [avgHRV, avgRHR, avgSleepHours, steps, weeklyAZM, vo2Max, lastKnownHRR?.hrr60,
-    waistCm, gripKg, homaIR, tygIndex, bodyFatPct, bp.sys])
+    [physioInputs, waistCm, gripKg, homaIR, tygIndex, bodyFatPct, bp.sys])
 
   // Persist today's biological age snapshot; compute longitudinal pace from history
   const [pace, setPace] = useState(null)

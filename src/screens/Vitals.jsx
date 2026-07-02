@@ -112,8 +112,9 @@ export default function Vitals({ data, onNav }) {
   // ── Body Weight ─────────────────────────────────────────────────────────────
   const weightAll = getBodyWeightHistory()
   const weightFiltered = cutoff ? weightAll.filter(e => e.date >= cutoff) : weightAll
-  const weightLatest = weightAll.at(-1)
-  const weightFirst = weightFiltered[0]
+  // Fat-only sync days store kg: null — skip back to the last real weigh-in
+  const weightLatest = weightAll.findLast(e => e.kg != null)
+  const weightFirst = weightFiltered.find(e => e.kg != null)
   const weightDisplay = v => v == null ? null : imperial ? Math.round(v * 2.2046 * 10) / 10 : v
   const weightUnit = imperial ? ' lbs' : ' kg'
   const weightChartData = weightFiltered.map(e => ({ label: fmtDate(e.date), weight: weightDisplay(e.kg) }))

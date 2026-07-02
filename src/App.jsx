@@ -456,15 +456,45 @@ export default function App() {
       }
       const effectiveHistory = [...dbHistory.filter(d => d.date !== todayRow.date), todayRow]
 
-      // result.calendarDays is rebuilt from sleep/HRV/RHR history each sync and
-      // never carries strain (no historical raw-HR stream to compute it from) —
-      // pull it back in from previously-saved IndexedDB rows so dates we've
-      // already synced don't lose their known strain when merged below.
-      const strainByDate = {}
-      for (const d of dbHistory) if (d.strain != null) strainByDate[d.date] = d.strain
-      strainByDate[todayRow.date] = todayRow.strain
+      // result.calendarDays is rebuilt from Google's ~30-day window each sync
+      // and can be missing data the DB already has (strain always — there's no
+      // historical raw-HR stream to recompute it — and sleep/HRV/etc when a
+      // metric drops out of Google's response). The reverse also happens: a
+      // date's row was saved before its sleep reached Google. Merge field-wise
+      // both ways — fill fresh rows from the DB, and write back stored rows the
+      // fresh sync has new data for — so late-arriving data is neither hidden
+      // on screen nor permanently lost once the date leaves the sync window.
+      const dbByDate = {}
+      for (const d of dbHistory) dbByDate[d.date] = d
       if (result.calendarDays?.length) {
-        result.calendarDays = result.calendarDays.map(d => ({ ...d, strain: strainByDate[d.date] ?? d.strain ?? null }))
+        const backfillRows = []
+        result.calendarDays = result.calendarDays.map(d => {
+          const prev = dbByDate[d.date]
+          const strain = (d.date === todayRow.date ? todayRow.strain : prev?.strain) ?? d.strain ?? null
+          if (!prev) return { ...d, strain }
+          const merged = {
+            ...d, strain,
+            recovery: d.recovery ?? prev.recovery ?? null,
+            sleep: d.sleep > 0 ? d.sleep : (prev.sleep ?? 0),
+            sleepEfficiency: d.sleepEfficiency > 0 ? d.sleepEfficiency : (prev.sleepEfficiency ?? 0),
+            hrv: d.hrv ?? prev.hrv ?? null,
+            rhr: d.rhr ?? prev.rhr ?? null,
+            steps: d.steps ?? (prev.steps > 0 ? prev.steps : null),
+            calories: d.calories ?? (prev.calories > 0 ? prev.calories : null),
+          }
+          const gained = (merged.sleep > 0 && !(prev.sleep > 0)) ||
+            (merged.hrv != null && prev.hrv == null) || (merged.rhr != null && prev.rhr == null) ||
+            (merged.recovery != null && prev.recovery == null) ||
+            (merged.steps > 0 && !(prev.steps > 0)) || (merged.calories > 0 && !(prev.calories > 0))
+          if (d.date !== todayRow.date && gained) {
+            backfillRows.push({
+              ...prev,
+              recovery: merged.recovery, sleep: merged.sleep, sleepEfficiency: merged.sleepEfficiency,
+              hrv: merged.hrv, rhr: merged.rhr, steps: merged.steps ?? 0, calories: merged.calories ?? 0,
+            })
+          }
+          return merged
+        })
         const newRows = result.calendarDays
           .filter(d => d.date && !existingDates.has(d.date))
           .map(d => ({
@@ -482,7 +512,8 @@ export default function App() {
             br: d.br ?? null,
             skinTempDev: d.skinTempDev ?? null,
           }))
-        if (newRows.length) { syncStage = 'saving calendar batch'; await saveDaysBatch(newRows) }
+        const rowsToSave = [...newRows, ...backfillRows]
+        if (rowsToSave.length) { syncStage = 'saving calendar batch'; await saveDaysBatch(rowsToSave) }
       }
       const syncedDates = new Set(result.calendarDays.map(d => d.date))
       const olderDays = dbHistory.filter(d => !syncedDates.has(d.date))
